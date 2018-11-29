@@ -8,6 +8,8 @@
 
 import numpy as np
 from scipy.spatial.distance import cdist
+from scipy.optimize import minimize
+import time
 
 class Vot:
     def setup(self, maxIterH=1000, maxIterP=10, thres=1e-8, rate=0.1):
@@ -53,9 +55,11 @@ class Vot:
     def cluster(self):
         for iterP in range(self.maxIterP):
             self.cost_base = cdist(self.p_coor, self.e_coor, 'sqeuclidean')
+            # t0 = time.clock()
             for iterH in range(self.maxIterH):
                 if self.update_map(iterP,iterH): break
-            if self.update_p(iterP): break
+            # print("map time: " + str(time.clock() - t0) + " seconds")
+            if self.update_p_reg(iterP): break
         return False
 
     def update_p(self, iterP):
@@ -80,3 +84,23 @@ class Vot:
         self.h = self.h - self.learnrate * grad
         # return max
         return True if np.amax(grad) < self.thres else False
+
+    def f_reg_potential(self, x0, x1, alpha=0.5):
+        x0 = x0.reshape(x1.shape)
+        return np.sum(np.sum((x1-x0)**2.0)) + \
+               alpha*np.sum(np.sum((x0[1:,:]-x0[:-1,:])**2.0) + (x0[0,:]-x0[-1,:])**2.0)
+
+    def update_p_reg(self, iterP):
+        # t0 = time.clock()
+        max_change = 0.0
+        tmp = np.zeros((self.p_coor.shape))
+        for j in range(self.numP):
+            tmp[j,:] = np.average(self.e_coor[self.e_idx == j,:], weights=self.e_mass[self.e_idx == j], axis=0)
+            max_change = max(np.amax(self.p_coor[j,:] - tmp[j,:]),max_change)
+        print("iter " + str(iterP) + ": " + str(max_change))
+        res = minimize(self.f_reg_potential, self.p_coor, method='BFGS', tol=1e-8, args=tmp)
+        self.p_coor = res.x
+        self.p_coor = self.p_coor.reshape(tmp.shape)
+        # print("p time: " + str(time.clock() - t0) + " seconds")
+        print(res)
+        return True if max_change < self.thres else False
