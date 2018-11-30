@@ -5,7 +5,7 @@
 import numpy as np
 from scipy.spatial.distance import cdist
 from scipy.optimize import minimize
-import time
+# import time
 
 class Vot:
     def setup(self, max_iter_h=1000, max_iter_p=10, thres=1e-8, rate=0.1):
@@ -14,9 +14,6 @@ class Vot:
         self.learnrate = rate
         self.max_iter_h = max_iter_h
         self.max_iter_p = max_iter_p
-        self.cost = np.zeros((self.p_num,self.numE))
-        self.e_idx = -np.ones(self.numE)
-        self.e_predict = -np.ones(self.numE)
 
     def import_data_file(self, pfilename, efilename, mass=False):
         p_data = np.loadtxt(open(pfilename, "r"), delimiter=",")
@@ -31,9 +28,9 @@ class Vot:
         self.p_mass = np.zeros(self.p_num)
 
         self.e_label = e_data[:,0]
-        self.numE = self.e_label.size
+        self.e_num = self.e_label.size
         self.e_coor = e_data[:,2:] if mass else e_data[:,1:]
-        self.e_mass = e_data[:,1] if mass else np.ones(self.numE)/self.numE
+        self.e_mass = e_data[:,1] if mass else np.ones(self.e_num)/self.e_num
 
     def print_var(self):
         print("h: " + str(self.h))
@@ -95,10 +92,10 @@ class Vot:
     #         dx = x1 - x2
     #         dy = y1 - y2
     #         dz = z1 - z2
-    #         numerator = (c*dy-b*dz)**2 + (c*dx-a*dz)**2 + (b*dx-a*dy)**2
+    #         e_numrator = (c*dy-b*dz)**2 + (c*dx-a*dz)**2 + (b*dx-a*dy)**2
     #
     #         def kp_ds(t):
-    #             return numerator / np.power((a*t-dx)**2 + (b*t-dy)**2 + (c*t-dz)**2, 2.5)
+    #             return e_numrator / np.power((a*t-dx)**2 + (b*t-dy)**2 + (c*t-dz)**2, 2.5)
     #
     #         sum = (kp_ds(0) + kp_ds(1)) / 2.0
     #         # Use matrix operations to replace for loop
