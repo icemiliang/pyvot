@@ -1,6 +1,6 @@
-# Variational Optimal Transportation
-# Author: Liang Mi <liangmi@asu.edu>
-# Date: Nov 29th 2018
+# Variational Wasserstein Clustering
+# Author: Liang Mi <icemiliang@gmail.com>
+# Date: Nov 30th 2018
 
 from vot import *
 import matplotlib.pyplot as plt
