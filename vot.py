@@ -69,16 +69,19 @@ class Vot:
         # update gradient and h
         grad = self.p_mass - self.p_dirac
         self.h = self.h - self.learnrate * grad
-        # return max
+        # check if converge and return max derivative
         return True if np.amax(grad) < self.thres else False
 
     def update_p(self, iterP):
         max_change = 0.0
+        # update p to the centroid of its clustered e samples
         for j in range(self.numP):
             tmp = np.average(self.e_coor[self.e_idx == j,:], weights=self.e_mass[self.e_idx == j], axis=0)
+            # check if converge
             max_change = max(np.amax(self.p_coor[j,:] - tmp),max_change)
-            self.p_coor[j, :] = tmp
+            self.p_coor[j,:] = tmp
         print("iter " + str(iterP) + ": " + str(max_change))
+        # return max p coor change
         return True if max_change < self.thres else False
 
     def f_potential(self, x, x0, label=None, alpha=0.5):
@@ -94,10 +97,10 @@ class Vot:
             dx = x1 - x2
             dy = y1 - y2
             dz = z1 - z2
-            numerator = (c * dy - b * dz) ** 2 + (c * dx - a * dz) ** 2 + (b * dx - a * dy) ** 2
+            numerator = (c*dy-b*dz)**2 + (c*dx-a*dz)**2 + (b*dx-a*dy)**2
 
             def kp_ds(t):
-                return numerator / np.power((a * t - dx) ** 2 + (b * t - dy) ** 2 + (c * t - dz) ** 2, 2.5)
+                return numerator / np.power((a*t-dx)**2 + (b*t-dy)**2 + (c*t-dz)**2, 2.5)
 
             sum = (kp_ds(0) + kp_ds(1)) / 2.0
             # Use matrix operations to replace for loop
