@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 # ------- set up -------- #
 vot = Vot()
 vot.import_data_file('data/p.csv','data/e.csv')
-vot.setup(maxIterP=1, maxIterH=1500)
+vot.setup(max_iter_p=1, max_iter_h=1500)
 
 # ----- plot before ----- #
 plt.subplot(121)
