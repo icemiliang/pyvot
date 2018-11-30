@@ -45,12 +45,12 @@ class Vot:
         print("e idx: " + str(self.e_idx))
         print("e coor: \n" + str(self.e_coor))
 
-    def cluster(self):
+    def cluster(self, reg=0):
         for iter_p in range(self.max_iter_p):
             self.cost_base = cdist(self.p_coor, self.e_coor, 'sqeuclidean')
             for iter_h in range(self.max_iter_h):
                 if self.update_map(iter_p,iter_h): break
-            if self.update_p(iter_p): break
+            if self.update_p(iter_p, reg): break
         return False
 
     def update_map(self, iter_p, iter_h):
@@ -67,7 +67,13 @@ class Vot:
         # check if converge and return max derivative
         return True if np.amax(grad) < self.thres else False
 
-    def update_p(self, iter_p):
+    def update_p(self, iter_p, reg=0):
+        if reg == 0:
+            return self.update_p_noreg(iter_p)
+        elif reg == 1:
+            return self.update_p_reg_potential(iter_p)
+
+    def update_p_noreg(self, iter_p):
         max_change = 0.0
         # update p to the centroid of its clustered e samples
         for j in range(self.p_num):
@@ -79,36 +85,7 @@ class Vot:
         # return max p coor change
         return True if max_change < self.thres else False
 
-    def f_potential(self, x, x0, label=None, alpha=0.5):
-        x = x.reshape(x0.shape)
-        return np.sum(np.sum((x0-x)**2.0)) + \
-               alpha*np.sum(np.sum((x[1:,:]-x[:-1,:])**2.0) + (x[0,:]-x[-1,:])**2.0)
-
-    # def f_curvature(self, p2, x0, fix, alpha1=0.1, alpha2=0.2):
-    #     def compute_curvature(x1, y1, z1, x2, y2, z2, x3, y3, z3):
-    #         a = x1 - 2 * x2 + x3
-    #         b = y1 - 2 * y2 + y3
-    #         c = z1 - 2 * z2 + z3
-    #         dx = x1 - x2
-    #         dy = y1 - y2
-    #         dz = z1 - z2
-    #         e_numrator = (c*dy-b*dz)**2 + (c*dx-a*dz)**2 + (b*dx-a*dy)**2
-    #
-    #         def kp_ds(t):
-    #             return e_numrator / np.power((a*t-dx)**2 + (b*t-dy)**2 + (c*t-dz)**2, 2.5)
-    #
-    #         sum = (kp_ds(0) + kp_ds(1)) / 2.0
-    #         # Use matrix operations to replace for loop
-    #         for t in range(1, 100):
-    #             t /= 100.0
-    #             sum += kp_ds(t)
-    #         sum /= 100.0
-    #         return sum
-    #
-    #     return np.sum(np.sum((x0[1, :] - p2) ** 2.0)) + \
-    #            alpha2 * np.sum(compute_curvature(p1[0], p1[1], p1[2], p2[0], p2[1], p2[2], p3[0], p3[1], p3[2]))
-
-    def update_p_reg(self, iter_p):
+    def update_p_reg_potential(self, iter_p):
         max_change = 0.0
         tmp = np.zeros((self.p_coor.shape))
         # new controid pos
@@ -122,3 +99,46 @@ class Vot:
         self.p_coor = self.p_coor.reshape(tmp.shape)
         # return max change
         return True if max_change < self.thres else False
+
+    def f_potential(self, x, x0, label=None, alpha=0.1):
+        """ Objective function incorporating p labels
+
+        Args:
+            x (np.array[p_num,dim]):   p
+            x0 (np.array[p_num,dim]):  centroids of e
+            label (np.array[p_num,1]): labels of p
+            alpha (float): regularizer weight
+
+        Returns:
+            float: total energy sum(|x-x0|^2) + sum(|xi-xj|^2)
+        """
+        x = x.reshape(x0.shape)
+        return np.sum(np.sum((x0-x)**2.0)) + \
+               alpha*np.sum(np.sum((x[1:,:]-x[:-1,:])**2.0) + (x[0,:]-x[-1,:])**2.0)
+
+    #
+    def f_curvature(self, x, x0, xfix, alpha1=0.1, alpha2=0.2):
+        def compute_curvature(x1, y1, z1, x2, y2, z2, x3, y3, z3):
+            a = x1 - 2 * x2 + x3
+            b = y1 - 2 * y2 + y3
+            c = z1 - 2 * z2 + z3
+            dx = x1 - x2
+            dy = y1 - y2
+            dz = z1 - z2
+            e_numrator = (c*dy-b*dz)**2 + (c*dx-a*dz)**2 + (b*dx-a*dy)**2
+
+            def kp_ds(t):
+                return e_numrator / np.power((a*t-dx)**2 + (b*t-dy)**2 + (c*t-dz)**2, 2.5)
+
+            sum = (kp_ds(0) + kp_ds(1)) / 2.0
+            # Use matrix operations to replace for loop
+            for t in range(1, 100):
+                t /= 100.0
+                sum += kp_ds(t)
+            sum /= 100.0
+            return sum
+
+        return np.sum(np.sum((x0[1, :] - p2) ** 2.0)) + \
+               alpha2 * np.sum(compute_curvature(p1[0], p1[1], p1[2], p2[0], p2[1], p2[2], p3[0], p3[1], p3[2]))
+
+
