@@ -6,7 +6,7 @@ Mi, Liang, Wen Zhang, Xianfeng Gu, and Yalin Wang. "Variational Wasserstein Clus
 
 ![alt text](sample.png?raw=true "Demo of variational optimal transportation")
 
-[Click me for a C++ version](https://github.com/icemiliang/vot)
+<!-- [Click me for a C++ version](https://github.com/icemiliang/vot) -->
 
 ## Dependencies
 * Python >= 3.5
