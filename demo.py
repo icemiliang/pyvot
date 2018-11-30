@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 # ------- set up -------- #
 vot = Vot()
-vot.import_data_file('p.csv','e.csv')
+vot.import_data_file('data/p.csv','data/e.csv')
 vot.setup(maxIterP=1, maxIterH=1500)
 
 # ----- plot before ----- #
