@@ -1,4 +1,4 @@
-# PyVot : Python Variatioanl Optimal Transport
+# PyVot : Python Variational Optimal Transportation
 This package includes the prototype codes for reproducing the map in Figure 4 (b) of the paper:
 
 Mi, Liang, Wen Zhang, Xianfeng Gu, and Yalin Wang. "Variational Wasserstein Clustering." In Proceedings of the European Conference on Computer Vision (ECCV), pp. 322-337. 2018.
