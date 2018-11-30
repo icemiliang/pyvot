@@ -2,6 +2,7 @@
 # Author: Liang Mi <icemiliang@gmail.com>
 # Date: Nov 30th 2018
 
+import sys
 import numpy as np
 from scipy.spatial.distance import cdist
 from scipy.optimize import minimize
@@ -72,6 +73,10 @@ class Vot:
             return self.update_p_noreg(iter_p)
         elif reg == 1:
             return self.update_p_reg_potential(iter_p)
+        elif reg == 2:
+            return self.update_p_reg_curvature(iter_p)
+        else:
+            sys.exit('[ ERROR ] Unknown regularization type\n')
 
     def update_p_noreg(self, iter_p):
         max_change = 0.0
@@ -86,6 +91,22 @@ class Vot:
         return True if max_change < self.thres else False
 
     def update_p_reg_potential(self, iter_p):
+        def f(self, x, x0, label=None, alpha=0.1):
+            """ Objective function incorporating p labels
+
+            Args:
+                x (np.array[p_num,dim]):   p
+                x0 (np.array[p_num,dim]):  centroids of e
+                label (np.array[p_num,1]): labels of p
+                alpha (float): regularizer weight
+
+            Returns:
+                float: total energy sum(|x-x0|^2) + sum(|xi-xj|^2)
+            """
+            x = x.reshape(x0.shape)
+            return np.sum(np.sum((x0 - x) ** 2.0)) + \
+                   alpha * np.sum(np.sum((x[1:, :] - x[:-1, :]) ** 2.0) + (x[0, :] - x[-1, :]) ** 2.0)
+
         max_change = 0.0
         tmp = np.zeros((self.p_coor.shape))
         # new controid pos
@@ -94,51 +115,36 @@ class Vot:
             max_change = max(np.amax(self.p_coor[j,:] - tmp[j,:]),max_change)
         print("iter " + str(iter_p) + ": " + str(max_change))
         # regularize
-        res = minimize(self.f_potential, self.p_coor, method='BFGS', tol=1e-8, args=(tmp,self.p_label))
+        res = minimize(f, self.p_coor, method='BFGS', tol=1e-8, args=(tmp,self.p_label))
         self.p_coor = res.x
         self.p_coor = self.p_coor.reshape(tmp.shape)
         # return max change
         return True if max_change < self.thres else False
 
-    def f_potential(self, x, x0, label=None, alpha=0.1):
-        """ Objective function incorporating p labels
+    def update_p_reg_curvature(self, iter_p):
 
-        Args:
-            x (np.array[p_num,dim]):   p
-            x0 (np.array[p_num,dim]):  centroids of e
-            label (np.array[p_num,1]): labels of p
-            alpha (float): regularizer weight
+        def f(self, x, x0, xfix, alpha1=0.1, alpha2=0.2):
+            def compute_curvature(x1, y1, z1, x2, y2, z2, x3, y3, z3):
+                a = x1 - 2 * x2 + x3
+                b = y1 - 2 * y2 + y3
+                c = z1 - 2 * z2 + z3
+                dx = x1 - x2
+                dy = y1 - y2
+                dz = z1 - z2
+                e_numrator = (c*dy - b*dz)**2 + (c*dx - a*dz)**2 + (b*dx - a*dy)**2
 
-        Returns:
-            float: total energy sum(|x-x0|^2) + sum(|xi-xj|^2)
-        """
-        x = x.reshape(x0.shape)
-        return np.sum(np.sum((x0-x)**2.0)) + \
-               alpha*np.sum(np.sum((x[1:,:]-x[:-1,:])**2.0) + (x[0,:]-x[-1,:])**2.0)
+                def kp_ds(t):
+                    return e_numrator / np.power((a*t - dx)**2 + (b*t - dy)**2 + (c*t - dz)**2, 2.5)
 
-    #
-    def f_curvature(self, x, x0, xfix, alpha1=0.1, alpha2=0.2):
-        def compute_curvature(x1, y1, z1, x2, y2, z2, x3, y3, z3):
-            a = x1 - 2 * x2 + x3
-            b = y1 - 2 * y2 + y3
-            c = z1 - 2 * z2 + z3
-            dx = x1 - x2
-            dy = y1 - y2
-            dz = z1 - z2
-            e_numrator = (c*dy-b*dz)**2 + (c*dx-a*dz)**2 + (b*dx-a*dy)**2
+                sum = (kp_ds(0) + kp_ds(1)) / 2.0
+                # Use matrix operations to replace for loop
+                for t in range(1, 100):
+                    t /= 100.0
+                    sum += kp_ds(t)
+                sum /= 100.0
+                return sum
 
-            def kp_ds(t):
-                return e_numrator / np.power((a*t-dx)**2 + (b*t-dy)**2 + (c*t-dz)**2, 2.5)
-
-            sum = (kp_ds(0) + kp_ds(1)) / 2.0
-            # Use matrix operations to replace for loop
-            for t in range(1, 100):
-                t /= 100.0
-                sum += kp_ds(t)
-            sum /= 100.0
-            return sum
-
-        return np.sum(np.sum((x0[1, :] - p2) ** 2.0)) + \
-               alpha2 * np.sum(compute_curvature(p1[0], p1[1], p1[2], p2[0], p2[1], p2[2], p3[0], p3[1], p3[2]))
+            return np.sum(np.sum((x0[1, :] - p2) ** 2.0)) + \
+                   alpha2 * np.sum(compute_curvature(p1[0], p1[1], p1[2], p2[0], p2[1], p2[2], p3[0], p3[1], p3[2]))
 
 
