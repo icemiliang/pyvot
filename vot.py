@@ -1,8 +1,6 @@
 # Variational Optimal Transportation
-#
 # Author: Liang Mi <liangmi@asu.edu>
 # Date: Nov 29th 2018
-# License: MIT License
 
 import numpy as np
 from scipy.spatial.distance import cdist

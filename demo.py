@@ -1,8 +1,6 @@
 # Variational Optimal Transportation
-#
 # Author: Liang Mi <liangmi@asu.edu>
 # Date: Nov 29th 2018
-# License: MIT License
 
 from vot import *
 import matplotlib.pyplot as plt
