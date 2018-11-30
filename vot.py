@@ -11,31 +11,31 @@ import time
 
 class Vot:
     def setup(self, maxIterH=1000, maxIterP=10, thres=1e-8, rate=0.1):
-        self.h = np.zeros(self.numP)
+        self.h = np.zeros(self.p_num)
         self.thres = thres
         self.learnrate = rate
         self.maxIterH = maxIterH
         self.maxIterP = maxIterP
-        self.cost = np.zeros((self.numP,self.numE))
+        self.cost = np.zeros((self.p_num,self.numE))
         self.e_idx = -np.ones(self.numE)
         self.e_predict = -np.ones(self.numE)
 
     def import_data_file(self, pfilename, efilename, mass=False):
-        dataP = np.loadtxt(open(pfilename, "r"), delimiter=",")
-        dataE = np.loadtxt(open(efilename, "r"), delimiter=",")
-        self.import_data(dataP, dataE, mass)
+        p_data = np.loadtxt(open(pfilename, "r"), delimiter=",")
+        e_data = np.loadtxt(open(efilename, "r"), delimiter=",")
+        self.import_data(p_data, e_data, mass)
 
-    def import_data(self, dataP, dataE, mass=False):
-        self.p_label = dataP[:,0]
-        self.numP = self.p_label.size
-        self.p_coor = dataP[:,2:] if mass else dataP[:,1:]
-        self.p_dirac = dataP[:,1] if mass else np.ones(self.numP)/self.numP
-        self.p_mass = np.zeros(self.numP)
+    def import_data(self, p_data, e_data, mass=False):
+        self.p_label = p_data[:,0]
+        self.p_num = self.p_label.size
+        self.p_coor = p_data[:,2:] if mass else p_data[:,1:]
+        self.p_dirac = p_data[:,1] if mass else np.ones(self.p_num)/self.p_num
+        self.p_mass = np.zeros(self.p_num)
 
-        self.e_label = dataE[:,0]
+        self.e_label = e_data[:,0]
         self.numE = self.e_label.size
-        self.e_coor = dataE[:,2:] if mass else dataE[:,1:]
-        self.e_mass = dataE[:,1] if mass else np.ones(self.numE)/self.numE
+        self.e_coor = e_data[:,2:] if mass else e_data[:,1:]
+        self.e_mass = e_data[:,1] if mass else np.ones(self.numE)/self.numE
 
     def print_var(self):
         print("h: " + str(self.h))
@@ -55,7 +55,7 @@ class Vot:
             self.cost_base = cdist(self.p_coor, self.e_coor, 'sqeuclidean')
             for iterH in range(self.maxIterH):
                 if self.update_map(iterP,iterH): break
-            if self.update_p_reg(iterP): break
+            if self.update_p(iterP): break
         return False
 
     def update_map(self, iterP, iterH):
@@ -64,7 +64,7 @@ class Vot:
         # find nearest p for each e and add mass to p
         self.e_idx = np.argmin(self.cost, axis=0)
         self.e_predict = self.p_label[self.e_idx]
-        for j in range(self.numP):
+        for j in range(self.p_num):
             self.p_mass[j] = np.sum(self.e_mass[self.e_idx == j])
         # update gradient and h
         grad = self.p_mass - self.p_dirac
@@ -75,7 +75,7 @@ class Vot:
     def update_p(self, iterP):
         max_change = 0.0
         # update p to the centroid of its clustered e samples
-        for j in range(self.numP):
+        for j in range(self.p_num):
             tmp = np.average(self.e_coor[self.e_idx == j,:], weights=self.e_mass[self.e_idx == j], axis=0)
             # check if converge
             max_change = max(np.amax(self.p_coor[j,:] - tmp),max_change)
@@ -117,7 +117,7 @@ class Vot:
         max_change = 0.0
         tmp = np.zeros((self.p_coor.shape))
         # new controid pos
-        for j in range(self.numP):
+        for j in range(self.p_num):
             tmp[j,:] = np.average(self.e_coor[self.e_idx == j,:], weights=self.e_mass[self.e_idx == j], axis=0)
             max_change = max(np.amax(self.p_coor[j,:] - tmp[j,:]),max_change)
         print("iter " + str(iterP) + ": " + str(max_change))
