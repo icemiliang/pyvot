@@ -4,7 +4,7 @@ This package includes the prototype codes for reproducing the map in Figure 4 (b
 Mi, Liang, Wen Zhang, Xianfeng Gu, and Yalin Wang. "Variational Wasserstein Clustering." In Proceedings of the European Conference on Computer Vision (ECCV), pp. 322-337. 2018.
 
 * Variational Wasserstein clustering in each iteration leverages variational princples [Gu et al. 2013] to solve optimal transportation. Thus, we name the repo pyvot instead of pyvwc for the sake of pronunciation. For computing optimal transportation, simply set the max iteration to one.
-* This program implements gradient descent instead of Newton's method in order to handle high-dimensional data. 
+* This program implements gradient descent instead of Newton's method to avoid computing convex hulls so that it can handle high-dimensional data. 
 
 ![alt text](data/sample.png?raw=true "Demo of variational Wasserstein clustering")
 
