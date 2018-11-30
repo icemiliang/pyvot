@@ -1,12 +1,14 @@
 # PyVot
-## A Python implementation of variational optimal transportation
+## A Python implementation of variational Wasserstein clustering
 This package includes the prototype codes for reproducing the map in Figure 4 (b) of the paper:
 
 Mi, Liang, Wen Zhang, Xianfeng Gu, and Yalin Wang. "Variational Wasserstein Clustering." In Proceedings of the European Conference on Computer Vision (ECCV), pp. 322-337. 2018.
 
-![alt text](sample.png?raw=true "Demo of variational optimal transportation")
+This program implements gradient descent instead of Newton's method in order to handle high-dimensional data.
 
-[Click me for a C++ version](https://github.com/icemiliang/pyvot)
+![alt text](data/sample.png?raw=true "Demo of variational optimal transportation")
+
+<!-- [Click me for a C++ version](https://github.com/icemiliang/vot) -->
 
 ## Dependencies
 * Python >= 3.5
