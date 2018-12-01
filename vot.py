@@ -18,7 +18,7 @@ class Vot:
             thres (float): threshold to break loops
             rate  (float): learning rate
         """
-        
+
         self.h = np.zeros(self.np)
         self.thres = thres
         self.learnrate = rate
@@ -48,12 +48,14 @@ class Vot:
         """
 
         self.p_label = p_data[:,0]
+        self.p_label = self.p_label.astype(int)
         self.np = self.p_label.size
         self.p_coor = p_data[:,2:] if mass else p_data[:,1:]
         self.p_dirac = p_data[:,1] if mass else np.ones(self.np)/self.np
         self.p_mass = np.zeros(self.np)
 
         self.e_label = e_data[:,0]
+        self.e_label = self.e_label.astype(int)
         self.ne = self.e_label.size
         self.e_coor = e_data[:,2:] if mass else e_data[:,1:]
         self.e_mass = e_data[:,1] if mass else np.ones(self.ne)/self.ne
@@ -106,6 +108,7 @@ class Vot:
         self.cost = self.cost_base - self.h[:, np.newaxis]
         # find nearest p for each e and add mass to p
         self.e_idx = np.argmin(self.cost, axis=0)
+        # labels come from centroids
         self.e_predict = self.p_label[self.e_idx]
         for j in range(self.np):
             self.p_mass[j] = np.sum(self.e_mass[self.e_idx == j])
@@ -138,14 +141,14 @@ class Vot:
         for j in range(self.np):
             tmp = np.average(self.e_coor[self.e_idx == j,:], weights=self.e_mass[self.e_idx == j], axis=0)
             # check if converge
-            max_change = np.amax(np.amax(self.p_coor[j,:] - tmp), max_change)
+            max_change = max(np.amax(self.p_coor[j,:] - tmp), max_change)
             self.p_coor[j,:] = tmp
         print("iter " + str(iter_p) + ": " + str(max_change))
         # return max p coor change
         return True if max_change < self.thres else False
 
     def update_p_reg_potential(self, iter_p):
-        def f(p, p0, label=None, alpha=0.1):
+        def f(p, p0, label=None, alpha=0.01):
             """ objective function incorporating labels
 
             Args:
@@ -155,12 +158,18 @@ class Vot:
                 alpha float: regularizer weight
 
             Returns:
-                float: f = sum(|x-x0|^2) + alpha*sum(|xi-xj|^2)
+                float: f = sum(|x-x0|^2) + alpha*sum(delta*|xi-xj|^2), delta = 1 if li == lj
             """
 
             p = p.reshape(p0.shape)
-            return np.sum(np.sum((p0 - p)**2.0)) + \
-                   alpha * np.sum(np.sum((p[1:,:] - p[:-1,:])**2.0) + (p[0,:] - p[-1,:])**2.0)
+            reg_term = 0.0
+            for idx, l in np.ndenumerate(np.unique(label)):
+                p_sub = p[label == l,:]
+                # TODO replace the for loop by vector operations?
+                for shift in range(1,np.size(p_sub,0)):
+                    reg_term += np.sum(np.sum((p_sub-np.roll(p_sub, shift, axis=0))**2.0))
+
+            return np.sum(np.sum((p - p0)**2.0)) + alpha*reg_term
 
         max_change = 0.0
         tmp = np.zeros((self.p_coor.shape))
