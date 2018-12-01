@@ -19,7 +19,7 @@ ot.setup(max_iter_p=1, max_iter_h=1500)
 
 # ----- plot before ----- #
 p_coor_before = np.copy(ot.p_coor)
-plt.figure(figsize=(10,10))
+plt.figure(figsize=(12,8))
 
 cp = [vot.color_blue, vot.color_red]
 cp = [cp[label] for index,label in np.ndenumerate(ot.p_label)]
