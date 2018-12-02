@@ -97,6 +97,5 @@ plt.scatter(p_coor_after[:,0], p_coor_after[:,1], marker='o', facecolors='none',
 
 # ---- plot and save ---- #
 plt.tight_layout(pad=1.0, w_pad=1.5, h_pad=0.5)
-plt.axis('off')
-plt.savefig("rwm.png")
+plt.savefig("data/rwm.png")
 plt.show()
