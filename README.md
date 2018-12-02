@@ -6,6 +6,9 @@ This package includes the prototype code for computing variational Wasserstein c
 * The picture below shows the results from regularized Wasserstein clustering.
 ![alt text](data/rwm.png?raw=true "Demo of regularized Wasserstein means")
 
+#### Notes
+* Curvature is computed following [Ulen et al. 2015].
+
 ## Dependencies
 * Python >= 3.5
 * NumPy >= 1.15.4
@@ -30,6 +33,8 @@ Mi, Liang, Wen Zhang, Xianfeng Gu, and Yalin Wang. "Variational Wasserstein Clus
 #### Additional references
 
 [1] Gu, Xianfeng, Feng Luo, Jian Sun, and S-T. Yau. "Variational principles for Minkowski type problems, discrete optimal transport, and discrete Monge-Ampere equations." arXiv preprint arXiv:1302.5472 (2013).
+
+[2] Ulen, Johannes, Petter Strandmark, and Fredrik Kahl. "Shortest paths with higher-order regularization." IEEE transactions on pattern analysis and machine intelligence 37, no. 12 (2015): 2588-2600.
 
 ## Contact
 Please contact Liang Mi icemiliang@gmail.com for any issues. 
