@@ -26,7 +26,7 @@ ot.setup(max_iter_p=1, max_iter_h=1500)
 
 # ----- plot before ----- #
 p_coor_before =  np.copy(ot.p_coor)
-plt.figure(figsize=(12,4))
+plt.figure(figsize=(12,3.5))
 
 cp = [vot.color_blue, vot.color_red]
 cp = [cp[label] for index,label in np.ndenumerate(ot.p_label)]
@@ -54,6 +54,8 @@ plt.subplot(133); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('Aft
 plt.scatter(ot.e_coor[:,0], ot.e_coor[:,1], marker='.', color=ce, zorder=2)
 plt.scatter(ot.p_coor[:,0], ot.p_coor[:,1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=3)
 
-# -------- plot --------- #
+# ---- plot and save ---- #
 plt.tight_layout(pad=1.0, w_pad=1.5, h_pad=1.0)
+plt.axis('off')
+plt.savefig("vwc.png")
 plt.show()
