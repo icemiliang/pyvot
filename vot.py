@@ -133,6 +133,15 @@ class Vot:
         return True if max_change < self.thres else False
 
     def update_p_reg_potential(self, iter_p):
+        """ update each p to the centroids of its cluster,
+            regularized by intra-class distances
+
+        Args:
+            iter_p int: index of the iteration of updating p
+
+        Returns:
+            float: max change of p, small max means convergence
+        """
         def f(p, p0, label=None, alpha=0.01):
             """ objective function incorporating labels
 
