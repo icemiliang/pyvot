@@ -1,7 +1,6 @@
 # Variational Wasserstein Clustering (vwc)
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: Nov 30th 2018
-
+# Date: Dec 1st 2018
 
 color_blue = [0.12,0.56,1]
 color_light_blue = [0.5, 0.855, 1]

@@ -1,6 +1,6 @@
-# Variational Optimal Transportation
+# Variational Wasserstein Clustering (vwc)
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: Nov 30th 2018
+# Date: Dec 1st 2018
 
 import numpy as np
 from scipy.spatial.distance import cdist
@@ -59,21 +59,6 @@ class Vot:
         self.ne = self.e_label.size
         self.e_coor = e_data[:,2:] if mass else e_data[:,1:]
         self.e_mass = e_data[:,1] if mass else np.ones(self.ne)/self.ne
-
-    def print_var(self):
-        """ print attributes to console """
-
-        print("h: " + str(self.h))
-        print("cost matrix: \n" + str(self.cost))
-        print("p label: " + str(self.p_label))
-        print("p dirac: " + str(self.p_dirac))
-        print("p mass: " + str(self.p_mass))
-        print("p coor: \n" + str(self.p_coor))
-        print("e label: " + str(self.e_label))
-        print("e predict: " + str(self.e_predict))
-        print("e mass: " + str(self.e_mass))
-        print("e idx: " + str(self.e_idx))
-        print("e coor: \n" + str(self.e_coor))
 
     def cluster(self, reg=0):
         """ compute Wasserstein clustering
@@ -184,51 +169,3 @@ class Vot:
         self.p_coor = self.p_coor.reshape(tmp.shape)
         # return max change
         return True if max_change < self.thres else False
-
-    def update_p_reg_curvature(self, iter_p):
-        def f(p, p0, pfix, alpha1=0.1, alpha2=0.1):
-            """ objective function incorporating length and curvature
-
-            Args:
-                p  np.ndarray(np-pfix_num,dim): p
-                p0 np.ndarray(np-pfix_num,dim): centroids of e
-                pfix np.ndarray(fix_num,): labels of p
-                alpha1 float: weight of regularizer length
-                alpha2 float: weight of regularizer curvature
-
-            Returns:
-                float: f = sum(|x-x0|^2) + alpha1*sum(length(xj,xj-1) + alpha2*sum(curvature(xj,xj-1,xj-2)))
-            """
-
-            def length(x1,y1,z1,x2,y2,z2,x3,y3,z3):
-                a = x1 - 2 * x2 + x3
-                b = y1 - 2 * y2 + y3
-                c = z1 - 2 * z2 + z3
-                dx = x1 - x2
-                dy = y1 - y2
-                dz = z1 - z2
-
-                t = np.array(0.0,1.01,0.01)
-                ds = np.sqrt((a*t - dx)**2 + (b*t - dy)**2 + (c*t - dz)**2)
-                return np.sum(ds)
-
-            def curvature(x1, y1, z1, x2, y2, z2, x3, y3, z3):
-                a = x1 - 2 * x2 + x3
-                b = y1 - 2 * y2 + y3
-                c = z1 - 2 * z2 + z3
-                dx = x1 - x2
-                dy = y1 - y2
-                dz = z1 - z2
-                numerator = (c*dy - b*dz)**2 + (c*dx - a*dz)**2 + (b*dx - a*dy)**2
-
-                t = np.arange(0.0, 1.01, 0.01)
-                k = numerator / np.power((a*t - dx)**2 + (b*t - dy)**2 + (c*t - dz)**2, 2.5)
-                k[0] /= 2
-                k[100] /= 2
-                return np.sum(k)/100
-
-            cost = 0
-            cost +=  np.sum(np.sum((p0 - p)**2.0)) + \
-                     alpha1 * np.sum(length())+\
-                     alpha2 * np.sum(curvature())
-            return cost

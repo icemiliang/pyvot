@@ -1,6 +1,18 @@
 # Variational Wasserstein Clustering (vwc)
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: Nov 30th 2018
+# Date: Dec 1st 2018
+
+"""
+===========================================
+    Variational Wasserstein Clustering
+===========================================
+
+This demo shows how to use variational transportation to cluster
+empirical samples into known clusters.
+
+Predicted labels of the empirical samples come from the centroids.
+It is equivalent to 1NN w.r.t. the power Euclidean distance.
+"""
 
 from vot import *
 import matplotlib.pyplot as plt
@@ -23,7 +35,7 @@ plt.scatter(ot.e_coor[:,0], ot.e_coor[:,1], marker='.', color=vot.color_light_gr
 plt.scatter(p_coor_before[:,0], p_coor_before[:,1], marker='o', color=cp, zorder=3)
 
 # ------- run vwc ------- #
-ot.cluster(0)
+ot.cluster()
 
 # ------ plot map ------- #
 map = [[tuple(p1),tuple(p2)] for p1,p2 in zip(p_coor_before.tolist(),ot.p_coor.tolist())]
