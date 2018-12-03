@@ -1,6 +1,6 @@
 # Variational Wasserstein Clustering (vwc)
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: Dec 1st 2018
+# Date: Dec 2nd 2018
 
 import numpy as np
 from scipy.spatial.distance import cdist
@@ -25,7 +25,7 @@ class Vot:
         self.max_iter_h = max_iter_h
         self.max_iter_p = max_iter_p
 
-    def import_data_file(self, pfilename, efilename, mass=False):
+    def import_data_file(self, pfilename, efilename, mass=False, label=True):
         """ import data from files
 
         Args:
@@ -36,31 +36,55 @@ class Vot:
 
         p_data = np.loadtxt(open(pfilename, "r"), delimiter=",")
         e_data = np.loadtxt(open(efilename, "r"), delimiter=",")
-        self.import_data(p_data, e_data, mass)
+        self.import_data(p_data, e_data, mass, label)
 
-    def import_data(self, p_data, e_data, mass=False):
+    def import_data(self, p_data, e_data, mass=False, label=True):
         """ import data from files
 
         Args:
             p_data np.ndarray(np,dim+): data of p, labels, mass, coordinates, etc
             e_data np.ndarray(ne,dim+): data of e, labels, mass, coordinates, etc
-            mass (bool): whether data has a mass colum
+            mass (bool): whether data has a mass column
+            label (bool): whether data has a label column
         """
 
-        self.p_label = p_data[:,0]
+        self.np = np.size(p_data, 0)
+        self.ne = np.size(e_data, 0)
+
+        if label and mass:
+            self.p_label = p_data[:,0]
+            self.e_label = e_data[:,0]
+            self.p_dirac = p_data[:,1]
+            self.e_mass = e_data[:,1]
+            self.p_coor = p_data[:,2:]
+            self.e_coor = e_data[:,2:]
+        elif label and not mass:
+            self.p_label = p_data[:,0]
+            self.e_label = e_data[:,0]
+            self.p_dirac = np.ones(self.np)/self.np
+            self.e_mass = np.ones(self.ne)/self.ne
+            self.p_coor = p_data[:,1:]
+            self.e_coor = e_data[:,1:]
+        elif not label and mass:
+            self.p_label = -np.ones(self.ne)
+            self.e_label = -np.ones(self.np)
+            self.p_dirac = p_data[:, 1]
+            self.e_mass = e_data[:, 1]
+            self.p_coor = p_data[:, 1:]
+            self.e_coor = e_data[:, 1:]
+        else: # not label and not mass
+            self.p_label = -np.ones(self.ne)
+            self.e_label = -np.ones(self.np)
+            self.p_dirac = np.ones(self.np)/self.np
+            self.e_mass = np.ones(self.ne)/self.ne
+            self.p_coor = p_data
+            self.e_coor = e_data
+
+        self.p_mass = np.zeros(self.np) # mass is the sum of its e's weights, its own weight is "dirac"
         self.p_label = self.p_label.astype(int)
-        self.np = self.p_label.size
-        self.p_coor = p_data[:,2:] if mass else p_data[:,1:]
-        self.p_dirac = p_data[:,1] if mass else np.ones(self.np)/self.np
-        self.p_mass = np.zeros(self.np)
-
-        self.e_label = e_data[:,0]
         self.e_label = self.e_label.astype(int)
-        self.ne = self.e_label.size
-        self.e_coor = e_data[:,2:] if mass else e_data[:,1:]
-        self.e_mass = e_data[:,1] if mass else np.ones(self.ne)/self.ne
 
-    def cluster(self, reg=0):
+    def cluster(self, reg=0, alpha=0.01):
         """ compute Wasserstein clustering
 
         Args:
@@ -76,7 +100,7 @@ class Vot:
             self.cost_base = cdist(self.p_coor, self.e_coor, 'sqeuclidean')
             for iter_h in range(self.max_iter_h):
                 if self.update_map(iter_p,iter_h): break
-            if self.update_p(iter_p, reg): break
+            if self.update_p(iter_p, reg, alpha): break
 
     def update_map(self, iter_p, iter_h):
         """ update each p to the centroids of its cluster
@@ -103,10 +127,21 @@ class Vot:
         # check if converge and return max derivative
         return True if np.amax(grad) < self.thres else False
 
-    def update_p(self, iter_p, reg=0):
-        if reg == 1:
-            return self.update_p_reg_potential(iter_p)
-        elif reg == 2:
+    def update_p(self, iter_p, reg=0, alpha=0.01):
+        """ update p
+
+        Args:
+            iter_p int: iteration index
+            reg int or string: regularizer type
+            alpha float: regularizer weight
+
+        Returns:
+            float: max change of p, small max means convergence
+        """
+
+        if reg == 1 or reg == 'potential':
+            return self.update_p_reg_potential(iter_p, alpha)
+        elif reg == 2 or reg == 'curvature':
             return self.update_p_reg_curvature(iter_p)
         else:
             return self.update_p_noreg(iter_p)
@@ -123,25 +158,30 @@ class Vot:
 
         max_change = 0.0
         # update p to the centroid of its clustered e samples
+        # TODO Replace the for loop with matrix/vector operations, if possible
         for j in range(self.np):
-            tmp = np.average(self.e_coor[self.e_idx == j,:], weights=self.e_mass[self.e_idx == j], axis=0)
+            weight = self.e_mass[self.e_idx == j]
+            if (weight)
+            p_target = np.average(self.e_coor[self.e_idx == j,:], weights=weight, axis=0)
             # check if converge
-            max_change = max(np.amax(self.p_coor[j,:] - tmp), max_change)
-            self.p_coor[j,:] = tmp
+            max_change = max(np.amax(self.p_coor[j,:] - p_target), max_change)
+            self.p_coor[j,:] = p_target
         print("iter " + str(iter_p) + ": " + str(max_change))
         # return max p coor change
         return True if max_change < self.thres else False
 
-    def update_p_reg_potential(self, iter_p):
+    def update_p_reg_potential(self, iter_p, alpha=0.01):
         """ update each p to the centroids of its cluster,
             regularized by intra-class distances
 
         Args:
             iter_p int: index of the iteration of updating p
+            alpha float: regularizer weight
 
         Returns:
             float: max change of p, small max means convergence
         """
+
         def f(p, p0, label=None, alpha=0.01):
             """ objective function incorporating labels
 
@@ -152,14 +192,14 @@ class Vot:
                 alpha float: regularizer weight
 
             Returns:
-                float: f = sum(|x-x0|^2) + alpha*sum(delta*|xi-xj|^2), delta = 1 if li == lj
+                float: f = sum(|p-p0|^2) + alpha*sum(delta*|pi-pj|^2), delta = 1 if li == lj
             """
 
             p = p.reshape(p0.shape)
             reg_term = 0.0
+            # TODO Replace the nested for loop with matrix/vector operations, if possible
             for idx, l in np.ndenumerate(np.unique(label)):
                 p_sub = p[label == l,:]
-                # TODO replace the for loop by vector operations?
                 for shift in range(1,np.size(p_sub,0)):
                     reg_term += np.sum(np.sum((p_sub-np.roll(p_sub, shift, axis=0))**2.0))
 
@@ -168,12 +208,13 @@ class Vot:
         max_change = 0.0
         tmp = np.zeros((self.p_coor.shape))
         # new controid pos
+        # TODO Replace the for loop with matrix/vector operations, if possible
         for j in range(self.np):
             tmp[j,:] = np.average(self.e_coor[self.e_idx == j,:], weights=self.e_mass[self.e_idx == j], axis=0)
             max_change = max(np.amax(self.p_coor[j,:] - tmp[j,:]),max_change)
         print("iter " + str(iter_p) + ": " + str(max_change))
         # regularize
-        res = minimize(f, self.p_coor, method='BFGS', tol=1e-8, args=(tmp,self.p_label))
+        res = minimize(f, self.p_coor, method='BFGS', tol=1e-8, args=(tmp,self.p_label,alpha))
         self.p_coor = res.x
         self.p_coor = self.p_coor.reshape(tmp.shape)
         # return max change
@@ -191,25 +232,25 @@ class Vot:
                 alpha2 float: weight of regularizer curvature
 
             Returns:
-                float: f = sum(|x-x0|^2) + alpha1*sum(length(xj,xj-1) + alpha2*sum(curvature(xj,xj-1,xj-2)))
+                float: f = sum(|p-p0|^2) + alpha1*sum(length(pj,pj-1) + alpha2*sum(curvature(pj,pj-1,pj-2)))
             """
 
             def length(x1,y1,z1,x2,y2,z2,x3,y3,z3):
-                a = x1 - 2 * x2 + x3
-                b = y1 - 2 * y2 + y3
-                c = z1 - 2 * z2 + z3
+                a = x1 - 2*x2 + x3
+                b = y1 - 2*y2 + y3
+                c = z1 - 2*z2 + z3
                 dx = x1 - x2
                 dy = y1 - y2
                 dz = z1 - z2
 
-                t = np.array(0.0,1.01,0.01)
+                t = np.array(0.0, 1.01, 0.01)
                 ds = np.sqrt((a*t - dx)**2 + (b*t - dy)**2 + (c*t - dz)**2)
                 return np.sum(ds)
 
             def curvature(x1, y1, z1, x2, y2, z2, x3, y3, z3):
-                a = x1 - 2 * x2 + x3
-                b = y1 - 2 * y2 + y3
-                c = z1 - 2 * z2 + z3
+                a = x1 - 2*x2 + x3
+                b = y1 - 2*y2 + y3
+                c = z1 - 2*z2 + z3
                 dx = x1 - x2
                 dy = y1 - y2
                 dz = z1 - z2

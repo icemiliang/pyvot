@@ -1,6 +1,6 @@
 # Regularized Wasserstein Means (RWM)
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: Dec 1st 2018
+# Date: Dec 2nd 2018
 
 """
 ===========================================
@@ -45,8 +45,8 @@ ot.cluster(0) # 0: w/o regularization
 p_coor_after = np.copy(ot.p_coor)
 map = [[tuple(p1),tuple(p2)] for p1,p2 in zip(p_coor_before.tolist(), p_coor_after.tolist())]
 lines = mc.LineCollection(map, colors=vot.color_light_grey)
-fig132 = plt.subplot(232); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('w/o reg map')
-fig132.add_collection(lines)
+fig232 = plt.subplot(232); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('w/o reg map')
+fig232.add_collection(lines)
 plt.scatter(p_coor_before[:,0], p_coor_before[:,1], marker='o', color=cp,zorder=3)
 plt.scatter(p_coor_after[:,0], p_coor_after[:,1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=2)
 
@@ -74,14 +74,14 @@ plt.scatter(ot.e_coor[:,0], ot.e_coor[:,1], marker='.', color=vot.color_light_gr
 plt.scatter(p_coor_before[:,0], p_coor_before[:,1], marker='o', color=cp, zorder=3)
 
 # ------- run RWM ------- #
-ot.cluster(1) # 1: w/ regularization
+ot.cluster(reg = 'potential', alpha = 0.01)
 
 # ------- plot map ------ #
 p_coor_after = np.copy(ot.p_coor)
 map = [[tuple(p1),tuple(p2)] for p1,p2 in zip(p_coor_before.tolist(), p_coor_after.tolist())]
 lines = mc.LineCollection(map, colors=vot.color_light_grey)
-fig132 = plt.subplot(235); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('w reg map')
-fig132.add_collection(lines)
+fig235 = plt.subplot(235); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('w reg map')
+fig235.add_collection(lines)
 plt.scatter(p_coor_before[:,0], p_coor_before[:,1], marker='o', color=cp,zorder=3)
 plt.scatter(p_coor_after[:,0], p_coor_after[:,1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=2)
 
