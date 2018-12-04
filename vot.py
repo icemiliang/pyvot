@@ -331,13 +331,60 @@ class Vot:
 
             # return cost_target + alpha1*cost_length + alpha2*cost_curvature
 
-            return 0.1*np.sum(np.sum((p0 - p)**2.0)) + \
+            # return 0.1*np.sum(np.sum((p0 - p)**2.0)) + \
+            #        length(pfix[0,:], p[1,:], p[2,:]) + \
+            #        length(p[1, :], p[2, :], p[3, :]) + \
+            #        length(p[2, :], p[3, :], p[4, :]) + \
+            #        length(p[3, :], p[4, :], p[5, :]) + \
+            #        length(p[4, :], p[5, :], p[6, :]) + \
+            #        length(p[5, :], p[6, :], p[7, :]) + \
+            #        length(p[6, :], p[7, :], p[8, :]) + \
+            #        length(p[7, :], p[8, :], pfix[3, :]) + \
+            #        curvature(pfix[0, :], p[1, :], p[2, :]) + \
+            #        curvature(p[1, :], p[2, :], p[3, :]) + \
+            #        curvature(p[2, :], p[3, :], p[4, :]) + \
+            #        curvature(p[3, :], p[4, :], p[5, :]) + \
+            #        curvature(p[4, :], p[5, :], p[6, :]) + \
+            #        curvature(p[5, :], p[6, :], p[7, :]) + \
+            #        curvature(p[6, :], p[7, :], p[8, :]) + \
+            #        curvature(p[7, :], p[8, :], pfix[3, :]) + \
+            #        length(pfix[1, :], p[11, :], p[12, :]) + \
+            #        length(p[11, :], p[12, :], p[13, :]) + \
+            #        length(p[12, :], p[13, :], p[14, :]) + \
+            #        length(p[13, :], p[14, :], p[15, :]) + \
+            #        length(p[14, :], p[15, :], p[16, :]) + \
+            #        length(p[15, :], p[16, :], p[17, :]) + \
+            #        length(p[16, :], p[17, :], p[18, :]) + \
+            #        length(p[17, :], p[18, :], pfix[3, :]) + \
+            #        curvature(pfix[1, :], p[11, :], p[12, :]) + \
+            #        curvature(p[11, :], p[12, :], p[13, :]) + \
+            #        curvature(p[12, :], p[13, :], p[14, :]) + \
+            #        curvature(p[13, :], p[14, :], p[15, :]) + \
+            #        curvature(p[14, :], p[15, :], p[16, :]) + \
+            #        curvature(p[15, :], p[16, :], p[17, :]) + \
+            #        curvature(p[16, :], p[17, :], p[18, :]) + \
+            #        curvature(p[17, :], p[18, :], pfix[3, :]) + \
+            #        length(pfix[2, :], p[20, :], p[21, :]) + \
+            #        length(p[20, :], p[22, :], p[23, :]) + \
+            #        length(p[21, :], p[22, :], p[23, :]) + \
+            #        length(p[22, :], p[23, :], p[24, :]) + \
+            #        length(p[23, :], p[24, :], p[25, :]) + \
+            #        length(p[24, :], p[25, :], p[26, :]) + \
+            #        length(p[25, :], p[26, :], p[27, :]) + \
+            #        length(p[26, :], p[27, :], pfix[3, :]) + \
+            #        curvature(pfix[2, :], p[20, :], p[21, :]) + \
+            #        curvature(p[20, :], p[22, :], p[23, :]) + \
+            #        curvature(p[21, :], p[22, :], p[23, :]) + \
+            #        curvature(p[22, :], p[23, :], p[24, :]) + \
+            #        curvature(p[23, :], p[24, :], p[25, :]) + \
+            #        curvature(p[24, :], p[25, :], p[26, :]) + \
+            #        curvature(p[25, :], p[26, :], p[27, :]) + \
+            #        curvature(p[26, :], p[27, :], pfix[3, :]) + \
+            #        curvature(p[18, :], pfix[3, :], p[27, :])
+            return 0.05*np.sum(np.sum((p0 - p)**2.0)) + \
                    length(pfix[0,:], p[1,:], p[2,:]) + \
-                   length(p[1, :], p[2, :], p[3, :]) + \
                    length(p[2, :], p[3, :], p[4, :]) + \
-                   length(p[3, :], p[4, :], p[5, :]) + \
                    length(p[4, :], p[5, :], p[6, :]) + \
-                   length(p[5, :], p[6, :], p[7, :]) + \
                    length(p[6, :], p[7, :], p[8, :]) + \
                    length(p[7, :], p[8, :], pfix[3, :]) + \
                    curvature(pfix[0, :], p[1, :], p[2, :]) + \
@@ -349,12 +396,10 @@ class Vot:
                    curvature(p[6, :], p[7, :], p[8, :]) + \
                    curvature(p[7, :], p[8, :], pfix[3, :]) + \
                    length(pfix[1, :], p[11, :], p[12, :]) + \
-                   length(p[11, :], p[12, :], p[13, :]) + \
                    length(p[12, :], p[13, :], p[14, :]) + \
-                   length(p[13, :], p[14, :], p[15, :]) + \
                    length(p[14, :], p[15, :], p[16, :]) + \
-                   length(p[15, :], p[16, :], p[17, :]) + \
                    length(p[16, :], p[17, :], p[18, :]) + \
+                   length(p[17, :], p[18, :], pfix[3, :]) + \
                    curvature(pfix[1, :], p[11, :], p[12, :]) + \
                    curvature(p[11, :], p[12, :], p[13, :]) + \
                    curvature(p[12, :], p[13, :], p[14, :]) + \
@@ -362,21 +407,12 @@ class Vot:
                    curvature(p[14, :], p[15, :], p[16, :]) + \
                    curvature(p[15, :], p[16, :], p[17, :]) + \
                    curvature(p[16, :], p[17, :], p[18, :]) + \
+                   curvature(p[17, :], p[18, :], pfix[3, :]) + \
                    length(pfix[2, :], p[20, :], p[21, :]) + \
-                   length(p[20, :], p[22, :], p[23, :]) + \
-                   length(p[21, :], p[22, :], p[23, :]) + \
-                   length(p[22, :], p[23, :], p[24, :]) + \
-                   length(p[23, :], p[24, :], p[25, :]) + \
-                   length(p[24, :], p[25, :], p[26, :]) + \
-                   length(p[25, :], p[26, :], p[27, :]) + \
+                   length(p[20, :], p[21, :], pfix[3, :]) + \
                    curvature(pfix[2, :], p[20, :], p[21, :]) + \
-                   curvature(p[20, :], p[22, :], p[23, :]) + \
-                   curvature(p[21, :], p[22, :], p[23, :]) + \
-                   curvature(p[22, :], p[23, :], p[24, :]) + \
-                   curvature(p[23, :], p[24, :], p[25, :]) + \
-                   curvature(p[24, :], p[25, :], p[26, :]) + \
-                   curvature(p[25, :], p[26, :], p[27, :]) + \
-                   curvature(p[18, :], pfix[3, :], p[27, :])
+                   curvature(p[20, :], p[21, :], pfix[3, :]) + \
+                   curvature(p[18, :], pfix[3, :], p[21, :])
 
         pfix = np.concatenate((self.p_coor[0,:],self.p_coor[10,:],self.p_coor[19,:],self.p_coor[9,:]), axis=0)
 
