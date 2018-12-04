@@ -161,7 +161,8 @@ class Vot:
         # TODO Replace the for loop with matrix/vector operations, if possible
         for j in range(self.np):
             weight = self.e_mass[self.e_idx == j]
-            if (weight)
+            if weight.size == 0:
+                continue
             p_target = np.average(self.e_coor[self.e_idx == j,:], weights=weight, axis=0)
             # check if converge
             max_change = max(np.amax(self.p_coor[j,:] - p_target), max_change)
@@ -214,14 +215,26 @@ class Vot:
             max_change = max(np.amax(self.p_coor[j,:] - tmp[j,:]),max_change)
         print("iter " + str(iter_p) + ": " + str(max_change))
         # regularize
-        res = minimize(f, self.p_coor, method='BFGS', tol=1e-8, args=(tmp,self.p_label,alpha))
+        res = minimize(f, self.p_coor, method='BFGS', tol=self.thres, args=(tmp,self.p_label,alpha))
         self.p_coor = res.x
         self.p_coor = self.p_coor.reshape(tmp.shape)
         # return max change
         return True if max_change < self.thres else False
 
-    def update_p_reg_curvature(self, iter_p):
-        def f(p, p0, pfix, alpha1=0.1, alpha2=0.1):
+    def update_p_reg_curvature(self, iter_p, alpha1=0.01, alpha2=0.01):
+        """ update each p to the centroids of its cluster,
+            regularized by length and curvature
+
+        Args:
+            iter_p int: index of the iteration of updating p
+            alpha1 float: length term
+            alpha2 float: curvature term
+
+        Returns:
+            float: max change of p, small max means convergence
+        """
+
+        def f(p, p0, pfix, alpha1=0.01, alpha2=0.01):
             """ objective function incorporating length and curvature
 
             Args:
@@ -235,7 +248,11 @@ class Vot:
                 float: f = sum(|p-p0|^2) + alpha1*sum(length(pj,pj-1) + alpha2*sum(curvature(pj,pj-1,pj-2)))
             """
 
-            def length(x1,y1,z1,x2,y2,z2,x3,y3,z3):
+            def length(p1, p2, p3):
+                x1 = p1[0]; y1 = p1[1]; z1 = p1[2];
+                x2 = p2[0]; y2 = p2[1]; z2 = p2[2];
+                x3 = p3[0]; y3 = p3[1]; z3 = p3[2];
+
                 a = x1 - 2*x2 + x3
                 b = y1 - 2*y2 + y3
                 c = z1 - 2*z2 + z3
@@ -243,11 +260,15 @@ class Vot:
                 dy = y1 - y2
                 dz = z1 - z2
 
-                t = np.array(0.0, 1.01, 0.01)
+                t = np.arange(0.0, 1.01, 0.01)
                 ds = np.sqrt((a*t - dx)**2 + (b*t - dy)**2 + (c*t - dz)**2)
                 return np.sum(ds)
 
-            def curvature(x1, y1, z1, x2, y2, z2, x3, y3, z3):
+            def curvature(p1, p2, p3):
+                x1 = p1[0]; y1 = p1[1]; z1 = p1[2];
+                x2 = p2[0]; y2 = p2[1]; z2 = p2[2];
+                x3 = p3[0]; y3 = p3[1]; z3 = p3[2];
+
                 a = x1 - 2*x2 + x3
                 b = y1 - 2*y2 + y3
                 c = z1 - 2*z2 + z3
@@ -262,8 +283,25 @@ class Vot:
                 k[100] /= 2
                 return np.sum(k)/100
 
-            cost = 0
+            # The following block of code should be modified to fit the specific skeleton
+            cost_length = 0
+            cost_length += length(p) np.sum(np.sum((p_sub-np.roll(p_sub, shift, axis=0))**2.0))
+
             cost +=  np.sum(np.sum((p0 - p)**2.0)) + \
                      alpha1 * np.sum(length())+\
                      alpha2 * np.sum(curvature())
             return cost
+
+        max_change = 0.0
+        tmp = np.zeros((self.p_coor.shape))
+        # new controid pos
+        # TODO Replace the for loop with matrix/vector operations, if possible
+        for j in range(self.np):
+            tmp[j,:] = np.average(self.e_coor[self.e_idx == j,:], weights=self.e_mass[self.e_idx == j], axis=0)
+            max_change = max(np.amax(self.p_coor[j,:] - tmp[j,:]),max_change)
+        print("iter " + str(iter_p) + ": " + str(max_change))
+        res = minimize(f, self.p_coor, method='BFGS', tol=self.thres, args=(tmp,alpha1,alpha2))
+        self.p_coor = res.x
+        self.p_coor = self.p_coor.reshape(tmp.shape)
+        # return max change
+        return True if max_change < self.thres else False

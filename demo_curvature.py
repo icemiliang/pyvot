@@ -30,6 +30,6 @@ ot.cluster(reg=0)
 
 fig = plt.figure()
 ax = plt.axes(projection='3d')
-plt.axis('equal')
-ax.scatter3D(ot.p_coor[:,0], ot.p_coor[:,1], ot.p_coor[:,2], marker='o', facecolors='none', linewidth=2, zorder=3)
+ax.scatter3D(ot.p_coor[:,0], ot.p_coor[:,1], ot.p_coor[:,2], marker='o', linewidth=2)
+ax.scatter3D(ot.e_coor[:,0], ot.e_coor[:,1], ot.e_coor[:,2], marker='o', s=0.2)
 plt.show()
