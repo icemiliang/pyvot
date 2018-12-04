@@ -225,6 +225,8 @@ class Vot:
         """ update each p to the centroids of its cluster,
             regularized by length and curvature
 
+            Note that some variables should be modified to fit the specific skeleton
+
         Args:
             iter_p int: index of the iteration of updating p
             alpha1 float: length term
@@ -234,7 +236,7 @@ class Vot:
             float: max change of p, small max means convergence
         """
 
-        def f(p, p0, pfix, alpha1=0.01, alpha2=0.01):
+        def f(p, p0, pfix, alpha1=0.01, alpha2=0.1):
             """ objective function incorporating length and curvature
 
             Args:
@@ -249,9 +251,11 @@ class Vot:
             """
 
             def length(p1, p2, p3):
-                x1 = p1[0]; y1 = p1[1]; z1 = p1[2];
-                x2 = p2[0]; y2 = p2[1]; z2 = p2[2];
-                x3 = p3[0]; y3 = p3[1]; z3 = p3[2];
+                if p1.ndim == 1:
+                    p1 = p1.reshape((1,-1)); p2 = p2.reshape((1,-1)); p3 = p3.reshape((1,-1))
+                x1 = p1[:,0]; y1 = p1[:,1]; z1 = p1[:,2]
+                x2 = p2[:,0]; y2 = p2[:,1]; z2 = p2[:,2]
+                x3 = p3[:,0]; y3 = p3[:,1]; z3 = p3[:,2]
 
                 a = x1 - 2*x2 + x3
                 b = y1 - 2*y2 + y3
@@ -262,12 +266,16 @@ class Vot:
 
                 t = np.arange(0.0, 1.01, 0.01)
                 ds = np.sqrt((a*t - dx)**2 + (b*t - dy)**2 + (c*t - dz)**2)
-                return np.sum(ds)
+                ds[0] /= 2
+                ds[100] /= 2
+                return np.sum(ds)/100.0
 
             def curvature(p1, p2, p3):
-                x1 = p1[0]; y1 = p1[1]; z1 = p1[2];
-                x2 = p2[0]; y2 = p2[1]; z2 = p2[2];
-                x3 = p3[0]; y3 = p3[1]; z3 = p3[2];
+                if p1.ndim == 1:
+                    p1 = p1.reshape((1,-1)); p2 = p2.reshape((1,-1)); p3 = p3.reshape((1,-1))
+                x1 = p1[:,0]; y1 = p1[:,1]; z1 = p1[:,2]
+                x2 = p2[:,0]; y2 = p2[:,1]; z2 = p2[:,2]
+                x3 = p3[:,0]; y3 = p3[:,1]; z3 = p3[:,2]
 
                 a = x1 - 2*x2 + x3
                 b = y1 - 2*y2 + y3
@@ -281,27 +289,114 @@ class Vot:
                 k = numerator / np.power((a*t - dx)**2 + (b*t - dy)**2 + (c*t - dz)**2, 2.5)
                 k[0] /= 2
                 k[100] /= 2
-                return np.sum(k)/100
+                return np.sum(k)/100.0
 
-            # The following block of code should be modified to fit the specific skeleton
-            cost_length = 0
-            cost_length += length(p) np.sum(np.sum((p_sub-np.roll(p_sub, shift, axis=0))**2.0))
+            # The following block of code should be modified to fit specific skeletons
 
-            cost +=  np.sum(np.sum((p0 - p)**2.0)) + \
-                     alpha1 * np.sum(length())+\
-                     alpha2 * np.sum(curvature())
-            return cost
+            cost_length = 0.0
+            cost_curvature = 0.0
+            pfix = pfix.reshape((-1,3))
+            p = p.reshape((-1, 3))
+            p0 = p0.reshape((-1, 3))
+            # # gamma1
+            # cost_length += length(pfix[0,:], p[1,:], p[2,:])
+            # cost_curvature += curvature(pfix[0,:], p[1,:], p[2,:])
+            # for i in range(1,8,1):
+            #     cost_length += length(p[i,:], p[i+1,:], p[i+2,:])
+            #     cost_curvature += curvature(p[i,:], p[i+1,:], p[i+2,:])
+
+            # # gamma2
+            # cost_length += length(pfix[1,:], p[11,:], p[12,:])
+            # cost_curvature += curvature(pfix[1,:], p[11,:], p[12,:])
+            # for i in range(11,16,1):
+            #     cost_length += length(p[i,:], p[i+1,:], p[i+2,:])
+            #     cost_curvature += curvature(p[i,:], p[i+1,:], p[i+2,:])
+            # cost_length += length(p[17, :], p[18, :], p[9,:])
+            # cost_curvature += curvature(p[17,:], p[18,:], p[9,:])
+            #
+            # # gamma3
+            # cost_length += length(pfix[2,:], p[20,:], p[21,:])
+            # cost_curvature += curvature(pfix[2, :], p[20, :], p[21, :])
+            # for i in range(20,25,1):
+            #     cost_length += length(p[i,:], p[i+1,:], p[i+2,:])
+            #     cost_curvature += curvature(p[i,:], p[i+1,:], p[i+2,:])
+            # cost_length += length(p[26,:], p[27,:], p[9,:])
+            # cost_curvature += curvature(p[26,:], p[27,:], p[9,:])
+            #
+            # cost_curvature += curvature(p[18,:], p[9,:], p[27,:])
+            #
+            # cost_target = np.sum(np.sum((p0 - p)**2.0))
+
+            # print("cost : p0: " + str(cost_target) + ", length: " + str(cost_length) + ", curvature: " + str(cost_curvature))
+
+            # return cost_target + alpha1*cost_length + alpha2*cost_curvature
+
+            return 0.1*np.sum(np.sum((p0 - p)**2.0)) + \
+                   length(pfix[0,:], p[1,:], p[2,:]) + \
+                   length(p[1, :], p[2, :], p[3, :]) + \
+                   length(p[2, :], p[3, :], p[4, :]) + \
+                   length(p[3, :], p[4, :], p[5, :]) + \
+                   length(p[4, :], p[5, :], p[6, :]) + \
+                   length(p[5, :], p[6, :], p[7, :]) + \
+                   length(p[6, :], p[7, :], p[8, :]) + \
+                   length(p[7, :], p[8, :], pfix[3, :]) + \
+                   curvature(pfix[0, :], p[1, :], p[2, :]) + \
+                   curvature(p[1, :], p[2, :], p[3, :]) + \
+                   curvature(p[2, :], p[3, :], p[4, :]) + \
+                   curvature(p[3, :], p[4, :], p[5, :]) + \
+                   curvature(p[4, :], p[5, :], p[6, :]) + \
+                   curvature(p[5, :], p[6, :], p[7, :]) + \
+                   curvature(p[6, :], p[7, :], p[8, :]) + \
+                   curvature(p[7, :], p[8, :], pfix[3, :]) + \
+                   length(pfix[1, :], p[11, :], p[12, :]) + \
+                   length(p[11, :], p[12, :], p[13, :]) + \
+                   length(p[12, :], p[13, :], p[14, :]) + \
+                   length(p[13, :], p[14, :], p[15, :]) + \
+                   length(p[14, :], p[15, :], p[16, :]) + \
+                   length(p[15, :], p[16, :], p[17, :]) + \
+                   length(p[16, :], p[17, :], p[18, :]) + \
+                   curvature(pfix[1, :], p[11, :], p[12, :]) + \
+                   curvature(p[11, :], p[12, :], p[13, :]) + \
+                   curvature(p[12, :], p[13, :], p[14, :]) + \
+                   curvature(p[13, :], p[14, :], p[15, :]) + \
+                   curvature(p[14, :], p[15, :], p[16, :]) + \
+                   curvature(p[15, :], p[16, :], p[17, :]) + \
+                   curvature(p[16, :], p[17, :], p[18, :]) + \
+                   length(pfix[2, :], p[20, :], p[21, :]) + \
+                   length(p[20, :], p[22, :], p[23, :]) + \
+                   length(p[21, :], p[22, :], p[23, :]) + \
+                   length(p[22, :], p[23, :], p[24, :]) + \
+                   length(p[23, :], p[24, :], p[25, :]) + \
+                   length(p[24, :], p[25, :], p[26, :]) + \
+                   length(p[25, :], p[26, :], p[27, :]) + \
+                   curvature(pfix[2, :], p[20, :], p[21, :]) + \
+                   curvature(p[20, :], p[22, :], p[23, :]) + \
+                   curvature(p[21, :], p[22, :], p[23, :]) + \
+                   curvature(p[22, :], p[23, :], p[24, :]) + \
+                   curvature(p[23, :], p[24, :], p[25, :]) + \
+                   curvature(p[24, :], p[25, :], p[26, :]) + \
+                   curvature(p[25, :], p[26, :], p[27, :]) + \
+                   curvature(p[18, :], pfix[3, :], p[27, :])
+
+        pfix = np.concatenate((self.p_coor[0,:],self.p_coor[10,:],self.p_coor[19,:],self.p_coor[9,:]), axis=0)
 
         max_change = 0.0
-        tmp = np.zeros((self.p_coor.shape))
+        p0 = np.zeros((self.p_coor.shape))
         # new controid pos
         # TODO Replace the for loop with matrix/vector operations, if possible
         for j in range(self.np):
-            tmp[j,:] = np.average(self.e_coor[self.e_idx == j,:], weights=self.e_mass[self.e_idx == j], axis=0)
-            max_change = max(np.amax(self.p_coor[j,:] - tmp[j,:]),max_change)
+            p0[j,:] = np.average(self.e_coor[self.e_idx == j,:], weights=self.e_mass[self.e_idx == j], axis=0)
+            max_change = max(np.amax(self.p_coor[j,:] - p0[j,:]),max_change)
         print("iter " + str(iter_p) + ": " + str(max_change))
-        res = minimize(f, self.p_coor, method='BFGS', tol=self.thres, args=(tmp,alpha1,alpha2))
+        res = minimize(f, self.p_coor, method='BFGS', tol=self.thres, args=(p0, pfix, alpha1, alpha2))
         self.p_coor = res.x
-        self.p_coor = self.p_coor.reshape(tmp.shape)
+        self.p_coor = self.p_coor.reshape(p0.shape)
+
+        pfix = pfix.reshape((-1, 3))
+        self.p_coor[0,:] = pfix[0,:]
+        self.p_coor[10,:] = pfix[1,:]
+        self.p_coor[19,:] = pfix[2,:]
+        self.p_coor[9, :] = pfix[3, :]
+
         # return max change
         return True if max_change < self.thres else False

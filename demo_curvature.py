@@ -18,18 +18,40 @@ from vot import *
 import matplotlib.pyplot as plt
 import matplotlib.collections  as mc
 import utils as vot
-from mpl_toolkits import mplot3d
+
+from mpl_toolkits.mplot3d import Axes3D
 
 # ----- set up WM ------ #
 ot = Vot()
 ot.import_data_file(pfilename='data/vent/skel.csv', efilename='data/vent/m5.csv', label=False)
-ot.setup(max_iter_p=1, max_iter_h=1500)
-
-# ------- run WM -------- #
-ot.cluster(reg=0)
+ot.setup(max_iter_p=2, max_iter_h=1500)
 
 fig = plt.figure()
-ax = plt.axes(projection='3d')
-ax.scatter3D(ot.p_coor[:,0], ot.p_coor[:,1], ot.p_coor[:,2], marker='o', linewidth=2)
-ax.scatter3D(ot.e_coor[:,0], ot.e_coor[:,1], ot.e_coor[:,2], marker='o', s=0.2)
+ax = fig.add_subplot(133, projection='3d')
+ax.scatter(ot.p_coor[:,0], ot.p_coor[:,1], ot.p_coor[:,2], marker='o', linewidth=2)
+ax.scatter(ot.e_coor[0::10,0], ot.e_coor[0::10,1], ot.e_coor[0::10,2], marker='o', s=0.2)
+
+# ------- run WM -------- #
+ot.cluster(reg='curvature')
+
+
+ax = fig.add_subplot(131, projection='3d')
+# ax.scatter(ot.p_coor[:,0], ot.p_coor[:,1], ot.p_coor[:,2], marker='o', linewidth=2)
+ax.scatter(ot.e_coor[0::10,0], ot.e_coor[0::10,1], ot.e_coor[0::10,2], marker='o', s=0.2)
+
+for i in range(28):
+    ax.text(ot.p_coor[i,0], ot.p_coor[i,1], ot.p_coor[i,2], str(i))
+
+
+# ------- run WM -------- #
+ot = Vot()
+ot.import_data_file(pfilename='data/vent/skel.csv', efilename='data/vent/m5.csv', label=False)
+ot.setup(max_iter_p=1, max_iter_h=1500)
+ot.cluster()
+
+ax = fig.add_subplot(132, projection='3d')
+# ax = plt.axes(projection='3d')
+ax.scatter(ot.p_coor[:,0], ot.p_coor[:,1], ot.p_coor[:,2], marker='o', linewidth=2)
+ax.scatter(ot.e_coor[0::10,0], ot.e_coor[0::10,1], ot.e_coor[0::10,2], marker='o', s=0.2)
+
 plt.show()

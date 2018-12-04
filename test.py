@@ -42,6 +42,7 @@ def curvature(p2, x0, fix, alpha=0.1):
 
     p1 = fix[0,:]
     p3 = fix[1,:]
+    p2 = p2.reshape(p2.shape)
 
     def compute_curvature(x1,y1,z1,x2,y2,z2,x3,y3,z3):
         a = x1-2*x2+x3
@@ -57,9 +58,10 @@ def curvature(p2, x0, fix, alpha=0.1):
         k[0]/=2
         k[100] /= 2
         return np.sum(k)/100
-    return np.sum(np.sum((x0[1,:]-p2)**2.0)) + \
-           alpha * np.sum(compute_curvature(p1[0],p1[1],p1[2],p2[0],p2[1],p2[2],p3[0],p3[1],p3[2]))
-           # alpha*np.sum(compute_curvature(p1[:,0],p1[:,1],p1[:,2],p2[:,0],p2[:,1],p2[:,2],p3[:,0],p3[:,1],p3[:,2]))
+
+    cost1 = np.sum(np.sum((x0[1,:]-p2)**2.0))
+    cost2 = np.sum(compute_curvature(p1[0],p1[1],p1[2],p2[0],p2[1],p2[2],p3[0],p3[1],p3[2]))
+    return cost1 + alpha * cost2
 
 # p = np.array([[0.0,0.0,0.0],
 #               [1.0,1.0,0.0],
