@@ -33,7 +33,6 @@ class Vot:
             efilename (string): filename of e
             mass (bool): whether data has a mass column
         """
-
         p_data = np.loadtxt(open(pfilename, "r"), delimiter=",")
         e_data = np.loadtxt(open(efilename, "r"), delimiter=",")
         self.import_data(p_data, e_data, mass, label)
