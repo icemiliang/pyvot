@@ -1,14 +1,11 @@
-# PyVot
-## A Python implementation of variational Wasserstein clustering
-This package includes the prototype codes for reproducing the map in Figure 4 (b) of the paper:
+# PyVot : Python Variational Optimal Transportation
+This package includes the prototype code for computing variational Wasserstein clustering.
 
-Mi, Liang, Wen Zhang, Xianfeng Gu, and Yalin Wang. "Variational Wasserstein Clustering." In Proceedings of the European Conference on Computer Vision (ECCV), pp. 322-337. 2018.
+* Variational Wasserstein clustering in each iteration leverages variational principles [Gu et al. 2013] to solve optimal transportation. Thus, we name the package PyVot instead of PyVWc for the sake of pronunciation. For computing optimal transportation, simply set the max iteration to one.
+* This program implements gradient descent instead of Newton's method to avoid computing convex hulls so that it can handle high-dimensional data. 
+* The picture below shows the results from regularized Wasserstein clustering.
+![alt text](data/rwm.png?raw=true "Demo of regularized Wasserstein means")
 
-This program implements gradient descent instead of Newton's method in order to handle high-dimensional data.
-
-![alt text](data/sample.png?raw=true "Demo of variational optimal transportation")
-
-<!-- [Click me for a C++ version](https://github.com/icemiliang/vot) -->
 
 ## Dependencies
 * Python >= 3.5
@@ -16,7 +13,9 @@ This program implements gradient descent instead of Newton's method in order to 
 * SciPy >= 1.1.0
 * Matplotlib >= 3.0.2 (for demo only)
 
-## Reference
+## References
+#### Citing the package
+
 If you find the code helpful, please cite the following article:
 
 Mi, Liang, Wen Zhang, Xianfeng Gu, and Yalin Wang. "Variational Wasserstein Clustering." In Proceedings of the European Conference on Computer Vision (ECCV), pp. 322-337. 2018.
@@ -29,5 +28,9 @@ Mi, Liang, Wen Zhang, Xianfeng Gu, and Yalin Wang. "Variational Wasserstein Clus
   year={2018}
 }
 ```
+#### Additional references
+
+[1] Gu, Xianfeng, Feng Luo, Jian Sun, and S-T. Yau. "Variational principles for Minkowski type problems, discrete optimal transport, and discrete Monge-Ampere equations." arXiv preprint arXiv:1302.5472 (2013).
+
 ## Contact
 Please contact Liang Mi icemiliang@gmail.com for any issues. 
