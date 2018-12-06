@@ -207,17 +207,17 @@ class Vot:
             return np.sum(np.sum((p - p0)**2.0)) + alpha*reg_term
 
         max_change = 0.0
-        tmp = np.zeros((self.p_coor.shape))
+        p0 = np.zeros((self.p_coor.shape))
         # new controid pos
         # TODO Replace the for loop with matrix/vector operations, if possible
         for j in range(self.np):
-            tmp[j,:] = np.average(self.e_coor[self.e_idx == j,:], weights=self.e_mass[self.e_idx == j], axis=0)
-            max_change = max(np.amax(self.p_coor[j,:] - tmp[j,:]),max_change)
+            p0[j,:] = np.average(self.e_coor[self.e_idx == j,:], weights=self.e_mass[self.e_idx == j], axis=0)
+            max_change = max(np.amax(self.p_coor[j,:] - p0[j,:]),max_change)
         print("iter " + str(iter_p) + ": " + str(max_change))
         # regularize
-        res = minimize(f, self.p_coor, method='BFGS', tol=self.thres, args=(tmp,self.p_label,alpha))
+        res = minimize(f, self.p_coor, method='BFGS', tol=self.thres, args=(p0,self.p_label,alpha))
         self.p_coor = res.x
-        self.p_coor = self.p_coor.reshape(tmp.shape)
+        self.p_coor = self.p_coor.reshape(p0.shape)
         # return max change
         return True if max_change < self.thres else False
 
@@ -298,40 +298,8 @@ class Vot:
             pfix = pfix.reshape((-1,3))
             p = p.reshape((-1, 3))
             p0 = p0.reshape((-1, 3))
-            # # gamma1
-            # cost_length += length(pfix[0,:], p[1,:], p[2,:])
-            # cost_curvature += curvature(pfix[0,:], p[1,:], p[2,:])
-            # for i in range(1,8,1):
-            #     cost_length += length(p[i,:], p[i+1,:], p[i+2,:])
-            #     cost_curvature += curvature(p[i,:], p[i+1,:], p[i+2,:])
 
-            # # gamma2
-            # cost_length += length(pfix[1,:], p[11,:], p[12,:])
-            # cost_curvature += curvature(pfix[1,:], p[11,:], p[12,:])
-            # for i in range(11,16,1):
-            #     cost_length += length(p[i,:], p[i+1,:], p[i+2,:])
-            #     cost_curvature += curvature(p[i,:], p[i+1,:], p[i+2,:])
-            # cost_length += length(p[17, :], p[18, :], p[9,:])
-            # cost_curvature += curvature(p[17,:], p[18,:], p[9,:])
-            #
-            # # gamma3
-            # cost_length += length(pfix[2,:], p[20,:], p[21,:])
-            # cost_curvature += curvature(pfix[2, :], p[20, :], p[21, :])
-            # for i in range(20,25,1):
-            #     cost_length += length(p[i,:], p[i+1,:], p[i+2,:])
-            #     cost_curvature += curvature(p[i,:], p[i+1,:], p[i+2,:])
-            # cost_length += length(p[26,:], p[27,:], p[9,:])
-            # cost_curvature += curvature(p[26,:], p[27,:], p[9,:])
-            #
-            # cost_curvature += curvature(p[18,:], p[9,:], p[27,:])
-            #
-            # cost_target = np.sum(np.sum((p0 - p)**2.0))
-
-            # print("cost : p0: " + str(cost_target) + ", length: " + str(cost_length) + ", curvature: " + str(cost_curvature))
-
-            # return cost_target + alpha1*cost_length + alpha2*cost_curvature
-
-            # return 0.1*np.sum(np.sum((p0 - p)**2.0)) + \
+            # return 0.05*np.sum(np.sum((p0 - p)**2.0)) + \
             #        length(pfix[0,:], p[1,:], p[2,:]) + \
             #        length(p[1, :], p[2, :], p[3, :]) + \
             #        length(p[2, :], p[3, :], p[4, :]) + \
@@ -365,29 +333,19 @@ class Vot:
             #        curvature(p[16, :], p[17, :], p[18, :]) + \
             #        curvature(p[17, :], p[18, :], pfix[3, :]) + \
             #        length(pfix[2, :], p[20, :], p[21, :]) + \
-            #        length(p[20, :], p[22, :], p[23, :]) + \
-            #        length(p[21, :], p[22, :], p[23, :]) + \
-            #        length(p[22, :], p[23, :], p[24, :]) + \
-            #        length(p[23, :], p[24, :], p[25, :]) + \
-            #        length(p[24, :], p[25, :], p[26, :]) + \
-            #        length(p[25, :], p[26, :], p[27, :]) + \
-            #        length(p[26, :], p[27, :], pfix[3, :]) + \
+            #        length(p[20, :], p[21, :], pfix[3, :]) + \
             #        curvature(pfix[2, :], p[20, :], p[21, :]) + \
-            #        curvature(p[20, :], p[22, :], p[23, :]) + \
-            #        curvature(p[21, :], p[22, :], p[23, :]) + \
-            #        curvature(p[22, :], p[23, :], p[24, :]) + \
-            #        curvature(p[23, :], p[24, :], p[25, :]) + \
-            #        curvature(p[24, :], p[25, :], p[26, :]) + \
-            #        curvature(p[25, :], p[26, :], p[27, :]) + \
-            #        curvature(p[26, :], p[27, :], pfix[3, :]) + \
-            #        curvature(p[18, :], pfix[3, :], p[27, :])
-            return 0.05*np.sum(np.sum((p0 - p)**2.0)) + \
-                   length(pfix[0,:], p[1,:], p[2,:]) + \
-                   length(p[2, :], p[3, :], p[4, :]) + \
-                   length(p[4, :], p[5, :], p[6, :]) + \
-                   length(p[6, :], p[7, :], p[8, :]) + \
-                   length(p[7, :], p[8, :], pfix[3, :]) + \
-                   curvature(pfix[0, :], p[1, :], p[2, :]) + \
+            #        curvature(p[20, :], p[21, :], pfix[3, :]) + \
+            #        curvature(p[18, :], pfix[3, :], p[21, :])
+
+
+            # tmp = curvature(p[1, :], p[2, :], p[3, :])
+            # print(p[1, :], end="")
+            # print(p[2, :], end="")
+            # print(p[3, :], end="")
+            # print(tmp)
+
+            cost_curvature = curvature(pfix[0, :], p[1, :], p[2, :]) + \
                    curvature(p[1, :], p[2, :], p[3, :]) + \
                    curvature(p[2, :], p[3, :], p[4, :]) + \
                    curvature(p[3, :], p[4, :], p[5, :]) + \
@@ -395,11 +353,6 @@ class Vot:
                    curvature(p[5, :], p[6, :], p[7, :]) + \
                    curvature(p[6, :], p[7, :], p[8, :]) + \
                    curvature(p[7, :], p[8, :], pfix[3, :]) + \
-                   length(pfix[1, :], p[11, :], p[12, :]) + \
-                   length(p[12, :], p[13, :], p[14, :]) + \
-                   length(p[14, :], p[15, :], p[16, :]) + \
-                   length(p[16, :], p[17, :], p[18, :]) + \
-                   length(p[17, :], p[18, :], pfix[3, :]) + \
                    curvature(pfix[1, :], p[11, :], p[12, :]) + \
                    curvature(p[11, :], p[12, :], p[13, :]) + \
                    curvature(p[12, :], p[13, :], p[14, :]) + \
@@ -408,11 +361,40 @@ class Vot:
                    curvature(p[15, :], p[16, :], p[17, :]) + \
                    curvature(p[16, :], p[17, :], p[18, :]) + \
                    curvature(p[17, :], p[18, :], pfix[3, :]) + \
-                   length(pfix[2, :], p[20, :], p[21, :]) + \
-                   length(p[20, :], p[21, :], pfix[3, :]) + \
                    curvature(pfix[2, :], p[20, :], p[21, :]) + \
                    curvature(p[20, :], p[21, :], pfix[3, :]) + \
                    curvature(p[18, :], pfix[3, :], p[21, :])
+            cost = np.sum(np.sum((p0 - p)**2.0))
+            print("data term: " + str(cost_curvature))
+            print("curvature: " + str(cost))
+            return 0.01*np.sum(np.sum((p0 - p)**2.0)) + \
+                   curvature(pfix[0, :], p[1, :], p[2, :]) + \
+                   curvature(p[1, :], p[2, :], p[3, :]) + \
+                   curvature(p[2, :], p[3, :], p[4, :]) + \
+                   curvature(p[3, :], p[4, :], p[5, :]) + \
+                   curvature(p[4, :], p[5, :], p[6, :]) + \
+                   curvature(p[5, :], p[6, :], p[7, :]) + \
+                   curvature(p[6, :], p[7, :], p[8, :]) + \
+                   curvature(p[7, :], p[8, :], pfix[3, :]) + \
+                   curvature(pfix[1, :], p[11, :], p[12, :]) + \
+                   curvature(p[11, :], p[12, :], p[13, :]) + \
+                   curvature(p[12, :], p[13, :], p[14, :]) + \
+                   curvature(p[13, :], p[14, :], p[15, :]) + \
+                   curvature(p[14, :], p[15, :], p[16, :]) + \
+                   curvature(p[15, :], p[16, :], p[17, :]) + \
+                   curvature(p[16, :], p[17, :], p[18, :]) + \
+                   curvature(p[17, :], p[18, :], pfix[3, :]) + \
+                   curvature(pfix[2, :], p[20, :], p[21, :]) + \
+                   curvature(p[20, :], p[21, :], pfix[3, :]) + \
+                   curvature(p[18, :], pfix[3, :], p[21, :])
+
+        # find nearest p for each e and add mass to p
+        idx_tmp = np.argmin(self.cost_base, axis=0)
+        dirac_tmp = np.zeros(self.np)
+        for j in range(self.np):
+            dirac_tmp[j] = np.sum(self.e_mass[idx_tmp == j])
+
+        self.p_dirac = 0.9 * self.p_dirac + 0.1 * dirac_tmp
 
         pfix = np.concatenate((self.p_coor[0,:],self.p_coor[10,:],self.p_coor[19,:],self.p_coor[9,:]), axis=0)
 

@@ -64,6 +64,8 @@ plt.scatter(p_coor_after[:,0], p_coor_after[:,1], marker='o', facecolors='none',
 # --------- w/ regularization ---------- #
 # -------------------------------------- #
 
+ot = Vot()
+ot.import_data_file('data/p.csv','data/e.csv')
 ot.setup(max_iter_p=5, max_iter_h=1500)
 
 # ----- plot before ----- #

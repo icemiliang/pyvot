@@ -24,7 +24,7 @@ from mpl_toolkits.mplot3d import Axes3D
 # ----- set up WM ------ #
 ot = Vot()
 ot.import_data_file(pfilename='data/vent/skel.csv', efilename='data/vent/m5.csv', label=False)
-ot.setup(max_iter_p=5, max_iter_h=1500)
+ot.setup(max_iter_p=10, max_iter_h=1500)
 
 fig = plt.figure()
 # ------- run WM -------- #
