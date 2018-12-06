@@ -210,7 +210,10 @@ class Vot:
         # new controid pos
         # TODO Replace the for loop with matrix/vector operations, if possible
         for j in range(self.np):
-            p0[j,:] = np.average(self.e_coor[self.e_idx == j,:], weights=self.e_mass[self.e_idx == j], axis=0)
+            weight = self.e_mass[self.e_idx == j]
+            if weight.size == 0:
+                continue
+            p0[j,:] = np.average(self.e_coor[self.e_idx == j,:], weights=weight, axis=0)
             max_change = max(np.amax(self.p_coor[j,:] - p0[j,:]),max_change)
         print("iter " + str(iter_p) + ": " + str(max_change))
         # regularize
