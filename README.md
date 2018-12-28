@@ -10,13 +10,14 @@ This package includes the prototype code for computing variational optimal trans
 ## Dependencies
 * Python >= 3.5
 * NumPy >= 1.15.4
-* SciPy >= 1.1.0
-* Matplotlib >= 3.0.2 (for demo only)
+* SciPy >= 1.1.0 (for regularization)
+* scikit-image >= 0.14.1 (for affine transformation)
+* Matplotlib >= 3.0.2 (for demo)
 
 ## References
 #### Citing the package
 
-If you find the code helpful, please cite the following article:
+If you find the code helpful, please cite one of the following articles:
 
 Mi, Liang, Wen Zhang, Xianfeng Gu, and Yalin Wang. "Variational Wasserstein Clustering." In Proceedings of the European Conference on Computer Vision (ECCV), pp. 322-337. 2018.
 ```
@@ -28,13 +29,24 @@ Mi, Liang, Wen Zhang, Xianfeng Gu, and Yalin Wang. "Variational Wasserstein Clus
   year={2018}
 }
 ```
+
+Mi, Liang, Wen Zhang, and Yalin Wang. "Regularized Wasserstein Means Based on Variational Transportation." arXiv preprint arXiv:1812.00338 (2018).
+```
+@article{mi2018regularized,
+  title={Regularized Wasserstein Means Based on Variational Transportation},
+  author={Mi, Liang and Zhang, Wen and Wang, Yalin},
+  journal={arXiv preprint arXiv:1812.00338},
+  year={2018}
+}
+```
+
 #### Additional references
 
 [1] Gu, Xianfeng, Feng Luo, Jian Sun, and S-T. Yau. "[Variational principles for Minkowski type problems, discrete optimal transport, and discrete Monge-Ampere equations.](https://arxiv.org/abs/1302.5472)" arXiv preprint arXiv:1302.5472 (2013).
 
 [2] Mi, Liang, Wen Zhang, Xianfeng Gu, and Yalin Wang. "[Variational Wasserstein Clustering.](https://arxiv.org/abs/1806.09045)" In Proceedings of the European Conference on Computer Vision (ECCV), pp. 322-337. 2018.
 
-[3] Mi, Liang, Wen Zhang, and Yalin Wang. "[Regularized Wasserstein Means based on Variational Transportation.](http://arxiv.org/abs/1812.00338)" arXiv preprint arXiv:1812.00338 (2018).
+[3] Mi, Liang, Wen Zhang, and Yalin Wang. "[Regularized Wasserstein Means Based on Variational Transportation.](http://arxiv.org/abs/1812.00338)" arXiv preprint arXiv:1812.00338 (2018).
 
 ## Contact
 Please contact Liang Mi icemiliang@gmail.com for any issues. 

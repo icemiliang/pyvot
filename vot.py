@@ -26,12 +26,16 @@ class Vot:
         self.max_iter_p = max_iter_p
 
     def import_data_file(self, pfilename, efilename, mass=False, label=True):
-        """ import data from files
+        """ import data from csv files
 
         Args:
             pfilename (string): filename of p
             efilename (string): filename of e
             mass (bool): whether data has a mass column
+
+        See Also
+        --------
+        import_data : import data in numpy arrays
         """
         p_data = np.loadtxt(open(pfilename, "r"), delimiter=",")
         e_data = np.loadtxt(open(efilename, "r"), delimiter=",")
@@ -45,6 +49,10 @@ class Vot:
             e_data np.ndarray(ne,dim+): data of e, labels, mass, coordinates, etc
             mass (bool): whether data has a mass column
             label (bool): whether data has a label column
+
+        See Also
+        --------
+        import_data_file : import data from csv files
         """
 
         self.np = np.size(p_data, 0)
@@ -92,7 +100,7 @@ class Vot:
         See Also
         --------
         update_p : update p
-        update_map: computer optimal transportation
+        update_map: compute optimal transportation
         """
 
         for iter_p in range(self.max_iter_p):
@@ -109,7 +117,7 @@ class Vot:
             iter_h int: iteration index of transportation
 
         Returns:
-            float: max change of derivative, small max means convergence
+            bool: convergence or not, determined by max derivative change
         """
 
         # update dist matrix
@@ -152,7 +160,7 @@ class Vot:
             iter_p int: iteration index
 
         Returns:
-            float: max change of p, small max means convergence
+            bool: convergence or not, determined by max p change
         """
 
         max_change = 0.0
@@ -179,7 +187,7 @@ class Vot:
             alpha float: regularizer weight
 
         Returns:
-            float: max change of p, small max means convergence
+            bool: convergence or not, determined by max p change
         """
 
         def f(p, p0, label=None, alpha=0.01):
@@ -197,11 +205,12 @@ class Vot:
 
             p = p.reshape(p0.shape)
             reg_term = 0.0
-            # TODO Replace the nested for loop with matrix/vector operations, if possible
             for idx, l in np.ndenumerate(np.unique(label)):
                 p_sub = p[label == l,:]
-                for shift in range(1,np.size(p_sub,0)):
-                    reg_term += np.sum(np.sum((p_sub-np.roll(p_sub, shift, axis=0))**2.0))
+                reg_term += np.sum(np.sum( (p_sub ** 2).sum(axis=1, keepdims=True) + \
+                                           (p_sub ** 2).sum(axis=1) - \
+                                           2 * p_sub.dot(p_sub.T)
+                                        ))
 
             return np.sum(np.sum((p - p0)**2.0)) + alpha*reg_term
 
@@ -218,6 +227,55 @@ class Vot:
         print("iter " + str(iter_p) + ": " + str(max_change))
         # regularize
         res = minimize(f, self.p_coor, method='BFGS', tol=self.thres, args=(p0,self.p_label,alpha))
+        self.p_coor = res.x
+        self.p_coor = self.p_coor.reshape(p0.shape)
+        # return max change
+        return True if max_change < self.thres else False
+
+    def update_p_reg_affine(self, iter_p, alpha=0.01):
+        """ update each p to the centroids of its cluster,
+            regularized by an affine transformation 
+            which is estimated from the OT map.
+
+        Args:
+            iter_p int: index of the iteration of updating p
+            alpha float: regularizer weight
+
+        Returns:
+            bool: convergence or not, determined by max p change
+        """
+
+        def f(p, p0, pa, alpha=0.01):
+            """ objective function regularized by affine transformations
+
+            Args:
+                p  np.array(np,dim): p
+                p0 np.array(np,dim): centroids of e
+                pa np.array(np,dim): target position of p after affine
+                alpha float: regularizer weight
+
+            Returns:
+                float: f = sum(|p-p0|^2) + alpha * sum(|p-pa|^2)
+            """
+            return np.sum(np.sum((p-p0)**2.0)) + alpha * np.sum(np.sum((p-pa)**2.0))
+
+        max_change = 0.0
+        p0 = np.zeros((self.p_coor.shape))
+        # new controid pos
+        # TODO Replace the for loop with matrix/vector operations, if possible
+        for j in range(self.np):
+            weight = self.e_mass[self.e_idx == j]
+            if weight.size == 0:
+                continue
+            p0[j,:] = np.average(self.e_coor[self.e_idx == j,:], weights=weight, axis=0)
+            max_change = max(np.amax(self.p_coor[j,:] - p0[j,:]),max_change)
+        print("iter " + str(iter_p) + ": " + str(max_change))
+
+        # TODO: Estimate affine transformation A
+        # TODO: Compute transformed positions pa
+        pa = p0
+
+        res = minimize(f, self.p_coor, method='BFGS', tol=self.thres, args=(p0,pa,alpha))
         self.p_coor = res.x
         self.p_coor = self.p_coor.reshape(p0.shape)
         # return max change
