@@ -22,7 +22,7 @@ import utils as vot
 # ----- set up vwc ------ #
 ot = Vot()
 ot.import_data_file('data/p.csv','data/e.csv')
-ot.setup(max_iter_p=1, max_iter_h=1500)
+ot.setup(max_iter_p = 2, max_iter_h = 2500)
 
 # ----- plot before ----- #
 p_coor_before =  np.copy(ot.p_coor)
@@ -57,5 +57,5 @@ plt.scatter(ot.p_coor[:,0], ot.p_coor[:,1], marker='o', facecolors='none', linew
 # ---- plot and save ---- #
 plt.tight_layout(pad=1.0, w_pad=1.5, h_pad=1.0)
 plt.axis('off')
-plt.savefig("vwc.png")
+# plt.savefig("vwc.png")
 plt.show()
