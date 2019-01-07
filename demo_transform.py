@@ -49,7 +49,7 @@ ot.setup(max_iter_p = 5, max_iter_h = 2000)
 
 # ----- plot before ----- #
 p_coor_before = np.copy(ot.p_coor)
-plt.figure(figsize=(12,6))
+plt.figure(figsize=(12,8))
 xmin = -2.0; xmax = 2.0; ymin = -1.5; ymax = 1.5
 
 cp = [vot.color_blue, vot.color_red]
