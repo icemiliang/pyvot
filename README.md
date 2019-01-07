@@ -4,8 +4,12 @@ This package includes the prototype code for computing variational optimal trans
 * Variational Wasserstein clustering in each iteration leverages variational principles [1] to solve optimal transportation. Thus, we name the package PyVot instead of PyVWc for the sake of pronunciation. For computing optimal transportation, simply set the max iteration to one.
 * This program implements gradient descent instead of Newton's method to avoid computing convex hulls so that it can handle high-dimensional data. 
 * The picture below shows the results from original Wasserstein clustering [2] and regularized Wasserstein clustering [3].
-![alt text](data/rwm.png?raw=true "Demo of regularized Wasserstein means")
+* Below shows two examples.
 
+python demo_potential.py
+![alt text](data/rwm_potential.png?raw=true)
+python demo_transform.py
+![alt text](data/rwm_transform.png?raw=true)
 
 ## Dependencies
 * Python >= 3.5
