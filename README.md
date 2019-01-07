@@ -15,13 +15,15 @@ python demo_transform.py
 * Python >= 3.5
 * NumPy >= 1.15.4
 * SciPy >= 1.1.0 (for regularization)
-* scikit-image >= 0.14.1 (for affine transformation)
+* scikit-image >= 0.14.1 (for geometric transformation)
 * Matplotlib >= 3.0.2 (for demo)
 
 ## References
-#### Citing the package
+### Citing the package
 
 If you find the code helpful, please cite one of the following articles:
+
+#### Citing the original Wasserstein clustering:
 
 Mi, Liang, Wen Zhang, Xianfeng Gu, and Yalin Wang. "Variational Wasserstein Clustering." In Proceedings of the European Conference on Computer Vision (ECCV), pp. 322-337. 2018.
 ```
@@ -33,6 +35,8 @@ Mi, Liang, Wen Zhang, Xianfeng Gu, and Yalin Wang. "Variational Wasserstein Clus
   year={2018}
 }
 ```
+
+#### Citing the regularized Wasserstein clustering:
 
 Mi, Liang, Wen Zhang, and Yalin Wang. "Regularized Wasserstein Means Based on Variational Transportation." arXiv preprint arXiv:1812.00338 (2018).
 ```
