@@ -19,6 +19,8 @@ demo_transform.py
 * scikit-image >= 0.14.1 (for geometric transformation)
 * Matplotlib >= 3.0.2 (for demo)
 
+The code has been tested on Ubuntu 16.04 and macOS 10.14
+
 ## References
 #### Citing the package
 
