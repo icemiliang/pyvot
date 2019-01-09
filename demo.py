@@ -21,7 +21,7 @@ import utils as vot
 
 # ----- set up vwc ------ #
 ot = Vot()
-ot.import_data_file('data/p.csv','data/e.csv')
+ot.import_data_from_file('data/p.csv','data/e.csv')
 ot.setup(max_iter_p = 2, max_iter_h = 2500)
 
 # ----- plot before ----- #

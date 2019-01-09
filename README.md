@@ -21,6 +21,11 @@ demo_transform.py
 
 The code has been tested on Ubuntu 16.04 and macOS 10.14
 
+## Code structure
+
+* demo_potential.py and demo_transform.py show how to import data and use PyVot to reproduce the pictures above.
+* vot.py is the main program that computes optimal transportation and clustering. Please refer to import_data and import_data_from_file for the data format.
+
 ## References
 #### Citing the package
 

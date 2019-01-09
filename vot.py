@@ -16,10 +16,10 @@ class Vot:
         """ set up parameters
 
         Args:
-            max_iter_h (int): max number of iterations of clustering
-            max_iter_p (int): max number of iterations of transportation
-            thres (float): threshold to break loops
-            rate  (float): learning rate
+            max_iter_h int: max number of iterations of clustering
+            max_iter_p int: max number of iterations of transportation
+            thres float: threshold to break loops
+            rate  float: learning rate
         """
 
         self.h = np.zeros(self.num_p)
@@ -28,13 +28,14 @@ class Vot:
         self.max_iter_h = max_iter_h
         self.max_iter_p = max_iter_p
 
-    def import_data_file(self, pfilename, efilename, mass = False, label = True):
+    def import_data_from_file(self, pfilename, efilename, mass = False, label = True):
         """ import data from csv files
 
         Args:
-            pfilename (string): filename of p
-            efilename (string): filename of e
-            mass (bool): whether data has a mass column
+            pfilename string: filename of p
+            efilename string: filename of e
+            mass  bool: whether data has a mass column
+            label bool: whether data has a label column
 
         See Also
         --------
