@@ -1,6 +1,6 @@
 # Variational Wasserstein Clustering (vwc)
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: Jan 6th 2019
+# Date: Jan 18th 2019
 
 import warnings
 
@@ -19,8 +19,8 @@ class VotAreaPreserve:
             max_iter int: max number of iterations of optimal transportation
             thres float: threshold to break loops
             rate  float: learning rate
-            box   float: length of boundary box edge
-            ratio float: num of e to the num of p
+            ratio float: the ratio of num of e to the num of p
+            dim     int: dimension of the data/space
         """
 
         self.thres = thres
@@ -30,9 +30,14 @@ class VotAreaPreserve:
         self.dim = dim
         self.ratio = ratio
 
-        if not self.dim is np.size(self.p_coor, 1):
-            warnings.warn("Dimension of data does not agree with setting.\n Truncating data...")
+        if self.dim < np.size(self.p_coor, 1):
+            warnings.warn("Dimension of data larger than the setting.\n Truncating data...")
             self.p_coor = self.p_coor[:,0:self.dim]
+        elif self.dim > np.size(self.p_coor, 1):
+            warnings.warn("Dimension of data smaller than the setting.\n Resetting dim...")
+            self.dim = np.size(self.p_coor, 1)
+
+        assert np.amax(self.p_coor) < 1 and np.amin(self.p_coor) > -1, "Input data output boundary (-1, 1)."
 
     def import_data_from_file(self, pfilename, mass = False, label = True):
         """ import data from csv files
@@ -87,8 +92,8 @@ class VotAreaPreserve:
         self.random_sample()
         self.cost_base = cdist(self.p_coor, self.e_coor, 'sqeuclidean')
         for iter in range(self.max_iter):
-            # if iter % 100 == 0:
-                # self.learnrate *= 0.95
+            if iter % 100 == 0:
+                self.learnrate *= 0.95
             if self.update_map(iter): break
         self.update_p()
 

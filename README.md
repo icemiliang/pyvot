@@ -1,21 +1,19 @@
 # PyVot : Python Variational Optimal Transportation
-This package includes the prototype code for computing variational optimal transportation and Wasserstein clustering.
+This package includes the prototype code for computing Monge's optimal transportation (OT) and Wasserstein clustering.
 
 * Variational Wasserstein clustering in each iteration leverages variational principles [1] to solve optimal transportation. Thus, we name the package PyVot instead of PyVWc for the sake of pronunciation. For computing optimal transportation, simply set the max iteration to one.
+* Monge's OT maps exist in general when one of the distributions is absolutely continuous. 
+In practice, we consider a collection of dense Dirac samples as an approximation.  
 * This program implements gradient descent instead of Newton's method to avoid computing convex hulls so that it can handle high-dimensional data. 
-* The picture below shows the results from original Wasserstein clustering [2] and regularized Wasserstein clustering [3].
-* Below shows two examples.
+* The picture below shows the results from original Wasserstein clustering [2] and regularized Wasserstein clustering [3]. More examples can be found in [demo/](demo/README.md)
 
-python demo_potential.py
-![alt text](data/rwm_potential.png?raw=true)
-python demo_transform.py
-![alt text](data/rwm_transform.png?raw=true)
+![alt text](demo/pics/rwm_potential.png?raw=true)
 
 ## Dependencies
 * Python >= 3.5
 * NumPy >= 1.15.4
 * SciPy >= 1.1.0 (for regularization)
-* scikit-image >= 0.14.1 (for affine transformation)
+* scikit-image >= 0.14.1 (for geometric transformation)
 * Matplotlib >= 3.0.2 (for demo)
 
 ## References
