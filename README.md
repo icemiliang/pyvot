@@ -1,16 +1,13 @@
 # PyVot : Python Variational Optimal Transportation
-This package includes the prototype code for computing variational optimal transportation and Wasserstein clustering.
+This package includes the prototype code for computing Monge's optimal transportation (OT) and Wasserstein clustering.
 
 * Variational Wasserstein clustering in each iteration leverages variational principles [1] to solve optimal transportation. Thus, we name the package PyVot instead of PyVWc for the sake of pronunciation. For computing optimal transportation, simply set the max iteration to one.
+* Monge's OT maps exist in general when one of the distributions is absolutely continuous. 
+In practice, we consider a collection of dense Dirac samples as an approximation.  
 * This program implements gradient descent instead of Newton's method to avoid computing convex hulls so that it can handle high-dimensional data. 
-* The picture below shows the results from original Wasserstein clustering [2] and regularized Wasserstein clustering [3].
-* Below shows two examples.
+* The picture below shows the results from original Wasserstein clustering [2] and regularized Wasserstein clustering [3]. More examples can be found in [demo/](demo/README.md)
 
-demo_potential.py
-![alt text](data/rwm_potential.png?raw=true)
-
-demo_transform.py
-![alt text](data/rwm_transform.png?raw=true)
+![alt text](demo/pics/rwm_potential.png?raw=true)
 
 ## Dependencies
 * Python >= 3.5
@@ -24,8 +21,6 @@ demo_transform.py
 
 If you find the code helpful, please cite one of the following articles:
 
-**Citing the original Wasserstein clustering:**
-
 Mi, Liang, Wen Zhang, Xianfeng Gu, and Yalin Wang. "Variational Wasserstein Clustering." In Proceedings of the European Conference on Computer Vision (ECCV), pp. 322-337. 2018.
 ```
 @inproceedings{mi2018variational,
@@ -36,8 +31,6 @@ Mi, Liang, Wen Zhang, Xianfeng Gu, and Yalin Wang. "Variational Wasserstein Clus
   year={2018}
 }
 ```
-
-**Citing the regularized Wasserstein clustering:**
 
 Mi, Liang, Wen Zhang, and Yalin Wang. "Regularized Wasserstein Means Based on Variational Transportation." arXiv preprint arXiv:1812.00338 (2018).
 ```
