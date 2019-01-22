@@ -5,7 +5,9 @@ This package includes the prototype code for computing Monge's optimal transport
 * Monge's OT maps exist in general when one of the distributions is absolutely continuous. 
 In practice, we consider a collection of dense Dirac samples as an approximation.  
 * This program implements gradient descent instead of Newton's method to avoid computing convex hulls so that it can handle high-dimensional data. 
-* The picture below shows the results from original Wasserstein clustering [2] and regularized Wasserstein clustering [3]. More examples can be found in [demo/](demo/README.md)
+* The picture below shows the results from original Wasserstein clustering [2] and regularized Wasserstein clustering [3]. 
+More examples can be found in [demo/](demo/README.md). Demos for the GPU version (under development)
+is available in [test/](test/). 
 
 ![alt text](demo/pics/rwm_potential.png?raw=true)
 
@@ -15,6 +17,7 @@ In practice, we consider a collection of dense Dirac samples as an approximation
 * SciPy >= 1.1.0 (for regularization)
 * scikit-image >= 0.14.1 (for geometric transformation)
 * Matplotlib >= 3.0.2 (for demo)
+* CuPy(CUDA9.0) >= 5.1.0 (for GPU version)
 
 ## References
 #### Citing the package

@@ -1,4 +1,4 @@
-# Variational Wasserstein Clustering (vwc)
+# PyVot
 # Author: Liang Mi <icemiliang@gmail.com>
 # Date: Jan 18th 2019
 
@@ -12,7 +12,7 @@ from skimage import transform as tf
 class VotAreaPreserve:
     """ Area Preserving with variational optimal transportation """
 
-    def setup(self, max_iter = 2000, thres = 1e-8, rate = 0.2, ratio = 100, dim = 2):
+    def setup(self, max_iter = 2000, thres = 1e-8, rate = 0.2, ratio = 100, dim = 2, verbose = True):
         """ set up parameters
 
         Args:
@@ -29,6 +29,7 @@ class VotAreaPreserve:
         self.h = np.zeros(self.num_p)
         self.dim = dim
         self.ratio = ratio
+        self.verbose = verbose
 
         if self.dim < np.size(self.p_coor, 1):
             warnings.warn("Dimension of data larger than the setting.\n Truncating data...")
@@ -134,7 +135,7 @@ class VotAreaPreserve:
         self.h = self.h - self.learnrate * grad
         # check if converge and return max derivative
         max_change = np.amax(grad)
-        if iter % 200 == 0:
+        if self.verbose and iter % 200 == 0:
             print("iter " + str(iter) + ": " + str(max_change))
         return True if max_change < self.thres else False
 
@@ -225,7 +226,7 @@ class Vot:
 
         self.num_p = np.size(Xp, 0)
         self.num_e = np.size(Xe, 0)
-        
+
         self.p_label = yp.astype(int) if not yp is None else -np.ones(self.num_p).astype(int)
         self.e_label = ye.astype(int) if not yp is None else -np.ones(self.num_e).astype(int)
 
@@ -390,7 +391,7 @@ class Vot:
 
     def update_p_reg_transform(self, iter_p, reg = 0.01):
         """ update each p to the centroids of its cluster,
-            regularized by an affine transformation 
+            regularized by an affine transformation
             which is estimated from the OT map.
 
         Args:

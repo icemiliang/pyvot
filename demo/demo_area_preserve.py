@@ -1,4 +1,4 @@
-# Regularized Wasserstein Means (RWM)
+# Area Preserving via Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
 # Date: Jan 18th 2019
 
@@ -38,7 +38,7 @@ plt.scatter(p_coor_before[:,0], p_coor_before[:,1], marker='o', color=cp, zorder
 
 # ----- run area preserving mapping ------ #
 tick = time.clock()
-ot.area_preserve() # 0: w/o regularization
+ot.area_preserve()
 tock = time.clock()
 print(tock-tick)
 
