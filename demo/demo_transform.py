@@ -16,9 +16,9 @@ It is equivalent to 1NN w.r.t. the power Euclidean distance.
 from __future__ import print_function
 from __future__ import division
 # import non-vot stuffs
-import os, sys
+import os
+import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import time
 import numpy as np
 import sklearn.datasets
 import matplotlib.pyplot as plt
