@@ -1,6 +1,6 @@
 # Regularized Wasserstein Means (RWM)
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: Jan 18th 2019
+# Date: MArch 6th 2019
 
 """
 ===========================================
@@ -13,12 +13,19 @@ and pairwise distances can benefit domain adaptation applications.
 Predicted labels of the empirical samples come from the centroids.
 It is equivalent to 1NN w.r.t. the power Euclidean distance.
 """
-
-from vot import *
+from __future__ import print_function
+from __future__ import division
+# import non-vot stuffs
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import numpy as np
+import sklearn.datasets
 import matplotlib.pyplot as plt
 import matplotlib.collections  as mc
-import utils as vot
-import sklearn.datasets
+# import vot stuffs
+import vot
+import utils
 
 # Generate data
 Ne = 5000
@@ -42,7 +49,7 @@ Xe1 = Xe.copy()
 # -------------------------------------- #
 
 # ----- set up WM ------ #
-ot = Vot()
+ot = vot.Vot()
 # ot.import_data_file('data/p.csv','data/e.csv')
 ot.import_data(Xp, Xe, yp = yp, ye = ye)
 ot.setup(max_iter_p = 5, max_iter_h = 2000)
@@ -52,19 +59,20 @@ p_coor_before = np.copy(ot.p_coor)
 plt.figure(figsize=(12,6))
 xmin = -2.0; xmax = 2.0; ymin = -1.5; ymax = 1.5
 
-cp = [vot.color_blue, vot.color_red]
+cp = [utils.color_blue, utils.color_red]
 cp = [cp[label] for index,label in np.ndenumerate(ot.p_label)]
 plt.subplot(231); plt.xlim(xmin,xmax); plt.ylim(ymin,ymax); plt.grid(True); plt.title('w/o reg before')
-plt.scatter(ot.e_coor[:,0], ot.e_coor[:,1], marker='.', color=vot.color_light_grey, zorder=2)
+plt.scatter(ot.e_coor[:,0], ot.e_coor[:,1], marker='.', color=utils.color_light_grey, zorder=2)
 plt.scatter(p_coor_before[:,0], p_coor_before[:,1], marker='o', color=cp, zorder=3)
 
 # ------- run WM -------- #
+print("running Wasserstein clustering...")
 ot.cluster(0) # 0: w/o regularization
 
 # ------ plot map ------- #
 p_coor_after = np.copy(ot.p_coor)
 map = [[tuple(p1),tuple(p2)] for p1,p2 in zip(p_coor_before.tolist(), p_coor_after.tolist())]
-lines = mc.LineCollection(map, colors=vot.color_light_grey)
+lines = mc.LineCollection(map, colors=utils.color_light_grey)
 fig232 = plt.subplot(232); plt.xlim(xmin,xmax); plt.ylim(ymin,ymax); plt.grid(True); plt.title('w/o reg map')
 fig232.add_collection(lines)
 plt.scatter(p_coor_before[:,0], p_coor_before[:,1], marker='o', color=cp,zorder=3)
@@ -72,9 +80,9 @@ plt.scatter(p_coor_after[:,0], p_coor_after[:,1], marker='o', facecolors='none',
 
 # ------ plot after ----- #
 le = np.copy(ot.e_predict)
-ce = [vot.color_light_blue, vot.color_light_red]
+ce = [utils.color_light_blue, utils.color_light_red]
 ce = [ce[label] for index,label in np.ndenumerate(le)]
-cp = [vot.color_dark_blue, vot.color_red]
+cp = [utils.color_dark_blue, utils.color_red]
 cp = [cp[label] for index,label in np.ndenumerate(ot.p_label)]
 plt.subplot(233); plt.xlim(xmin,xmax); plt.ylim(ymin,ymax); plt.grid(True); plt.title('w/o reg after')
 plt.scatter(ot.e_coor[:,0], ot.e_coor[:,1], marker='.', color=ce, zorder=2)
@@ -84,19 +92,20 @@ plt.scatter(p_coor_after[:,0], p_coor_after[:,1], marker='o', facecolors='none',
 # --------- w/ regularization ---------- #
 # -------------------------------------- #
 
-ot_reg = Vot()
+ot_reg = vot.Vot()
 # ot.import_data_file('data/p.csv','data/e.csv')
 ot_reg.import_data(Xp1, Xe1, yp = yp, ye = ye)
 ot_reg.setup(max_iter_p = 10, max_iter_h = 2000)
 
 # ----- plot before ----- #
-cp = [vot.color_blue, vot.color_red]
+cp = [utils.color_blue, utils.color_red]
 cp = [cp[label] for index,label in np.ndenumerate(ot_reg.p_label)]
 plt.subplot(234); plt.xlim(xmin,1.5); plt.ylim(ymin,ymax); plt.grid(True); plt.title('w/ reg before')
-plt.scatter(ot_reg.e_coor[:,0], ot_reg.e_coor[:,1], marker='.', color=vot.color_light_grey, zorder=2)
+plt.scatter(ot_reg.e_coor[:,0], ot_reg.e_coor[:,1], marker='.', color=utils.color_light_grey, zorder=2)
 plt.scatter(p_coor_before[:,0], p_coor_before[:,1], marker='o', color=cp, zorder=3)
 
 # ------- run RWM ------- #
+print("running regularized Wasserstein clustering...")
 ot_reg.cluster(reg_type = 'transform', reg = 50.0)
 
 # ------- run OT ------- #
@@ -104,12 +113,13 @@ ot_reg.cluster(reg_type = 'transform', reg = 50.0)
 # This almost does not change the correspondence but can give better positions.
 # This is optional.
 ot_reg.setup(max_iter_p = 1, max_iter_h = 2000)
+print("[optional] distribute centroids into target domain...")
 ot_reg.cluster()
 
 # ------- plot map ------ #
 p_coor_after = np.copy(ot_reg.p_coor)
 map = [[tuple(p1),tuple(p2)] for p1,p2 in zip(p_coor_before.tolist(), p_coor_after.tolist())]
-lines = mc.LineCollection(map, colors=vot.color_light_grey)
+lines = mc.LineCollection(map, colors=utils.color_light_grey)
 fig235 = plt.subplot(235); plt.xlim(xmin,xmax); plt.ylim(ymin,ymax); plt.grid(True); plt.title('w/ reg map')
 fig235.add_collection(lines)
 plt.scatter(p_coor_before[:,0], p_coor_before[:,1], marker='o', color=cp,zorder=3)
@@ -117,9 +127,9 @@ plt.scatter(p_coor_after[:,0], p_coor_after[:,1], marker='o', facecolors='none',
 
 # ------ plot after ----- #
 le = np.copy(ot_reg.e_predict)
-ce = [vot.color_light_blue, vot.color_light_red]
+ce = [utils.color_light_blue, utils.color_light_red]
 ce = [ce[label] for index,label in np.ndenumerate(le)]
-cp = [vot.color_dark_blue, vot.color_red]
+cp = [utils.color_dark_blue, utils.color_red]
 cp = [cp[label] for index,label in np.ndenumerate(ot_reg.p_label)]
 plt.subplot(236); plt.xlim(xmin,xmax); plt.ylim(ymin,ymax); plt.grid(True); plt.title('w/ reg after')
 plt.scatter(ot_reg.e_coor[:,0], ot_reg.e_coor[:,1], marker='.', color=ce, zorder=2)
