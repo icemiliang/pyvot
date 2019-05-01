@@ -9,62 +9,76 @@ from scipy.spatial.distance import cdist
 from scipy.optimize import minimize
 from skimage import transform as tf
 
+
 class VotAreaPreserve:
     """ Area Preserving with variational optimal transportation """
+    # p are the centroids
+    # e are the empirical samples
 
-    def setup(self, max_iter = 2000, thres = 1e-8, rate = 0.2, ratio = 100, dim = 2, verbose = True):
+    def __init__(self, max_iter=2000, thres=1e-5, lr=0.2, ratio=100, dim=2, verbose=True):
         """ set up parameters
-
         Args:
             max_iter int: max number of iterations of optimal transportation
             thres float: threshold to break loops
             rate  float: learning rate
             ratio float: the ratio of num of e to the num of p
             dim     int: dimension of the data/space
-        """
 
+        Atts:
+            thres    float: Threshold to break loops
+            lr       float: Learning rate
+            ratio    float: ratio of num_e to num_p
+            h        float: VOT optimizer, "height vector
+            verbose   bool: console output verbose flag
+            max_iter   int: maximum iteration
+            num_p      int: number of p
+            num_e      int: number of e
+            dim        int: dimension of X
+            X_p    numpy ndarray: coordinates of p
+            y_p    numpy ndarray: labels of p
+            mass_p numpy ndarray: mass of clusters of p
+
+        """
         self.thres = thres
-        self.learnrate = rate
+        self.lr = lr
         self.max_iter = max_iter
-        self.h = np.zeros(self.num_p)
+        self.h = None
+        self.verbose = verbose
+        self.X_p = None
+        self.y_p = None
+        self.num_p = None
+        self.num_e = None
+        self.p_dirac = None
+        self.mass_p = None
+        self.X_e = None
         self.dim = dim
         self.ratio = ratio
-        self.verbose = verbose
 
-        if self.dim < np.size(self.p_coor, 1):
-            warnings.warn("Dimension of data larger than the setting.\n Truncating data...")
-            self.p_coor = self.p_coor[:,0:self.dim]
-        elif self.dim > np.size(self.p_coor, 1):
-            warnings.warn("Dimension of data smaller than the setting.\n Resetting dim...")
-            self.dim = np.size(self.p_coor, 1)
-
-        assert np.amax(self.p_coor) < 1 and np.amin(self.p_coor) > -1, "Input data output boundary (-1, 1)."
-
-    def import_data_from_file(self, pfilename, mass = False, label = True):
-        """ import data from csv files
+    def import_data_from_file(self, filename, has_mass=False, has_label=False):
+        """ import data from a csv file
 
         Args:
-            pfilename string: filename of p
-            mass  bool: whether data has a mass column
-            label bool: whether data has a label column
+            filename string: file name of p
+            has_mass  bool: whether data has a has_mass column
+            has_label bool: whether data has a label column
 
         See Also
         --------
         import_data : dump data into internal numpy arrays
         """
 
-        p_data = np.loadtxt(open(pfilename, "r"), delimiter=",")
+        p_data = np.loadtxt(filename, delimiter=",")
 
-        if label and mass:
-            self.import_data(p_data[:, 2:], yp = p_data[:, 0], mass_p = p_data[:, 1])
-        elif label and not mass:
-            self.import_data(p_data[:, 1:], yp = p_data[:, 0])
-        elif not label and mass:
-            self.import_data(p_data[:, 1:], mass_p = p_data[:, 0])
+        if has_label and has_mass:
+            self.import_data(p_data[:, 2:], y_p=p_data[:, 0], mass_p=p_data[:, 1])
+        elif has_label and not has_mass:
+            self.import_data(p_data[:, 1:], y_p=p_data[:, 0])
+        elif not has_label and has_mass:
+            self.import_data(p_data[:, 1:], mass_p=p_data[:, 0])
         else:
             self.import_data(p_data)
 
-    def import_data(self, Xp, yp = None, mass_p = None):
+    def import_data(self, X_p, y_p=None, mass_p=None):
         """ import data from numpy arrays
 
         Args:
@@ -77,13 +91,23 @@ class VotAreaPreserve:
         import_data_file : import data from csv files
         """
 
-        self.num_p = np.size(Xp, 0)
-        self.p_label = yp.astype(int) if not yp is None else -np.ones(self.num_p).astype(int)
+        self.num_p = np.size(X_p, 0)
+        self.y_p = y_p.astype(int) if not y_p is None else -np.ones(self.num_p).astype(int)
         self.p_dirac = mass_p if not mass_p is None else np.ones(self.num_p) / self.num_p
-        self.p_coor = Xp
+        self.X_p = X_p
 
-        # "p_mass" is the sum of its corresponding e's weights, its own weight is "p_dirac"
-        self.p_mass = np.zeros(self.num_p)
+        # "mass_p" is the sum of its corresponding e's weights, its own weight is "p_dirac"
+        self.mass_p = np.zeros(self.num_p)
+
+        if self.dim < np.size(self.X_p, 1):
+            warnings.warn("Dimension of data larger than the setting.\n Truncating data...")
+            self.X_p = self.X_p[:, 0:self.dim]
+        elif self.dim > np.size(self.X_p, 1):
+            warnings.warn("Dimension of data smaller than the setting.\n Resetting dim...")
+            self.dim = np.size(self.X_p, 1)
+
+        assert np.amax(self.X_p) < 1 and np.amin(self.X_p) > -1, "Input data output boundary (-1, 1)."
+        self.h = np.zeros(self.num_p)
 
     def area_preserve(self):
         """ map p into the area
@@ -91,10 +115,10 @@ class VotAreaPreserve:
         :return:
         """
         self.random_sample()
-        self.cost_base = cdist(self.p_coor, self.e_coor, 'sqeuclidean')
+        self.cost_base = cdist(self.X_p, self.X_e, 'sqeuclidean')
         for iter in range(self.max_iter):
             if iter % 100 == 0:
-                self.learnrate *= 0.95
+                self.lr *= 0.95
             if self.update_map(iter): break
         self.update_p()
 
@@ -107,9 +131,9 @@ class VotAreaPreserve:
         self.num_e = self.num_p * self.ratio
         if self.num_e * self.dim > 1e8:
             warnings.warn("Sampling the area will take too much memory.")
-        self.e_coor = np.random.random((self.num_e, self.dim)) * 2 - 1
-        self.e_mass =  np.ones(self.num_e)/self.num_e
-        self.e_label = -np.ones(self.num_e).astype(int)
+        self.X_e = np.random.random((self.num_e, self.dim)) * 2 - 1
+        self.mass_e = np.ones(self.num_e) / self.num_e
+        self.y_e = -np.ones(self.num_e).astype(int)
 
     def update_map(self, iter):
         """ update each p to the centroids of its cluster
@@ -127,12 +151,12 @@ class VotAreaPreserve:
         # find nearest p for each e and add mass to p
         self.e_idx = np.argmin(cost, axis = 0)
         # labels come from centroids
-        self.e_predict = self.p_label[self.e_idx]
+        self.e_predict = self.y_p[self.e_idx]
         for j in range(self.num_p):
-            self.p_mass[j] = np.sum(self.e_mass[self.e_idx == j])
+            self.mass_p[j] = np.sum(self.mass_e[self.e_idx == j])
         # update gradient and h
-        grad = self.p_mass - self.p_dirac
-        self.h = self.h - self.learnrate * grad
+        grad = self.mass_p - self.p_dirac
+        self.h = self.h - self.lr * grad
         # check if converge and return max derivative
         max_change = np.amax(grad)
         if self.verbose and iter % 200 == 0:
@@ -153,11 +177,12 @@ class VotAreaPreserve:
         # TODO Replace the for loop with matrix/vector operations, if possible
         for j in range(self.num_p):
             idx_e_j = self.e_idx == j
-            weights = self.e_mass[idx_e_j]
+            weights = self.mass_e[idx_e_j]
             if weights.size == 0:
                 continue
-            p_target = np.average(self.e_coor[idx_e_j,:], weights = weights, axis = 0)
-            self.p_coor[j,:] = p_target
+            p_target = np.average(self.X_e[idx_e_j, :], weights = weights, axis = 0)
+            self.X_p[j, :] = p_target
+
 
 class Vot:
     """ variational optimal transportation """

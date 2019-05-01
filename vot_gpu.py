@@ -37,7 +37,7 @@ class VotAreaPreserveGPU:
             warnings.warn("Dimension of data smaller than the setting.\n Resetting dim...")
             self.dim = cupy.size(self.p_coor, 1)
 
-        # assert np.amax(self.p_coor) < 1 and np.amin(self.p_coor) > -1, "Input data output boundary (-1, 1)."
+        # assert np.amax(self.Xp) < 1 and np.amin(self.Xp) > -1, "Input data output boundary (-1, 1)."
 
     def import_data_from_file(self, pfilename, mass = False, label = True):
         """ import data from csv files
@@ -91,7 +91,7 @@ class VotAreaPreserveGPU:
         :return:
         """
         self.random_sample()
-        # self.cost_base = cdist(self.p_coor, self.e_coor, 'sqeuclidean')
+        # self.cost_base = cdist(self.Xp, self.e_coor, 'sqeuclidean')
         self.cost_base = cupy.transpose(cupy.sum((self.p_coor[None, :] - self.e_coor[:, None]) ** 2, -1))
         for iter in range(self.max_iter):
             if iter % 100 == 0:
