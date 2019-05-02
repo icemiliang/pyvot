@@ -53,6 +53,8 @@ class VotAreaPreserve:
         self.X_e = None
         self.dim = dim
         self.ratio = ratio
+        self.has_mass = False
+        self.has_label = False
 
     def import_data_from_file(self, filename, has_mass=False, has_label=False):
         """ import data from a csv file
@@ -68,6 +70,9 @@ class VotAreaPreserve:
         """
 
         p_data = np.loadtxt(filename, delimiter=",")
+
+        self.has_mass = has_mass
+        self.has_label = has_label
 
         if has_label and has_mass:
             self.import_data(p_data[:, 2:], y_p=p_data[:, 0], mass_p=p_data[:, 1])
@@ -149,9 +154,10 @@ class VotAreaPreserve:
         # update dist matrix
         cost = self.cost_base - self.h[:, np.newaxis]
         # find nearest p for each e and add mass to p
-        self.e_idx = np.argmin(cost, axis = 0)
+        self.e_idx = np.argmin(cost, axis=0)
         # labels come from centroids
-        self.e_predict = self.y_p[self.e_idx]
+        if self.has_label:
+            self.e_predict = self.y_p[self.e_idx]
         for j in range(self.num_p):
             self.mass_p[j] = np.sum(self.mass_e[self.e_idx == j])
         # update gradient and h
@@ -180,8 +186,10 @@ class VotAreaPreserve:
             weights = self.mass_e[idx_e_j]
             if weights.size == 0:
                 continue
-            p_target = np.average(self.X_e[idx_e_j, :], weights = weights, axis = 0)
-            self.X_p[j, :] = p_target
+            if self.has_mass:
+                self.X_p[j, :] = np.mean(self.X_e[idx_e_j, :], axis=0)
+            else:
+                self.X_p[j, :] = np.average(self.X_e[idx_e_j, :], weights=weights, axis=0)
 
 
 class Vot:
