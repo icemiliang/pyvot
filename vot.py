@@ -69,19 +69,19 @@ class VotAreaPreserve:
         import_data : dump data into internal numpy arrays
         """
 
-        p_data = np.loadtxt(filename, delimiter=",")
+        data = np.loadtxt(filename, delimiter=",")
 
         self.has_mass = has_mass
         self.has_label = has_label
 
         if has_label and has_mass:
-            self.import_data(p_data[:, 2:], y_p=p_data[:, 0], mass_p=p_data[:, 1])
+            self.import_data(data[:, 2:], y_p=data[:, 0], mass_p=data[:, 1])
         elif has_label and not has_mass:
-            self.import_data(p_data[:, 1:], y_p=p_data[:, 0])
+            self.import_data(data[:, 1:], y_p=data[:, 0])
         elif not has_label and has_mass:
-            self.import_data(p_data[:, 1:], mass_p=p_data[:, 0])
+            self.import_data(data[:, 1:], mass_p=data[:, 0])
         else:
-            self.import_data(p_data)
+            self.import_data(data)
 
     def import_data(self, X_p, y_p=None, mass_p=None):
         """ import data from numpy arrays
@@ -122,7 +122,7 @@ class VotAreaPreserve:
         self.random_sample()
         self.cost_base = cdist(self.X_p, self.X_e, 'sqeuclidean')
         for iter in range(self.max_iter):
-            if iter % 100 == 0:
+            if iter != 0 and iter % 100 == 0:
                 self.lr *= 0.95
             if self.update_map(iter): break
         self.update_p()
@@ -131,21 +131,19 @@ class VotAreaPreserve:
         """ randomly sample the area with dirac measures
 
         """
-        pass
-
         self.num_e = self.num_p * self.ratio
         if self.num_e * self.dim > 1e8:
             warnings.warn("Sampling the area will take too much memory.")
         self.X_e = np.random.random((self.num_e, self.dim)) * 2 - 1
-        self.mass_e = np.ones(self.num_e) / self.num_e
-        self.y_e = -np.ones(self.num_e).astype(int)
+        # self.mass_e = np.ones(self.num_e) / self.num_e # this variable is being deprecated
+        if self.has_label:
+            self.y_e = -np.ones(self.num_e).astype(int)
 
     def update_map(self, iter):
         """ update each p to the centroids of its cluster
 
         Args:
-            iter_p int: iteration index of clustering
-            iter_h int: iteration index of transportation
+            iter int: iteration index of optimal transport
 
         Returns:
             bool: convergence or not, determined by max derivative change
@@ -155,11 +153,15 @@ class VotAreaPreserve:
         cost = self.cost_base - self.h[:, np.newaxis]
         # find nearest p for each e and add mass to p
         self.e_idx = np.argmin(cost, axis=0)
+
+        # Use bincount to replace for loop because each e sample has the same weight
+        self.mass_p = np.bincount(self.e_idx) / self.num_e
+
         # labels come from centroids
         if self.has_label:
             self.e_predict = self.y_p[self.e_idx]
-        for j in range(self.num_p):
-            self.mass_p[j] = np.sum(self.mass_e[self.e_idx == j])
+        # for j in range(self.num_p):
+        #     self.mass_p[j] = np.sum(self.mass_e[self.e_idx == j])
         # update gradient and h
         grad = self.mass_p - self.p_dirac
         self.h = self.h - self.lr * grad
@@ -187,9 +189,9 @@ class VotAreaPreserve:
             if weights.size == 0:
                 continue
             if self.has_mass:
-                self.X_p[j, :] = np.mean(self.X_e[idx_e_j, :], axis=0)
-            else:
                 self.X_p[j, :] = np.average(self.X_e[idx_e_j, :], weights=weights, axis=0)
+            else:
+                self.X_p[j, :] = np.mean(self.X_e[idx_e_j, :], axis=0)
 
 
 class Vot:
