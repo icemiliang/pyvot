@@ -3,14 +3,13 @@
 # Date: Jan 18th 2019
 
 import warnings
-
 import numpy as np
 from scipy.spatial.distance import cdist
 from scipy.optimize import minimize
 from skimage import transform as tf
 
 
-class VotAreaPreserve:
+class VotAP:
     """ Area Preserving with variational optimal transportation """
     # p are the centroids
     # e are the empirical samples
@@ -50,11 +49,13 @@ class VotAreaPreserve:
         self.num_e = None
         self.p_dirac = None
         self.mass_p = None
+        self.mass_e = None
         self.X_e = None
         self.dim = dim
         self.ratio = ratio
         self.has_mass = False
         self.has_label = False
+        self.y_e_predict = None
 
     def import_data_from_file(self, filename, has_mass=False, has_label=False):
         """ import data from a csv file
@@ -70,9 +71,6 @@ class VotAreaPreserve:
         """
 
         data = np.loadtxt(filename, delimiter=",")
-
-        self.has_mass = has_mass
-        self.has_label = has_label
 
         if has_label and has_mass:
             self.import_data(data[:, 2:], y_p=data[:, 0], mass_p=data[:, 1])
@@ -96,10 +94,14 @@ class VotAreaPreserve:
         import_data_file : import data from csv files
         """
 
+        self.has_mass = mass_p is not None
+        self.has_label = y_p is not None
+
         self.num_p = np.size(X_p, 0)
         self.y_p = y_p.astype(int) if not y_p is None else -np.ones(self.num_p).astype(int)
         self.p_dirac = mass_p if not mass_p is None else np.ones(self.num_p) / self.num_p
         self.X_p = X_p
+        self.X_p_original = X_p.copy()
 
         # "mass_p" is the sum of its corresponding e's weights, its own weight is "p_dirac"
         self.mass_p = np.zeros(self.num_p)
@@ -114,28 +116,39 @@ class VotAreaPreserve:
         assert np.amax(self.X_p) < 1 and np.amin(self.X_p) > -1, "Input data output boundary (-1, 1)."
         self.h = np.zeros(self.num_p)
 
-    def area_preserve(self):
+    def area_preserve(self, sampling='unisquare'):
         """ map p into the area
 
         :return:
         """
-        self.random_sample()
+        self.random_sample(sampling=sampling)
         self.cost_base = cdist(self.X_p, self.X_e, 'sqeuclidean')
+        self.e_idx = np.argmin(self.cost_base, axis=0)
+
         for iter in range(self.max_iter):
-            if iter != 0 and iter % 100 == 0:
-                self.lr *= 0.95
             if self.update_map(iter): break
         self.update_p()
 
-    def random_sample(self):
+    def random_sample(self, sampling='unisquare'):
         """ randomly sample the area with dirac measures
 
         """
         self.num_e = self.num_p * self.ratio
         if self.num_e * self.dim > 1e8:
             warnings.warn("Sampling the area will take too much memory.")
-        self.X_e = np.random.random((self.num_e, self.dim)) * 2 - 1
-        # self.mass_e = np.ones(self.num_e) / self.num_e # this variable is being deprecated
+        if sampling == 'unisquare':
+            self.X_e = np.random.random((self.num_e, self.dim)) * 2 - 1
+        elif sampling == 'unicircle':
+            r = np.random.uniform(low=0, high=1, size=self.num_e)  # radius
+            theta = np.random.uniform(low=0, high=2 * np.pi, size=self.num_e)  # angle
+            x = np.sqrt(r) * np.cos(theta)
+            y = np.sqrt(r) * np.sin(theta)
+            self.X_e = np.concatenate((x[:, None], y[:, None]), axis=1)
+        elif sampling == 'gaussian':
+            mean = [0, 0]
+            cov = [[.1, 0], [0, .1]]
+            self.X_e = np.random.multivariate_normal(mean, cov, self.num_e).clip(-0.99, 0.99)
+
         if self.has_label:
             self.y_e = -np.ones(self.num_e).astype(int)
 
@@ -150,26 +163,29 @@ class VotAreaPreserve:
         """
 
         # update dist matrix
-        cost = self.cost_base - self.h[:, np.newaxis]
+        cost = self.cost_base - self.h[:, None]
         # find nearest p for each e and add mass to p
         self.e_idx = np.argmin(cost, axis=0)
-
         # Use bincount to replace for loop because each e sample has the same weight
-        self.mass_p = np.bincount(self.e_idx) / self.num_e
+        self.mass_p = np.bincount(self.e_idx, minlength=self.num_p) / self.num_e
 
         # labels come from centroids
         if self.has_label:
-            self.e_predict = self.y_p[self.e_idx]
-        # for j in range(self.num_p):
-        #     self.mass_p[j] = np.sum(self.mass_e[self.e_idx == j])
+            self.y_e_predict = self.y_p[self.e_idx]
         # update gradient and h
-        grad = self.mass_p - self.p_dirac
-        self.h = self.h - self.lr * grad
+        dh = self.mass_p - self.p_dirac
+        if iter != 0 and iter % 500 == 0:
+            self.lr *= 0.8
+        self.h -= self.lr * dh
         # check if converge and return max derivative
-        max_change = np.amax(grad)
+        index = np.argmax(dh)
+        if isinstance(index, np.ndarray):
+            index = index[0]
+        max_change = dh[index]
+        max_change_percentage = max_change * 100 / self.mass_p[index]
         if self.verbose and iter % 200 == 0:
-            print("iter " + str(iter) + ": " + str(max_change))
-        return True if max_change < self.thres else False
+            print("{0:d}: max gradient {1:g} ({2:.2f}%)".format(iter, max_change, max_change_percentage))
+        return True if max_change < self.thres or max_change_percentage <= 1 else False
 
     def update_p(self):
         """ update each p to the centroids of its cluster
@@ -182,16 +198,11 @@ class VotAreaPreserve:
         """
 
         # update p to the centroid of its clustered e samples
-        # TODO Replace the for loop with matrix/vector operations, if possible
-        for j in range(self.num_p):
-            idx_e_j = self.e_idx == j
-            weights = self.mass_e[idx_e_j]
-            if weights.size == 0:
-                continue
-            if self.has_mass:
-                self.X_p[j, :] = np.average(self.X_e[idx_e_j, :], weights=weights, axis=0)
-            else:
-                self.X_p[j, :] = np.mean(self.X_e[idx_e_j, :], axis=0)
+        bincount = np.bincount(self.e_idx)
+        if 0 in bincount:
+            raise Exception('Empty cluster found, optimal transport did not converge\nTry larger lr or max_iter')
+        for i in range(self.dim):
+            self.X_p[:, i] = np.bincount(self.e_idx, weights=self.X_e[:, i]) / bincount
 
 
 class Vot:

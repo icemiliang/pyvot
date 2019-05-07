@@ -1,13 +1,13 @@
 # Area Preserving via Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: Jan 18th 2019
+# Date: May 2nd 2019
 
 """
 ===============================================================
        Area Preserving Map through Optimal Transportation
 ===============================================================
 
-This demo shows area preserving mapping through optimal transportation.
+This demo shows R^n -> R^n area preserving mapping through optimal transportation.
 The total area is assumed to be one. We randomly sample a square and
 count the samples to approximate the area. In this way, we avoid computing
 convex hulls.
@@ -16,49 +16,52 @@ For now, PyVot assumes that the range in each dimension is (-1,1).
 
 """
 
-from vot import *
+from vot import VotAP
 import matplotlib.pyplot as plt
-import matplotlib.collections  as mc
-import utils as vot
+import matplotlib.collections as mc
+import utils
 import time
+import numpy as np
+from scipy.spatial import Delaunay
+
 
 # ----- set up ot ------ #
-ot = VotAreaPreserve(max_iter=5000, ratio=200, lr=0.2, dim=2)
-ot.import_data_from_file('data/p.csv', has_label=True)
+ot = VotAP(ratio=500)
+# data = np.loadtxt('data/p_ap.csv', delimiter=",")
+mean = [0, 0]
+cov = [[.08, 0],[0, .04]]
+data = np.random.multivariate_normal(mean, cov, 50).clip(-0.99,0.99)
+ot.import_data(data)
+
+tick = time.clock()
+ot.area_preserve(sampling='unisquare')
+tock = time.clock()
+print('total time: {0:.4f}'.format(tock-tick))
+# TODO Area preserving requires a consistent boundary, (i.e.) That is a todo.
+#  That is also why triangles may intersect with each other near the boundary.
 
 # ----- plot before ----- #
-p_coor_before = np.copy(ot.X_p)
+X_p_before = np.copy(ot.X_p_original)
 plt.figure(figsize=(12,4))
-
-cp = [vot.color_blue, vot.color_red]
-cp = [cp[label] for index,label in np.ndenumerate(ot.y_p)]
 plt.subplot(131); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('before')
-plt.scatter(p_coor_before[:,0], p_coor_before[:,1], marker='o', color=cp, zorder=3)
-
-# ----- run area preserving mapping ------ #
-tick = time.clock()
-ot.area_preserve()
-tock = time.clock()
-print(tock-tick)
+plt.scatter(X_p_before[:, 0], X_p_before[:, 1], marker='o', color=utils.color_red, zorder=3)
+tri = Delaunay(X_p_before)
+plt.triplot(X_p_before[:, 0], X_p_before[:, 1], tri.simplices)
 
 # ------ plot map ------- #
-p_coor_after = np.copy(ot.X_p)
-map = [[tuple(p1),tuple(p2)] for p1,p2 in zip(p_coor_before.tolist(), p_coor_after.tolist())]
-lines = mc.LineCollection(map, colors=vot.color_light_grey)
+X_p_after = np.copy(ot.X_p)
+map = [[tuple(p1),tuple(p2)] for p1,p2 in zip(X_p_before.tolist(), X_p_after.tolist())]
+lines = mc.LineCollection(map, colors=utils.color_light_grey)
 fig232 = plt.subplot(132); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('area preserving map')
 fig232.add_collection(lines)
-plt.scatter(p_coor_before[:,0], p_coor_before[:,1], marker='o', color=cp,zorder=3)
-plt.scatter(p_coor_after[:,0], p_coor_after[:,1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=2)
+plt.scatter(X_p_before[:, 0], X_p_before[:, 1], marker='o', color=utils.color_light_red, zorder=3)
+plt.scatter(X_p_after[:, 0], X_p_after[:, 1], marker='o', facecolors='none', linewidth=2, color=utils.color_red, zorder=2)
 
 # ------ plot after ----- #
-le = np.copy(ot.e_predict)
-ce = [vot.color_light_blue, vot.color_light_red]
-ce = [ce[label] for index,label in np.ndenumerate(le)]
-cp = [vot.color_dark_blue, vot.color_red]
-cp = [cp[label] for index,label in np.ndenumerate(ot.y_p)]
 plt.subplot(133); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('after')
-plt.scatter(ot.X_e[:, 0], ot.X_e[:, 1], marker='.', color=ce, zorder=2, s=0.5)
-plt.scatter(p_coor_after[:,0], p_coor_after[:,1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=3)
+plt.scatter(ot.X_e[:, 0], ot.X_e[:, 1], marker='.', color=utils.color_light_grey, zorder=2, s=0.5)
+plt.scatter(X_p_after[:, 0], X_p_after[:, 1], marker='o', facecolors='none', linewidth=2, color=utils.color_red, zorder=3)
+plt.triplot(X_p_after[:, 0], X_p_after[:, 1], tri.simplices)
 
 # ---- plot and save ---- #
 plt.tight_layout(pad=1.0, w_pad=1.5, h_pad=0.5)
