@@ -7,6 +7,9 @@ import numpy as np
 from scipy.spatial.distance import cdist
 from scipy.optimize import minimize
 from skimage import transform as tf
+import imageio
+import matplotlib.pyplot as plt
+import utils
 
 
 class VotAP:
@@ -14,7 +17,7 @@ class VotAP:
     # p are the centroids
     # e are the empirical samples
 
-    def __init__(self, max_iter=2000, thres=1e-5, lr=0.2, ratio=100, dim=2, verbose=True):
+    def __init__(self, max_iter=2000, thres=1e-5, lr=0.2, ratio=100, dim=2, verbose=True, plot=None):
         """ set up parameters
         Args:
             max_iter int: max number of iterations of optimal transportation
@@ -56,6 +59,8 @@ class VotAP:
         self.has_mass = False
         self.has_label = False
         self.y_e_predict = None
+        self.X_p_original = None
+        self.plot = plot
 
     def import_data_from_file(self, filename, has_mass=False, has_label=False):
         """ import data from a csv file
@@ -116,7 +121,7 @@ class VotAP:
         assert np.amax(self.X_p) < 1 and np.amin(self.X_p) > -1, "Input data output boundary (-1, 1)."
         self.h = np.zeros(self.num_p)
 
-    def area_preserve(self, sampling='unisquare'):
+    def area_preserve(self, sampling='unisquare', plot=None):
         """ map p into the area
 
         :return:
@@ -126,7 +131,8 @@ class VotAP:
         self.e_idx = np.argmin(self.cost_base, axis=0)
 
         for iter in range(self.max_iter):
-            if self.update_map(iter): break
+            if self.update_map(iter):
+                break
         self.update_p()
 
     def random_sample(self, sampling='unisquare'):
@@ -185,6 +191,14 @@ class VotAP:
         max_change_percentage = max_change * 100 / self.mass_p[index]
         if self.verbose and iter % 200 == 0:
             print("{0:d}: max gradient {1:g} ({2:.2f}%)".format(iter, max_change, max_change_percentage))
+        if self.plot:
+            fig = plt.figure(figsize=(5, 5))
+            plt.xlim(-1, 1);
+            plt.ylim(-1, 1);
+            plt.grid(True);
+            plt.title('before')
+            plt.scatter(self.X_p_original[:, 0], self.X_p_original[:, 1], marker='o', color=utils.color_red, zorder=3)
+            img = utils.fig2data(fig)
         return True if max_change < self.thres or max_change_percentage <= 1 else False
 
     def update_p(self):
@@ -238,23 +252,23 @@ class Vot:
         import_data : dump data into internal numpy arrays
         """
 
-        p_data = np.loadtxt(open(pfilename, "r"), delimiter = ",")
-        e_data = np.loadtxt(open(efilename, "r"), delimiter = ",")
+        p_data = np.loadtxt(pfilename, delimiter=",")
+        e_data = np.loadtxt(efilename, delimiter=",")
 
         if label and mass:
-            self.import_data(p_data[:,2:], e_data[:,2:],
-                             yp = p_data[:,0], ye = e_data[:,0],
-                             mass_p = p_data[:,1], mass_e = e_data[:,0])
+            self.import_data(p_data[:, 2:], e_data[:, 2:],
+                             yp=p_data[:, 0], ye=e_data[:, 0],
+                             mass_p=p_data[:, 1], mass_e=e_data[:, 0])
         elif label and not mass:
             self.import_data(p_data[:, 1:], e_data[:, 1:],
-                             yp = p_data[:, 0], ye = e_data[:, 0])
+                             yp = p_data[:, 0], ye=e_data[:, 0])
         elif not label and mass:
             self.import_data(p_data[:, 1:], e_data[:, 1:],
-                             mass_p = p_data[:, 0], mass_e = e_data[:, 0])
+                             mass_p=p_data[:, 0], mass_e=e_data[:, 0])
         else:
             self.import_data(p_data, e_data)
 
-    def import_data(self, Xp, Xe, yp = None, ye = None, mass_p = None, mass_e = None):
+    def import_data(self, Xp, Xe, yp = None, ye = None, mass_p=None, mass_e=None):
         """ import data from numpy arrays
 
         Args:
@@ -429,7 +443,7 @@ class Vot:
         print("iter " + str(iter_p) + ": " + str(max_change))
 
         # regularize
-        res = minimize(f, self.p_coor, method = 'BFGS', tol = self.thres, args = (p0, self.p_label, reg))
+        res = minimize(f, self.p_coor, method='BFGS', tol = self.thres, args = (p0, self.p_label, reg))
         self.p_coor = res.x
         self.p_coor = self.p_coor.reshape(p0.shape)
         # return max change
@@ -481,17 +495,172 @@ class Vot:
 
         for idx, l in np.ndenumerate(np.unique(self.p_label)):
             idx_p_label = self.p_label == l
-            p_sub = self.p_coor[idx_p_label,:]
-            p0_sub = p0[idx_p_label,:]
+            p_sub = self.p_coor[idx_p_label, :]
+            p0_sub = p0[idx_p_label, :]
             # TODO estimating a high-dimensional transformation is a todo
             T = tf.EuclideanTransform()
             # T = tf.AffineTransform()
             # T = tf.ProjectiveTransform()
             T.estimate(p_sub, p0_sub)
-            pa[idx_p_label,:] = T(p_sub)
+            pa[idx_p_label, :] = T(p_sub)
 
         res = minimize(f, self.p_coor, method = 'BFGS', tol = self.thres, args = (p0, pa, reg))
         self.p_coor = res.x
         self.p_coor = self.p_coor.reshape(p0.shape)
         # return max change
         return True if max_change < self.thres else False
+
+
+def random_sample(num, dim, sampling='unisquare'):
+    """ randomly sample the area with dirac measures
+
+    """
+    if num * dim > 1e8:
+        warnings.warn("Sampling the area will take too much memory.")
+    if sampling == 'unisquare':
+        data = np.random.random((num, dim)) * 2 - 1
+    elif sampling == 'unicircle':
+        r = np.random.uniform(low=0, high=1, size=num)  # radius
+        theta = np.random.uniform(low=0, high=2 * np.pi, size=num)  # angle
+        x = np.sqrt(r) * np.cos(theta)
+        y = np.sqrt(r) * np.sin(theta)
+        data = np.concatenate((x[:, None], y[:, None]), axis=1)
+    elif sampling == 'gaussian':
+        mean = [0, 0]
+        cov = [[.1, 0], [0, .1]]
+        data = np.random.multivariate_normal(mean, cov, num).clip(-0.99, 0.99)
+
+    label = -np.ones(num).astype(int)
+    return data, label
+
+
+class VotAPNew:
+    """ Area Preserving with variational optimal transportation """
+    # p are the centroids
+    # e are the empirical samples
+
+    def __init__(self, max_iter=2000, thres=1e-5, lr=0.2, ratio=100, verbose=True):
+        """ set up parameters
+        Args:
+            max_iter int: max number of iterations of optimal transportation
+            thres float: threshold to break loops
+            rate  float: learning rate
+            ratio float: the ratio of num of e to the num of p
+            dim     int: dimension of the data/space
+
+        Atts:
+            thres    float: Threshold to break loops
+            lr       float: Learning rate
+            ratio    float: ratio of num_e to num_p
+            h        float: VOT optimizer, "height vector
+            verbose   bool: console output verbose flag
+            max_iter   int: maximum iteration
+            num_p      int: number of p
+            num_e      int: number of e
+            dim        int: dimension of X
+            X_p    numpy ndarray: coordinates of p
+            y_p    numpy ndarray: labels of p
+            mass_p numpy ndarray: mass of clusters of p
+
+        """
+        self.thres = thres
+        self.lr = lr
+        self.max_iter = max_iter
+        self.h = None
+        self.verbose = verbose
+        self.data_p = None
+        self.label_p = None
+        self.num_p = None
+        self.num_e = None
+        self.p_dirac = None
+        self.mass_p = None
+        self.mass_e = None
+        self.X_e = None
+        self.ratio = ratio
+        self.has_mass = False
+        self.has_label = False
+        self.y_e_predict = None
+        self.data_p_original = None
+
+    def import_data(self, data, label=None, mass_p=None):
+        """ import data from numpy arrays
+
+        Args:
+            Xp np.ndarray(np,dim+): initial coordinates of p
+            yp np.ndarray(num_p,): labels of p
+            mass_p np.ndarray(num_p,): weights of p
+
+        See Also
+        --------
+        import_data_file : import data from csv files
+        """
+
+        self.has_mass = mass_p is not None
+        self.has_label = label is not None
+
+        self.num_p = np.size(data, 0)
+        self.label_p = label.astype(int) if not label is None else -np.ones(self.num_p).astype(int)
+        self.p_dirac = mass_p if not mass_p is None else np.ones(self.num_p)
+        self.data_p = data
+        self.data_p_original = data.copy()
+        # "mass_p" is the sum of its corresponding e's weights, its own weight is "p_dirac"
+        self.mass_p = np.zeros(self.num_p)
+
+        assert np.amax(self.data_p) < 1 and np.amin(self.data_p) > -1, "Input data output boundary (-1, 1)."
+
+    def map(self, sampling='unisquare', plot_filename=None):
+        """ map p into the area
+
+        :return:
+        """
+        num = self.ratio * self.data_p.shape[0]
+        dim = self.data_p.shape[1]
+        data_e, label_e = random_sample(num, dim, sampling=sampling)
+        cost_base = cdist(self.data_p, data_e, 'sqeuclidean')
+        e_idx = np.argmin(cost_base, axis=0)
+        h = np.zeros(self.num_p)
+        imgs = []
+        self.p_dirac = self.p_dirac / self.num_p * num
+
+        for i in range(self.max_iter):
+            cost = cost_base - h[:, None]
+            # find nearest p for each e and add mass to p
+            e_idx = np.argmin(cost, axis=0)
+            # calculate total mass of each cell
+            self.mass_p = np.bincount(e_idx, minlength=self.num_p)
+
+            # labels come from centroids
+            if self.has_label:
+                self.y_e_predict = self.label_p[e_idx]
+            # update gradient and h
+            dh = self.mass_p - self.p_dirac
+            if i != 0 and i % 500 == 0:
+                self.lr *= 0.8
+            h -= self.lr * dh
+            # check if converge and return max derivative
+            index = np.argmax(dh)
+            if isinstance(index, np.ndarray):
+                index = index[0]
+            max_change = dh[index]
+            max_change_percentage = max_change * 100 / self.mass_p[index]
+
+            if self.verbose and i % 100 == 0:
+                print("{0:d}: max gradient {1:g} ({2:.2f}%)".format(i, max_change, max_change_percentage))
+            if plot_filename:
+                fig = plt.figure(figsize=(5, 5))
+                plt.xlim(-1, 1)
+                plt.ylim(-1, 1)
+                plt.grid(True)
+                plt.title('before')
+                plt.scatter(self.data_p_original[:, 0], self.data_p_original[:, 1], marker='o', color=utils.color_red)
+                img = utils.fig2data(fig)
+                imgs.append(img)
+                plt.close()
+            if max_change_percentage <= 1:
+                break
+
+        bincount = np.bincount(e_idx)
+        if 0 in bincount:
+            raise Exception('Empty cluster found, optimal transport did not converge\nTry larger lr or max_iter')
+        for i in range(self.data_p.shape[1]):
+            self.data_p[:, i] = np.bincount(e_idx, weights=self.X_e[:, i]) / bincount
