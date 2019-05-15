@@ -8,215 +8,7 @@ from scipy.spatial.distance import cdist
 from scipy.optimize import minimize
 from skimage import transform as tf
 import imageio
-import matplotlib.pyplot as plt
 import utils
-
-
-class VotAP:
-    """ Area Preserving with variational optimal transportation """
-    # p are the centroids
-    # e are the empirical samples
-
-    def __init__(self, max_iter=2000, thres=1e-5, lr=0.2, ratio=100, dim=2, verbose=True, plot=None):
-        """ set up parameters
-        Args:
-            max_iter int: max number of iterations of optimal transportation
-            thres float: threshold to break loops
-            rate  float: learning rate
-            ratio float: the ratio of num of e to the num of p
-            dim     int: dimension of the data/space
-
-        Atts:
-            thres    float: Threshold to break loops
-            lr       float: Learning rate
-            ratio    float: ratio of num_e to num_p
-            h        float: VOT optimizer, "height vector
-            verbose   bool: console output verbose flag
-            max_iter   int: maximum iteration
-            num_p      int: number of p
-            num_e      int: number of e
-            dim        int: dimension of X
-            X_p    numpy ndarray: coordinates of p
-            y_p    numpy ndarray: labels of p
-            mass_p numpy ndarray: mass of clusters of p
-
-        """
-        self.thres = thres
-        self.lr = lr
-        self.max_iter = max_iter
-        self.h = None
-        self.verbose = verbose
-        self.X_p = None
-        self.y_p = None
-        self.num_p = None
-        self.num_e = None
-        self.p_dirac = None
-        self.mass_p = None
-        self.mass_e = None
-        self.X_e = None
-        self.dim = dim
-        self.ratio = ratio
-        self.has_mass = False
-        self.has_label = False
-        self.y_e_predict = None
-        self.X_p_original = None
-        self.plot = plot
-
-    def import_data_from_file(self, filename, has_mass=False, has_label=False):
-        """ import data from a csv file
-
-        Args:
-            filename string: file name of p
-            has_mass  bool: whether data has a has_mass column
-            has_label bool: whether data has a label column
-
-        See Also
-        --------
-        import_data : dump data into internal numpy arrays
-        """
-
-        data = np.loadtxt(filename, delimiter=",")
-
-        if has_label and has_mass:
-            self.import_data(data[:, 2:], y_p=data[:, 0], mass_p=data[:, 1])
-        elif has_label and not has_mass:
-            self.import_data(data[:, 1:], y_p=data[:, 0])
-        elif not has_label and has_mass:
-            self.import_data(data[:, 1:], mass_p=data[:, 0])
-        else:
-            self.import_data(data)
-
-    def import_data(self, X_p, y_p=None, mass_p=None):
-        """ import data from numpy arrays
-
-        Args:
-            Xp np.ndarray(np,dim+): initial coordinates of p
-            yp np.ndarray(num_p,): labels of p
-            mass_p np.ndarray(num_p,): weights of p
-
-        See Also
-        --------
-        import_data_file : import data from csv files
-        """
-
-        self.has_mass = mass_p is not None
-        self.has_label = y_p is not None
-
-        self.num_p = np.size(X_p, 0)
-        self.y_p = y_p.astype(int) if not y_p is None else -np.ones(self.num_p).astype(int)
-        self.p_dirac = mass_p if not mass_p is None else np.ones(self.num_p) / self.num_p
-        self.X_p = X_p
-        self.X_p_original = X_p.copy()
-
-        # "mass_p" is the sum of its corresponding e's weights, its own weight is "p_dirac"
-        self.mass_p = np.zeros(self.num_p)
-
-        if self.dim < np.size(self.X_p, 1):
-            warnings.warn("Dimension of data larger than the setting.\n Truncating data...")
-            self.X_p = self.X_p[:, 0:self.dim]
-        elif self.dim > np.size(self.X_p, 1):
-            warnings.warn("Dimension of data smaller than the setting.\n Resetting dim...")
-            self.dim = np.size(self.X_p, 1)
-
-        assert np.amax(self.X_p) < 1 and np.amin(self.X_p) > -1, "Input data output boundary (-1, 1)."
-        self.h = np.zeros(self.num_p)
-
-    def area_preserve(self, sampling='unisquare', plot=None):
-        """ map p into the area
-
-        :return:
-        """
-        self.random_sample(sampling=sampling)
-        self.cost_base = cdist(self.X_p, self.X_e, 'sqeuclidean')
-        self.e_idx = np.argmin(self.cost_base, axis=0)
-
-        for iter in range(self.max_iter):
-            if self.update_map(iter):
-                break
-        self.update_p()
-
-    def random_sample(self, sampling='unisquare'):
-        """ randomly sample the area with dirac measures
-
-        """
-        self.num_e = self.num_p * self.ratio
-        if self.num_e * self.dim > 1e8:
-            warnings.warn("Sampling the area will take too much memory.")
-        if sampling == 'unisquare':
-            self.X_e = np.random.random((self.num_e, self.dim)) * 2 - 1
-        elif sampling == 'unicircle':
-            r = np.random.uniform(low=0, high=1, size=self.num_e)  # radius
-            theta = np.random.uniform(low=0, high=2 * np.pi, size=self.num_e)  # angle
-            x = np.sqrt(r) * np.cos(theta)
-            y = np.sqrt(r) * np.sin(theta)
-            self.X_e = np.concatenate((x[:, None], y[:, None]), axis=1)
-        elif sampling == 'gaussian':
-            mean = [0, 0]
-            cov = [[.1, 0], [0, .1]]
-            self.X_e = np.random.multivariate_normal(mean, cov, self.num_e).clip(-0.99, 0.99)
-
-        if self.has_label:
-            self.y_e = -np.ones(self.num_e).astype(int)
-
-    def update_map(self, iter):
-        """ update each p to the centroids of its cluster
-
-        Args:
-            iter int: iteration index of optimal transport
-
-        Returns:
-            bool: convergence or not, determined by max derivative change
-        """
-
-        # update dist matrix
-        cost = self.cost_base - self.h[:, None]
-        # find nearest p for each e and add mass to p
-        self.e_idx = np.argmin(cost, axis=0)
-        # Use bincount to replace for loop because each e sample has the same weight
-        self.mass_p = np.bincount(self.e_idx, minlength=self.num_p) / self.num_e
-
-        # labels come from centroids
-        if self.has_label:
-            self.y_e_predict = self.y_p[self.e_idx]
-        # update gradient and h
-        dh = self.mass_p - self.p_dirac
-        if iter != 0 and iter % 500 == 0:
-            self.lr *= 0.8
-        self.h -= self.lr * dh
-        # check if converge and return max derivative
-        index = np.argmax(dh)
-        if isinstance(index, np.ndarray):
-            index = index[0]
-        max_change = dh[index]
-        max_change_percentage = max_change * 100 / self.mass_p[index]
-        if self.verbose and iter % 200 == 0:
-            print("{0:d}: max gradient {1:g} ({2:.2f}%)".format(iter, max_change, max_change_percentage))
-        if self.plot:
-            fig = plt.figure(figsize=(5, 5))
-            plt.xlim(-1, 1);
-            plt.ylim(-1, 1);
-            plt.grid(True);
-            plt.title('before')
-            plt.scatter(self.X_p_original[:, 0], self.X_p_original[:, 1], marker='o', color=utils.color_red, zorder=3)
-            img = utils.fig2data(fig)
-        return True if max_change < self.thres or max_change_percentage <= 1 else False
-
-    def update_p(self):
-        """ update each p to the centroids of its cluster
-
-        Args:
-            iter_p int: iteration index
-
-        Returns:
-            bool: convergence or not, determined by max p change
-        """
-
-        # update p to the centroid of its clustered e samples
-        bincount = np.bincount(self.e_idx)
-        if 0 in bincount:
-            raise Exception('Empty cluster found, optimal transport did not converge\nTry larger lr or max_iter')
-        for i in range(self.dim):
-            self.X_p[:, i] = np.bincount(self.e_idx, weights=self.X_e[:, i]) / bincount
 
 
 class Vot:
@@ -511,38 +303,14 @@ class Vot:
         return True if max_change < self.thres else False
 
 
-def random_sample(num, dim, sampling='unisquare'):
-    """ randomly sample the area with dirac measures
-
-    """
-    if num * dim > 1e8:
-        warnings.warn("Sampling the area will take too much memory.")
-    if sampling == 'unisquare':
-        data = np.random.random((num, dim)) * 2 - 1
-    elif sampling == 'unicircle':
-        r = np.random.uniform(low=0, high=1, size=num)  # radius
-        theta = np.random.uniform(low=0, high=2 * np.pi, size=num)  # angle
-        x = np.sqrt(r) * np.cos(theta)
-        y = np.sqrt(r) * np.sin(theta)
-        data = np.concatenate((x[:, None], y[:, None]), axis=1)
-    elif sampling == 'gaussian':
-        mean = [0, 0]
-        cov = [[.1, 0], [0, .1]]
-        data = np.random.multivariate_normal(mean, cov, num).clip(-0.99, 0.99)
-
-    label = -np.ones(num).astype(int)
-    return data, label
-
-
-class VotAPNew:
+class VotAP:
     """ Area Preserving with variational optimal transportation """
     # p are the centroids
     # e are the empirical samples
 
-    def __init__(self, max_iter=2000, thres=1e-5, lr=0.2, ratio=100, verbose=True):
+    def __init__(self, thres=1e-5, lr=0.2, ratio=100, verbose=True):
         """ set up parameters
         Args:
-            max_iter int: max number of iterations of optimal transportation
             thres float: threshold to break loops
             rate  float: learning rate
             ratio float: the ratio of num of e to the num of p
@@ -554,7 +322,6 @@ class VotAPNew:
             ratio    float: ratio of num_e to num_p
             h        float: VOT optimizer, "height vector
             verbose   bool: console output verbose flag
-            max_iter   int: maximum iteration
             num_p      int: number of p
             num_e      int: number of e
             dim        int: dimension of X
@@ -565,12 +332,10 @@ class VotAPNew:
         """
         self.thres = thres
         self.lr = lr
-        self.max_iter = max_iter
         self.h = None
         self.verbose = verbose
         self.data_p = None
         self.label_p = None
-        self.num_p = None
         self.num_e = None
         self.p_dirac = None
         self.mass_p = None
@@ -581,6 +346,8 @@ class VotAPNew:
         self.has_label = False
         self.y_e_predict = None
         self.data_p_original = None
+        self.data_e = None
+        self.label_e = None
 
     def import_data(self, data, label=None, mass_p=None):
         """ import data from numpy arrays
@@ -598,69 +365,73 @@ class VotAPNew:
         self.has_mass = mass_p is not None
         self.has_label = label is not None
 
-        self.num_p = np.size(data, 0)
-        self.label_p = label.astype(int) if not label is None else -np.ones(self.num_p).astype(int)
-        self.p_dirac = mass_p if not mass_p is None else np.ones(self.num_p)
+        num_p = np.size(data, 0)
+        self.label_p = label.astype(int) if not label is None else -np.ones(num_p).astype(int)
+        self.p_dirac = mass_p if not mass_p is None else np.ones(num_p) / num_p
         self.data_p = data
         self.data_p_original = data.copy()
         # "mass_p" is the sum of its corresponding e's weights, its own weight is "p_dirac"
-        self.mass_p = np.zeros(self.num_p)
+        self.mass_p = np.zeros(num_p)
 
-        assert np.amax(self.data_p) < 1 and np.amin(self.data_p) > -1, "Input data output boundary (-1, 1)."
+        assert np.amax(self.data_p) <= 1 and np.amin(self.data_p) >= -1,\
+            "Input output boundary (-1, 1)."
 
-    def map(self, sampling='unisquare', plot_filename=None):
+    def map(self, sampling='unisquare', plot_filename=None, beta=0.9, max_iter=1000, lr_decay=50):
         """ map p into the area
 
         :return:
         """
-        num = self.ratio * self.data_p.shape[0]
+        num_p = self.data_p.shape[0]
+        num_e = self.ratio * num_p
         dim = self.data_p.shape[1]
-        data_e, label_e = random_sample(num, dim, sampling=sampling)
-        cost_base = cdist(self.data_p, data_e, 'sqeuclidean')
-        e_idx = np.argmin(cost_base, axis=0)
-        h = np.zeros(self.num_p)
+        self.data_e, self.label_e = utils.random_sample(num_e, dim, sampling=sampling)
+        base_dist = cdist(self.data_p, self.data_e, 'sqeuclidean')
+        e_idx = np.argmin(base_dist, axis=0)
+        h = np.zeros(num_p)
         imgs = []
-        self.p_dirac = self.p_dirac / self.num_p * num
+        dh = 0
 
-        for i in range(self.max_iter):
-            cost = cost_base - h[:, None]
+        for i in range(max_iter):
+            dist = base_dist - h[:, None]
             # find nearest p for each e and add mass to p
-            e_idx = np.argmin(cost, axis=0)
+            e_idx = np.argmin(dist, axis=0)
+
             # calculate total mass of each cell
-            self.mass_p = np.bincount(e_idx, minlength=self.num_p)
+            self.mass_p = np.bincount(e_idx, minlength=num_p) / num_e
 
             # labels come from centroids
             if self.has_label:
                 self.y_e_predict = self.label_p[e_idx]
             # update gradient and h
-            dh = self.mass_p - self.p_dirac
-            if i != 0 and i % 500 == 0:
-                self.lr *= 0.8
+            # gradient descent with momentum and decay
+            dh = beta * dh + (1-beta) * (self.mass_p - self.p_dirac)
+            if i != 0 and i % lr_decay == 0:
+                self.lr *= 0.9
             h -= self.lr * dh
+
             # check if converge and return max derivative
             index = np.argmax(dh)
             if isinstance(index, np.ndarray):
                 index = index[0]
             max_change = dh[index]
-            max_change_percentage = max_change * 100 / self.mass_p[index]
+            max_change_pct = max_change * 100 / self.mass_p[index]
 
-            if self.verbose and i % 100 == 0:
-                print("{0:d}: max gradient {1:g} ({2:.2f}%)".format(i, max_change, max_change_percentage))
+            if self.verbose and i % 10 == 0:
+                print("{0:d}: max gradient {1:g} ({2:.2f}%)".format(i, max_change, max_change_pct))
+            # plot to gif, TODO this is time consuming, got a better way?
             if plot_filename:
-                fig = plt.figure(figsize=(5, 5))
-                plt.xlim(-1, 1)
-                plt.ylim(-1, 1)
-                plt.grid(True)
-                plt.title('before')
-                plt.scatter(self.data_p_original[:, 0], self.data_p_original[:, 1], marker='o', color=utils.color_red)
+                fig = utils.plot_map(self.data_e, e_idx / (num_p - 1))
                 img = utils.fig2data(fig)
                 imgs.append(img)
-                plt.close()
-            if max_change_percentage <= 1:
+            if max_change_pct <= 1:
                 break
+        if imgs:
+            imageio.mimsave(plot_filename, imgs, fps=0.5)
 
         bincount = np.bincount(e_idx)
         if 0 in bincount:
-            raise Exception('Empty cluster found, optimal transport did not converge\nTry larger lr or max_iter')
+            print('Empty cluster found, optimal transport did not converge\nTry larger lr or max_iter')
+            return
         for i in range(self.data_p.shape[1]):
-            self.data_p[:, i] = np.bincount(e_idx, weights=self.X_e[:, i]) / bincount
+            tmp = np.bincount(e_idx, weights=self.data_e[:, i], minlength=num_p)
+            self.data_p[:, i] = tmp / bincount

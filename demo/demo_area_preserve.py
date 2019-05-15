@@ -26,29 +26,29 @@ from scipy.spatial import Delaunay
 
 
 # ----- set up ot ------ #
-ot = VotAP(ratio=500, plot='area_preserve.gif')
+ot = VotAP(ratio=1000)
 mean = [0, 0]
 cov = [[.08, 0], [0, .04]]
 data = np.random.multivariate_normal(mean, cov, 50).clip(-0.99, 0.99)
 ot.import_data(data)
 
 tick = time.clock()
-ot.area_preserve(sampling='unisquare')
+ot.map(sampling='unisquare', plot_filename='area_preserve.gif', max_iter=200)
 tock = time.clock()
 print('total time: {0:.4f}'.format(tock-tick))
 # TODO Area preserving requires a pre-defined boundary. \
 #  This demo does not deal with that.
 
 # ----- plot before ----- #
-X_p_before = np.copy(ot.X_p_original)
+X_p_before = np.copy(ot.data_p_original)
 plt.figure(figsize=(12, 4))
 plt.subplot(131); plt.xlim(-1, 1); plt.ylim(-1, 1); plt.grid(True); plt.title('before')
 plt.scatter(X_p_before[:, 0], X_p_before[:, 1], marker='o', color=utils.color_red, zorder=3)
-# tri = Delaunay(X_p_before)
+tri = Delaunay(X_p_before)
 
 # ------ plot map ------- #
-X_p_after = np.copy(ot.X_p)
-ot_map = [[tuple(p1),tuple(p2)] for p1,p2 in zip(X_p_before.tolist(), X_p_after.tolist())]
+X_p_after = np.copy(ot.data_p)
+ot_map = [[tuple(p1), tuple(p2)] for p1, p2 in zip(X_p_before.tolist(), X_p_after.tolist())]
 lines = mc.LineCollection(ot_map, colors=utils.color_light_grey)
 fig232 = plt.subplot(132); plt.xlim(-1, 1); plt.ylim(-1, 1); plt.grid(True); plt.title('area preserving map')
 fig232.add_collection(lines)
@@ -57,7 +57,7 @@ plt.scatter(X_p_after[:, 0], X_p_after[:, 1], marker='o', facecolors='none', lin
 
 # ------ plot after ----- #
 plt.subplot(133); plt.xlim(-1, 1); plt.ylim(-1, 1); plt.grid(True); plt.title('after')
-plt.scatter(ot.X_e[:, 0], ot.X_e[:, 1], marker='.', color=utils.color_light_grey, zorder=2, s=0.5)
+plt.scatter(ot.data_e[:, 0], ot.data_e[:, 1], marker='.', color=utils.color_light_grey, zorder=2, s=0.5)
 plt.scatter(X_p_after[:, 0], X_p_after[:, 1], marker='o', facecolors='none', linewidth=2, color=utils.color_red, zorder=3)
 
 # ---- plot and save ---- #
