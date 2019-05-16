@@ -1,6 +1,7 @@
-# Variational Wasserstein Clustering (vwc)
+# PyVot
+# Variational Wasserstein Clustering
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: May 13th 2019
+# Date: May 15th 2019
 
 import numpy as np
 from PIL import Image
@@ -45,8 +46,8 @@ def fig2img(fig):
     """
     # put the figure pixmap into a numpy array
     buf = fig2data(fig)
-    w, h, d = buf.shape
-    return Image.frombytes("RGBA", ( w ,h ), buf.tostring())
+    w, h = buf.shape[0], buf.shape[1]
+    return Image.frombytes("RGBA", (w, h), buf.tostring())
 
 
 def random_sample(num, dim, sampling='unisquare'):
@@ -76,6 +77,8 @@ def random_sample(num, dim, sampling='unisquare'):
 
 def plot_map(data, idx, color_map='viridis'):
     color = plt.get_cmap(color_map)
+    # close previously opened figure
+    # TODO return figure and close it outside the function seems not good
     plt.close()
     fig = plt.figure(figsize=(5, 5))
     plt.xlim(-1, 1)

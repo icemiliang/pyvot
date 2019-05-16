@@ -1,6 +1,7 @@
 # PyVot
+# Variational Wasserstein Clustering
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: Jan 18th 2019
+# Date: May 15th 2019
 
 import warnings
 import numpy as np
@@ -306,66 +307,37 @@ class Vot:
 class VotAP:
     """ Area Preserving with variational optimal transportation """
     # p are the centroids
-    # e are the empirical samples
+    # e are the area samples
 
-    def __init__(self, thres=1e-5, lr=0.2, ratio=100, verbose=True):
+    def __init__(self, data, label=None, mass_p=None, thres=1e-5, ratio=100, verbose=True):
         """ set up parameters
         Args:
             thres float: threshold to break loops
-            rate  float: learning rate
             ratio float: the ratio of num of e to the num of p
-            dim     int: dimension of the data/space
+            data np.ndarray(np,dim+): initial coordinates of p
+            label np.ndarray(num_p,): labels of p
+            mass_p np.ndarray(num_p,): weights of p
 
         Atts:
             thres    float: Threshold to break loops
             lr       float: Learning rate
             ratio    float: ratio of num_e to num_p
-            h        float: VOT optimizer, "height vector
             verbose   bool: console output verbose flag
             num_p      int: number of p
-            num_e      int: number of e
-            dim        int: dimension of X
             X_p    numpy ndarray: coordinates of p
             y_p    numpy ndarray: labels of p
             mass_p numpy ndarray: mass of clusters of p
 
         """
         self.thres = thres
-        self.lr = lr
-        self.h = None
         self.verbose = verbose
-        self.data_p = None
-        self.label_p = None
-        self.num_e = None
         self.p_dirac = None
-        self.mass_p = None
-        self.mass_e = None
-        self.X_e = None
         self.ratio = ratio
-        self.has_mass = False
-        self.has_label = False
-        self.y_e_predict = None
-        self.data_p_original = None
-        self.data_e = None
-        self.label_e = None
-
-    def import_data(self, data, label=None, mass_p=None):
-        """ import data from numpy arrays
-
-        Args:
-            Xp np.ndarray(np,dim+): initial coordinates of p
-            yp np.ndarray(num_p,): labels of p
-            mass_p np.ndarray(num_p,): weights of p
-
-        See Also
-        --------
-        import_data_file : import data from csv files
-        """
 
         self.has_mass = mass_p is not None
         self.has_label = label is not None
 
-        num_p = np.size(data, 0)
+        num_p = data.shape[0]
         self.label_p = label.astype(int) if not label is None else -np.ones(num_p).astype(int)
         self.p_dirac = mass_p if not mass_p is None else np.ones(num_p) / num_p
         self.data_p = data
@@ -376,8 +348,30 @@ class VotAP:
         assert np.amax(self.data_p) <= 1 and np.amin(self.data_p) >= -1,\
             "Input output boundary (-1, 1)."
 
-    def map(self, sampling='unisquare', plot_filename=None, beta=0.9, max_iter=1000, lr_decay=50):
+    def map(self, sampling='unisquare', plot_filename=None, beta=0.9, max_iter=1000, lr=0.2, lr_decay=50):
         """ map p into the area
+
+        Args:
+            sampling string: sampling area
+            plot_filename string: filename of the gif image
+            beta float: gradient descent momentum
+            max_iter int: maximum number of iteration
+            lr float: learning rate
+            lr_decay float: learning rate decay
+
+        Atts:
+            num_p int: number of p
+            num_e int: number of e
+            dim int: dimentionality
+            data_e numpy ndarray: coordinates of e
+            label_e numpy ndarray: label of e
+            base_dist numpy ndarray: pairwise distance between p and e
+            h  numpy ndarray: VOT optimizer, "height vector
+            dh  numpy ndarray: gradient of h
+            max_change float: maximum gradient change
+            max_change_pct float: relative maximum gradient change
+            imgs list: list of plots to show mapping progress
+            e_idx numpy ndarray: p index of every e
 
         :return:
         """
@@ -386,7 +380,7 @@ class VotAP:
         dim = self.data_p.shape[1]
         self.data_e, self.label_e = utils.random_sample(num_e, dim, sampling=sampling)
         base_dist = cdist(self.data_p, self.data_e, 'sqeuclidean')
-        e_idx = np.argmin(base_dist, axis=0)
+        self.e_idx = np.argmin(base_dist, axis=0)
         h = np.zeros(num_p)
         imgs = []
         dh = 0
@@ -394,20 +388,20 @@ class VotAP:
         for i in range(max_iter):
             dist = base_dist - h[:, None]
             # find nearest p for each e and add mass to p
-            e_idx = np.argmin(dist, axis=0)
+            self.e_idx = np.argmin(dist, axis=0)
 
             # calculate total mass of each cell
-            self.mass_p = np.bincount(e_idx, minlength=num_p) / num_e
+            self.mass_p = np.bincount(self.e_idx, minlength=num_p) / num_e
 
             # labels come from centroids
             if self.has_label:
-                self.y_e_predict = self.label_p[e_idx]
-            # update gradient and h
+                self.label_e = self.label_p[self.e_idx]
+
             # gradient descent with momentum and decay
             dh = beta * dh + (1-beta) * (self.mass_p - self.p_dirac)
             if i != 0 and i % lr_decay == 0:
-                self.lr *= 0.9
-            h -= self.lr * dh
+                lr *= 0.9
+            h -= lr * dh
 
             # check if converge and return max derivative
             index = np.argmax(dh)
@@ -420,18 +414,19 @@ class VotAP:
                 print("{0:d}: max gradient {1:g} ({2:.2f}%)".format(i, max_change, max_change_pct))
             # plot to gif, TODO this is time consuming, got a better way?
             if plot_filename:
-                fig = utils.plot_map(self.data_e, e_idx / (num_p - 1))
+                fig = utils.plot_map(self.data_e, self.e_idx / (num_p - 1))
                 img = utils.fig2data(fig)
                 imgs.append(img)
             if max_change_pct <= 1:
                 break
-        if imgs:
-            imageio.mimsave(plot_filename, imgs, fps=0.5)
+        if plot_filename and imgs:
+            imageio.mimsave(plot_filename, imgs, fps=4)
 
-        bincount = np.bincount(e_idx)
+        # update coordinates of p
+        bincount = np.bincount(self.e_idx)
         if 0 in bincount:
             print('Empty cluster found, optimal transport did not converge\nTry larger lr or max_iter')
             return
         for i in range(self.data_p.shape[1]):
-            tmp = np.bincount(e_idx, weights=self.data_e[:, i], minlength=num_p)
-            self.data_p[:, i] = tmp / bincount
+            # update p to the centroid of their correspondences
+            self.data_p[:, i] = np.bincount(self.e_idx, weights=self.data_e[:, i], minlength=num_p) / bincount

@@ -1,6 +1,6 @@
 # Area Preserving via Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: May 2nd 2019
+# Date: May 15th 2019
 
 """
 ===============================================================
@@ -26,18 +26,19 @@ from scipy.spatial import Delaunay
 
 
 # ----- set up ot ------ #
-ot = VotAP(ratio=1000)
 mean = [0, 0]
 cov = [[.08, 0], [0, .04]]
-data = np.random.multivariate_normal(mean, cov, 50).clip(-0.99, 0.99)
-ot.import_data(data)
+N = 50
+data = np.random.multivariate_normal(mean, cov, N).clip(-0.99, 0.99)
+ot = VotAP(data, ratio=1000)
 
 tick = time.clock()
-ot.map(sampling='unisquare', plot_filename='area_preserve.gif', max_iter=200)
+ot.map(sampling='unisquare', plot_filename='area_preserve.gif', max_iter=300)
+# ot.map(sampling='unisquare', max_iter=300)
 tock = time.clock()
 print('total time: {0:.4f}'.format(tock-tick))
-# TODO Area preserving requires a pre-defined boundary. \
-#  This demo does not deal with that.
+# TODO Area preserving usually requires a pre-defined boundary. \
+#  That is beyond the scope of the demo.
 
 # ----- plot before ----- #
 X_p_before = np.copy(ot.data_p_original)
@@ -58,6 +59,8 @@ plt.scatter(X_p_after[:, 0], X_p_after[:, 1], marker='o', facecolors='none', lin
 # ------ plot after ----- #
 plt.subplot(133); plt.xlim(-1, 1); plt.ylim(-1, 1); plt.grid(True); plt.title('after')
 plt.scatter(ot.data_e[:, 0], ot.data_e[:, 1], marker='.', color=utils.color_light_grey, zorder=2, s=0.5)
+color = plt.get_cmap('viridis')
+plt.scatter(ot.data_e[:, 0], ot.data_e[:, 1], s=1, marker='o', color=color(ot.e_idx / (N - 1)))
 plt.scatter(X_p_after[:, 0], X_p_after[:, 1], marker='o', facecolors='none', linewidth=2, color=utils.color_red, zorder=3)
 
 # ---- plot and save ---- #
