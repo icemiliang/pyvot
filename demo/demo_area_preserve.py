@@ -32,9 +32,10 @@ N = 50
 data = np.random.multivariate_normal(mean, cov, N).clip(-0.99, 0.99)
 ot = VotAP(data, ratio=1000)
 
+# ----- map ------ #
 tick = time.clock()
-ot.map(sampling='unisquare', plot_filename='area_preserve.gif', max_iter=300)
-# ot.map(sampling='unisquare', max_iter=300)
+# ot.map(sampling='unisquare', plot_filename='area_preserve.gif', max_iter=300)
+ot.map(sampling='unisquare', max_iter=300)
 tock = time.clock()
 print('total time: {0:.4f}'.format(tock-tick))
 # TODO Area preserving usually requires a pre-defined boundary. \
