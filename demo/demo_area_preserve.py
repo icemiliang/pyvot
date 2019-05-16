@@ -2,6 +2,7 @@
 # Author: Liang Mi <icemiliang@gmail.com>
 # Date: May 15th 2019
 
+
 """
 ===============================================================
        Area Preserving Map through Optimal Transportation
@@ -13,7 +14,6 @@ count the samples to approximate the area. In this way, we avoid computing
 convex hulls.
 
 For now, PyVot assumes that the range in each dimension is (-1,1).
-
 """
 
 from vot import VotAP
@@ -68,3 +68,4 @@ plt.scatter(X_p_after[:, 0], X_p_after[:, 1], marker='o', facecolors='none', lin
 plt.tight_layout(pad=1.0, w_pad=1.5, h_pad=0.5)
 # plt.savefig("ot_area_preserve.png")
 plt.show()
+# TODO plot Voronoi diagram

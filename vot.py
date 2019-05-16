@@ -3,6 +3,7 @@
 # Author: Liang Mi <icemiliang@gmail.com>
 # Date: May 15th 2019
 
+
 import warnings
 import numpy as np
 from scipy.spatial.distance import cdist
@@ -179,7 +180,7 @@ class Vot:
             # check if converge
             max_change = max(np.amax(self.p_coor[j,:] - p_target), max_change)
             self.p_coor[j,:] = p_target
-        print("iter " + str(iter_p) + ": " + str(max_change))
+        print("iter %d: %.8f" % (iter_p, max_change))
         # return max p coor change
         return True if max_change < self.thres else False
 
@@ -233,7 +234,7 @@ class Vot:
                 continue
             p0[j,:] = np.average(self.e_coor[idx_e_j,:], weights = weight, axis = 0)
             max_change = max(np.amax(self.p_coor[j,:] - p0[j,:]),max_change)
-        print("iter " + str(iter_p) + ": " + str(max_change))
+        print("iter %d: %.8f" % (iter_p, max_change))
 
         # regularize
         res = minimize(f, self.p_coor, method='BFGS', tol = self.thres, args = (p0, self.p_label, reg))
@@ -282,7 +283,7 @@ class Vot:
                 continue
             p0[j,:] = np.average(self.e_coor[idx_e_j,:], weights = weight, axis = 0)
             max_change = max(np.amax(self.p_coor[j,:] - p0[j,:]),max_change)
-        print("iter " + str(iter_p) + ": " + str(max_change))
+        print("iter %d: %.8f" % (iter_p, max_change))
 
         pa = np.zeros(p0.shape)
 
