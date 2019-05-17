@@ -16,23 +16,7 @@ import utils
 class Vot:
     """ variational optimal transportation """
 
-    def setup(self, max_iter_h = 2000, max_iter_p = 10, thres = 1e-8, rate = 0.1):
-        """ set up parameters
-
-        Args:
-            max_iter_h int: max number of iterations of clustering
-            max_iter_p int: max number of iterations of transportation
-            thres float: threshold to break loops
-            rate  float: learning rate
-        """
-
-        self.thres = thres
-        self.learnrate = rate
-        self.max_iter_h = max_iter_h
-        self.max_iter_p = max_iter_p
-        self.h = np.zeros(self.num_p)
-
-    def import_data_from_file(self, pfilename, efilename, mass = False, label = True):
+    def import_data_from_file(self, pfilename, efilename, mass=False, label=True):
         """ import data from csv files
 
         Args:
@@ -55,14 +39,14 @@ class Vot:
                              mass_p=p_data[:, 1], mass_e=e_data[:, 0])
         elif label and not mass:
             self.import_data(p_data[:, 1:], e_data[:, 1:],
-                             yp = p_data[:, 0], ye=e_data[:, 0])
+                             yp=p_data[:, 0], ye=e_data[:, 0])
         elif not label and mass:
             self.import_data(p_data[:, 1:], e_data[:, 1:],
                              mass_p=p_data[:, 0], mass_e=e_data[:, 0])
         else:
             self.import_data(p_data, e_data)
 
-    def import_data(self, Xp, Xe, yp = None, ye = None, mass_p=None, mass_e=None):
+    def import_data(self, Xp, Xe, yp=None, ye=None, mass_p=None, mass_e=None):
         """ import data from numpy arrays
 
         Args:
@@ -89,6 +73,7 @@ class Vot:
 
         self.p_coor = Xp
         self.e_coor = Xe
+        self.p_coor_original = np.copy(Xp)
 
         # "p_mass" is the sum of its corresponding e's weights, its own weight is "p_dirac"
         self.p_mass = np.zeros(self.num_p)
@@ -96,7 +81,7 @@ class Vot:
         if abs(np.sum(self.p_dirac) - np.sum(self.e_mass)) > 1e-6:
             warnings.warn("Total mass of e does not equal to total mass of p")
 
-    def cluster(self, reg_type = 0, reg = 0.01):
+    def cluster(self, reg_type=0, reg=0.01, lr=0.2, max_iter_p=10, max_iter_h=2000):
         """ compute Wasserstein clustering
 
         Args:
@@ -108,13 +93,13 @@ class Vot:
         update_map: compute optimal transportation
         """
 
-        for iter_p in range(self.max_iter_p):
-            self.cost_base = cdist(self.p_coor, self.e_coor, 'sqeuclidean')
-            for iter_h in range(self.max_iter_h):
-                if self.update_map(iter_p,iter_h): break
-            if self.update_p(iter_p, reg_type, reg): break
+        for iter_p in range(max_iter_p):
+            cost_base = cdist(self.p_coor, self.e_coor, 'sqeuclidean')
+            self.update_map(cost_base, max_iter_h, lr=lr)
+            if self.update_p(iter_p, reg_type, reg):
+                break
 
-    def update_map(self, iter_p, iter_h):
+    def update_map(self, cost_base, max_iter, lr=0.2, beta=0.9, lr_decay=50):
         """ update each p to the centroids of its cluster
 
         Args:
@@ -125,21 +110,34 @@ class Vot:
             bool: convergence or not, determined by max derivative change
         """
 
-        # update dist matrix
-        cost = self.cost_base - self.h[:, np.newaxis]
-        # find nearest p for each e and add mass to p
-        self.e_idx = np.argmin(cost, axis = 0)
-        # labels come from centroids
-        self.e_predict = self.p_label[self.e_idx]
-        for j in range(self.num_p):
-            self.p_mass[j] = np.sum(self.e_mass[self.e_idx == j])
-        # update gradient and h
-        grad = self.p_mass - self.p_dirac
-        self.h = self.h - self.learnrate * grad
-        # check if converge and return max derivative
-        return True if np.amax(grad) < self.thres else False
+        h = np.zeros(self.num_p)
+        for i in range(max_iter):
+            # update dist matrix
+            cost = cost_base - h[:, np.newaxis]
+            # find nearest p for each e and add mass to p
+            self.e_idx = np.argmin(cost, axis = 0)
+            # labels come from centroids
+            self.e_predict = self.p_label[self.e_idx]
+            self.p_mass = np.bincount(self.e_idx, weights=self.e_mass, minlength=self.num_p)
+            # update gradient and h
+            dh = self.p_mass - self.p_dirac
 
-    def update_p(self, iter_p, reg_type = 0, reg = 0.01):
+            # gradient descent with momentum and decay
+            dh = beta * dh + (1-beta) * (self.p_mass - self.p_dirac)
+            if i != 0 and i % lr_decay == 0:
+                lr *= 0.9
+            h -= lr * dh
+
+            # check if converge and return max derivative
+            index = np.argmax(dh)
+            if isinstance(index, np.ndarray):
+                index = index[0]
+            max_change = dh[index]
+            max_change_pct = max_change * 100 / self.p_mass[index]
+            if max_change_pct <= 1:
+                break
+
+    def update_p(self, iter_p, reg_type=0, reg=0.01):
         """ update p
 
         Args:
@@ -168,23 +166,24 @@ class Vot:
             bool: convergence or not, determined by max p change
         """
 
-        max_change = 0.0
+        max_change_pct = 0.0
         # update p to the centroid of its clustered e samples
-        # TODO Replace the for loop with matrix/vector operations, if possible
-        for j in range(self.num_p):
-            idx_e_j = self.e_idx == j
-            weights = self.e_mass[idx_e_j]
-            if weights.size == 0:
-                continue
-            p_target = np.average(self.e_coor[idx_e_j,:], weights = weights, axis = 0)
-            # check if converge
-            max_change = max(np.amax(self.p_coor[j,:] - p_target), max_change)
-            self.p_coor[j,:] = p_target
-        print("iter %d: %.8f" % (iter_p, max_change))
+        bincount = np.bincount(self.e_idx)
+        if 0 in bincount:
+            print('Empty cluster found, optimal transport probably did not converge\n'
+                  'Try larger lr or max_iter after checking the measures.')
+            return False
+        for i in range(self.p_coor.shape[1]):
+            # update p to the centroid of their correspondences
+            p_target = np.bincount(self.e_idx, weights=self.e_coor[:, i], minlength=self.num_p) / bincount
+            change_pct = np.amax(np.abs((self.p_coor[:, i] - p_target)/self.p_coor[:, i]))
+            max_change_pct = max(max_change_pct, change_pct)
+            self.p_coor[:, i] = p_target
+        print("iter {0:d}: max centroid change {1:.2f}%".format(iter_p, 100 * max_change_pct))
         # return max p coor change
-        return True if max_change < self.thres else False
+        return True if max_change_pct < 0.01 else False
 
-    def update_p_reg_potential(self, iter_p, reg = 0.01):
+    def update_p_reg_potential(self, iter_p, reg=0.01):
         """ update each p to the centroids of its cluster,
             regularized by intra-class distances
 
@@ -196,7 +195,7 @@ class Vot:
             bool: convergence or not, determined by max p change
         """
 
-        def f(p, p0, label = None, reg = 0.01):
+        def f(p, p0, label=None, reg=0.01):
             """ objective function incorporating labels
 
             Args:
@@ -212,38 +211,43 @@ class Vot:
             p = p.reshape(p0.shape)
             reg_term = 0.0
             for idx, l in np.ndenumerate(np.unique(label)):
-                p_sub = p[label == l,:]
+                p_sub = p[label == l, :]
                 # pairwise distance with smaller memory burden
                 # |pi - pj|^2 = pi^2 + pj^2 - 2*pi*pj
-                reg_term += np.sum((p_sub ** 2).sum(axis = 1, keepdims = True) + \
-                                   (p_sub ** 2).sum(axis = 1) - \
+                reg_term += np.sum((p_sub ** 2).sum(axis=1, keepdims=True) +
+                                   (p_sub ** 2).sum(axis=1) -
                                    2 * p_sub.dot(p_sub.T))
 
-            return np.sum((p - p0)**2.0) + reg * reg_term
+            return np.sum((p - p0) ** 2.0) + reg * reg_term
 
-        if (np.unique(self.p_label).size == 1): warnings.warn("All known samples belong to the same class")
+        if np.unique(self.p_label).size == 1:
+            warnings.warn("All known samples belong to the same class")
 
-        max_change = 0.0
-        p0 = np.zeros((self.p_coor.shape))
+        p0 = np.zeros_like(self.p_coor)
 
-        # new controid pos
-        for j in range(self.num_p):
-            idx_e_j = self.e_idx == j
-            weight = self.e_mass[idx_e_j]
-            if weight.size == 0:
-                continue
-            p0[j,:] = np.average(self.e_coor[idx_e_j,:], weights = weight, axis = 0)
-            max_change = max(np.amax(self.p_coor[j,:] - p0[j,:]),max_change)
-        print("iter %d: %.8f" % (iter_p, max_change))
+        max_change_pct = 0.0
+        # update p to the centroid of its clustered e samples
+        bincount = np.bincount(self.e_idx)
+        if 0 in bincount:
+            print('Empty cluster found, optimal transport probably did not converge\n'
+                  'Abort this round of updating'
+                  'Try larger lr or max_iter after checking the measures.')
+            return False
+        for i in range(p0.shape[1]):
+            # update p to the centroid of their correspondences
+            p_target = np.bincount(self.e_idx, weights=self.e_coor[:, i], minlength=self.num_p) / bincount
+            change_pct = np.amax(np.abs((self.p_coor[:, i] - p_target)/self.p_coor[:, i]))
+            max_change_pct = max(max_change_pct, change_pct)
+            p0[:, i] = p_target
+        print("iter {0:d}: max centroid change {1:.2f}%".format(iter_p, 100 * max_change_pct))
 
         # regularize
-        res = minimize(f, self.p_coor, method='BFGS', tol = self.thres, args = (p0, self.p_label, reg))
-        self.p_coor = res.x
-        self.p_coor = self.p_coor.reshape(p0.shape)
+        res = minimize(f, self.p_coor, method='BFGS', args=(p0, self.p_label, reg))
+        self.p_coor = res.x.reshape(p0.shape)
         # return max change
-        return True if max_change < self.thres else False
+        return True if max_change_pct < 0.01 else False
 
-    def update_p_reg_transform(self, iter_p, reg = 0.01):
+    def update_p_reg_transform(self, iter_p, reg=0.01):
         """ update each p to the centroids of its cluster,
             regularized by an affine transformation
             which is estimated from the OT map.
@@ -256,7 +260,7 @@ class Vot:
             bool: convergence or not, determined by max p change
         """
 
-        def f(p, p0, pa, reg = 0.01):
+        def f(p, p0, pa, reg=0.01):
             """ objective function regularized by affine transformations
 
             Args:
@@ -271,38 +275,41 @@ class Vot:
             p = p.reshape(p0.shape)
             return np.sum((p-p0)**2.0) + reg * np.sum((p-pa)**2.0)
 
-        # assert self.dim == 2, "dim has to equal 2"
+        assert self.p_coor.shape[1] == 2, "dim has to be 2 for geometric transformation"
 
-        max_change = 0.0
-        p0 = np.zeros((self.p_coor.shape))
-        # new controid pos
-        for j in range(self.num_p):
-            idx_e_j = self.e_idx == j
-            weight = self.e_mass[idx_e_j]
-            if weight.size == 0:
-                continue
-            p0[j,:] = np.average(self.e_coor[idx_e_j,:], weights = weight, axis = 0)
-            max_change = max(np.amax(self.p_coor[j,:] - p0[j,:]),max_change)
-        print("iter %d: %.8f" % (iter_p, max_change))
-
+        p0 = np.zeros_like(self.p_coor)
+        max_change_pct = 0.0
+        # update p to the centroid of its clustered e samples
+        bincount = np.bincount(self.e_idx)
+        if 0 in bincount:
+            print('Empty cluster found, optimal transport probably did not converge\n'
+                  'Abort this round of updating'
+                  'Try larger lr or max_iter after checking the measures.')
+            return False
+        for i in range(p0.shape[1]):
+            # update p to the centroid of their correspondences
+            p_target = np.bincount(self.e_idx, weights=self.e_coor[:, i], minlength=self.num_p) / bincount
+            change_pct = np.amax(np.abs((self.p_coor[:, i] - p_target)/self.p_coor[:, i]))
+            max_change_pct = max(max_change_pct, change_pct)
+            p0[:, i] = p_target
+        print("iter {0:d}: max centroid change {1:.2f}%".format(iter_p, 100 * max_change_pct))
         pa = np.zeros(p0.shape)
 
         for idx, l in np.ndenumerate(np.unique(self.p_label)):
             idx_p_label = self.p_label == l
             p_sub = self.p_coor[idx_p_label, :]
             p0_sub = p0[idx_p_label, :]
-            # TODO estimating a high-dimensional transformation is a todo
+            # TODO estimating a high-dimensional transformation?
             T = tf.EuclideanTransform()
             # T = tf.AffineTransform()
             # T = tf.ProjectiveTransform()
             T.estimate(p_sub, p0_sub)
             pa[idx_p_label, :] = T(p_sub)
 
-        res = minimize(f, self.p_coor, method = 'BFGS', tol = self.thres, args = (p0, pa, reg))
-        self.p_coor = res.x
-        self.p_coor = self.p_coor.reshape(p0.shape)
+        res = minimize(f, self.p_coor, method='BFGS', args=(p0, pa, reg))
+        self.p_coor = res.x.reshape(p0.shape)
         # return max change
-        return True if max_change < self.thres else False
+        return True if max_change_pct < 0.01 else False
 
 
 class VotAP:
