@@ -1,111 +1,68 @@
-# Regularized Wasserstein Means (RWM)
+# Area Preserving via Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: MArch 6th 2019
+# Date: May 15th 2019
+
 
 """
 ===============================================================
        Area Preserving Map through Optimal Transportation
 ===============================================================
 
-This demo shows area preserving mapping through optimal transportation.
+This demo shows R^n -> R^n area preserving mapping through optimal transportation.
 The total area is assumed to be one. We randomly sample a square and
 count the samples to approximate the area. In this way, we avoid computing
 convex hulls.
 
 For now, PyVot assumes that the range in each dimension is (-1,1).
 """
-from __future__ import print_function
-from __future__ import division
-# import non-vot stuffs
-import os
-import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from vot import VotAP
+import matplotlib.pyplot as plt
+import matplotlib.collections as mc
+import utils
 import time
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.collections  as mc
-# import vot stuffs
-import vot
-import utils
+from scipy.spatial import Delaunay
+
 
 # ----- set up ot ------ #
-ot = vot.VotAreaPreserve()
-ot.import_data_from_file('data/p.csv')
-ot.setup(max_iter=5000, ratio=200, rate=0.2, dim = 2)
+mean = [0, 0]
+cov = [[.08, 0], [0, .04]]
+N = 50
+data = np.random.multivariate_normal(mean, cov, N).clip(-0.99, 0.99)
+ot = VotAP(data, ratio=1000)
+
+# ----- map ------ #
+tick = time.clock()
+# ot.map(sampling='unisquare', plot_filename='area_preserve.gif', max_iter=300)
+ot.map(sampling='unisquare', max_iter=300)
+tock = time.clock()
+print('total time: {0:.4f}'.format(tock-tick))
+# TODO Area preserving usually requires a pre-defined boundary. \
+#  That is beyond the scope of the demo.
 
 # ----- plot before ----- #
-p_coor_before = np.copy(ot.p_coor)
-plt.figure(figsize=(12,8))
-
-cp = [utils.color_blue, utils.color_red]
-cp = [cp[label] for index,label in np.ndenumerate(ot.p_label)]
-plt.subplot(231); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('[equal area] before')
-plt.scatter(p_coor_before[:,0], p_coor_before[:,1], marker='o', color=cp, zorder=3)
-
-# ----- run area preserving mapping ------ #
-print("running area-preserving mapping...")
-tick = time.clock()
-ot.area_preserve() # 0: w/o regularization
-tock = time.clock()
-print("running time: %.2f seconds" % (tock-tick))
+X_p_before = np.copy(ot.data_p_original)
+plt.figure(figsize=(12, 4))
+plt.subplot(131); plt.xlim(-1, 1); plt.ylim(-1, 1); plt.grid(True); plt.title('before')
+plt.scatter(X_p_before[:, 0], X_p_before[:, 1], marker='o', color=utils.color_red, zorder=3)
+tri = Delaunay(X_p_before)
 
 # ------ plot map ------- #
-p_coor_after = np.copy(ot.p_coor)
-ot_map = [[tuple(p1),tuple(p2)] for p1,p2 in zip(p_coor_before.tolist(), p_coor_after.tolist())]
+X_p_after = np.copy(ot.data_p)
+ot_map = [[tuple(p1), tuple(p2)] for p1, p2 in zip(X_p_before.tolist(), X_p_after.tolist())]
 lines = mc.LineCollection(ot_map, colors=utils.color_light_grey)
-fig232 = plt.subplot(232); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('area preserving map')
+fig232 = plt.subplot(132); plt.xlim(-1, 1); plt.ylim(-1, 1); plt.grid(True); plt.title('area preserving map')
 fig232.add_collection(lines)
-plt.scatter(p_coor_before[:,0], p_coor_before[:,1], marker='o', color=cp,zorder=3)
-plt.scatter(p_coor_after[:,0], p_coor_after[:,1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=2)
+plt.scatter(X_p_before[:, 0], X_p_before[:, 1], marker='o', color=utils.color_light_red, zorder=3)
+plt.scatter(X_p_after[:, 0], X_p_after[:, 1], marker='o', facecolors='none', linewidth=2, color=utils.color_red, zorder=2)
 
 # ------ plot after ----- #
-le = np.copy(ot.e_predict)
-ce = [utils.color_light_blue, utils.color_light_red]
-ce = [ce[label] for index, label in np.ndenumerate(le)]
-cp = [utils.color_dark_blue, utils.color_red]
-cp = [cp[label] for index, label in np.ndenumerate(ot.p_label)]
-plt.subplot(233); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('after')
-plt.scatter(ot.e_coor[:,0], ot.e_coor[:,1], marker='.', color=ce, zorder=2, s=0.5)
-plt.scatter(p_coor_after[:,0], p_coor_after[:,1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=3)
-
-# ----- set up ot ------ #
-ot = vot.VotAreaPreserve()
-ot.import_data_from_file('data/p_random_weight.csv', mass=True)
-ot.setup(max_iter=5000, ratio=200, rate=0.2, dim = 2)
-
-# ----- plot before ----- #
-p_coor_before = np.copy(ot.p_coor)
-
-cp = [utils.color_blue, utils.color_red]
-cp = [cp[label] for index,label in np.ndenumerate(ot.p_label)]
-plt.subplot(234); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('[random area] before')
-plt.scatter(p_coor_before[:,0], p_coor_before[:,1], marker='o', color=cp, zorder=3)
-
-# ----- run area preserving mapping ------ #
-print("running area-preserving mapping...")
-tick = time.clock()
-ot.area_preserve() # 0: w/o regularization
-tock = time.clock()
-print( "running time: %.2f seconds" % (tock-tick))
-
-# ------ plot map ------- #
-p_coor_after = np.copy(ot.p_coor)
-ot_map = [[tuple(p1),tuple(p2)] for p1,p2 in zip(p_coor_before.tolist(), p_coor_after.tolist())]
-lines = mc.LineCollection(ot_map, colors=utils.color_light_grey)
-fig232 = plt.subplot(235); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('area preserving map')
-fig232.add_collection(lines)
-plt.scatter(p_coor_before[:,0], p_coor_before[:,1], marker='o', color=cp,zorder=3)
-plt.scatter(p_coor_after[:,0], p_coor_after[:,1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=2)
-
-# ------ plot after ----- #
-le = np.copy(ot.e_predict)
-ce = [utils.color_light_blue, utils.color_light_red]
-ce = [ce[label] for index,label in np.ndenumerate(le)]
-cp = [utils.color_dark_blue, utils.color_red]
-cp = [cp[label] for index,label in np.ndenumerate(ot.p_label)]
-plt.subplot(236); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('after')
-plt.scatter(ot.e_coor[:,0], ot.e_coor[:,1], marker='.', color=ce, zorder=2, s=0.5)
-plt.scatter(p_coor_after[:,0], p_coor_after[:,1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=3)
+plt.subplot(133); plt.xlim(-1, 1); plt.ylim(-1, 1); plt.grid(True); plt.title('after')
+plt.scatter(ot.data_e[:, 0], ot.data_e[:, 1], marker='.', color=utils.color_light_grey, zorder=2, s=0.5)
+color = plt.get_cmap('viridis')
+plt.scatter(ot.data_e[:, 0], ot.data_e[:, 1], s=1, marker='o', color=color(ot.e_idx / (N - 1)))
+plt.scatter(X_p_after[:, 0], X_p_after[:, 1], marker='o', facecolors='none', linewidth=2, color=utils.color_red, zorder=3)
 
 # ---- plot and save ---- #
 plt.tight_layout(pad=1.0, w_pad=1.5, h_pad=0.5)
