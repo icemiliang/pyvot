@@ -16,32 +16,38 @@ convex hulls.
 For now, PyVot assumes that the range in each dimension is (-1,1).
 """
 
-from vot import VotAP
+from vot_pytorch import VotAP
 import matplotlib.pyplot as plt
 import matplotlib.collections as mc
 import utils
 import time
 import numpy as np
 from scipy.spatial import Delaunay
-
+import torch
 
 # ----- set up ot ------ #
 mean = [0, 0]
 cov = [[.08, 0], [0, .08]]
 N = 50
 data = np.random.multivariate_normal(mean, cov, N).clip(-0.99, 0.99)
+
 # data = np.loadtxt('data/p.csv', delimiter=',')
-# ot = VotAP(data[:, 1:], ratio=1000)
+data = torch.from_numpy(data).float().to('cpu')
 ot = VotAP(data, ratio=1000)
 
 # ----- map ------ #
 tick = time.clock()
-# ot.map(sampling='unisquare', plot_filename='area_preserve.gif', max_iter=300)
+# ot.map(sampling='unisquare', plot_filename='area_preserve_pytorch.gif', max_iter=300)
 ot.map(sampling='unisquare', max_iter=300)
 tock = time.clock()
 print('total time: {0:.4f}'.format(tock-tick))
 # TODO Area preserving usually requires a pre-defined boundary. \
 #  That is beyond the scope of the demo.
+
+ot.data_e = ot.data_e.cpu().numpy()
+ot.e_idx = ot.e_idx.cpu().numpy()
+ot.data_p_original = ot.data_p_original.cpu().numpy()
+ot.data_p = ot.data_p.cpu().numpy()
 
 # ----- plot before ----- #
 X_p_before = np.copy(ot.data_p_original)
