@@ -1,7 +1,7 @@
 # PyVot
 # Variational Wasserstein Clustering
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: May 15th 2019
+# Date: May 19th 2019
 
 
 import warnings

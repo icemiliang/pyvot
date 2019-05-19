@@ -1,15 +1,12 @@
 # PyVot
 # Variational Wasserstein Clustering
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: May 15th 2019
+# Date: May 19th 2019
 
 
-from skimage import transform as tf
 import imageio
 import utils
 import torch
-import numpy as np
-from scipy.spatial.distance import cdist
 
 
 class VotAP:
@@ -18,6 +15,25 @@ class VotAP:
     # e are the area samples
 
     def __init__(self, data, label=None, mass_p=None, thres=1e-5, ratio=100, verbose=True, device='cpu'):
+        """ set up parameters
+        Args:
+            thres float: threshold to break loops
+            ratio float: the ratio of num of e to the num of p
+            data pytorch floattensor: initial coordinates of p
+            label pytorch inttensor: labels of p
+            mass_p pytorch floattensor: weights of p
+
+        Atts:
+            thres    float: Threshold to break loops
+            lr       float: Learning rate
+            ratio    float: ratio of num_e to num_p
+            verbose   bool: console output verbose flag
+            num_p      int: number of p
+            X_p    pytorch floattensor: coordinates of p
+            y_p    pytorch inttensor: labels of p
+            mass_p pytorch floattensor: mass of clusters of p
+
+        """
         if not isinstance(data, torch.Tensor):
             raise Exception('input is not a pytorch tensor')
         self.data_p = data
@@ -47,6 +63,32 @@ class VotAP:
             "Input output boundary (-1, 1)."
 
     def map(self, sampling='unisquare', plot_filename=None, beta=0.9, max_iter=1000, lr=0.2, lr_decay=100):
+        """ map p into the area
+
+        Args:
+            sampling string: sampling area
+            plot_filename string: filename of the gif image
+            beta float: gradient descent momentum
+            max_iter int: maximum number of iteration
+            lr float: learning rate
+            lr_decay float: learning rate decay
+
+        Atts:
+            num_p int: number of p
+            num_e int: number of e
+            dim int: dimentionality
+            data_e pytorch floattensor: coordinates of e
+            label_e pytorch inttensor: label of e
+            base_dist pytorch floattensor: pairwise distance between p and e
+            h  pytorch floattensor: VOT optimizer, "height vector
+            dh  pytorch floattensor: gradient of h
+            max_change pytorch floattensor: maximum gradient change
+            max_change_pct pytorch floattensor: relative maximum gradient change
+            imgs list: list of plots to show mapping progress
+            e_idx pytorch inttensor: p index of every e
+
+        :return:
+        """
         num_p = self.data_p.shape[0]
         num_e = self.ratio * num_p
         dim = self.data_p.shape[1]
