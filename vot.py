@@ -402,7 +402,7 @@ class VotAP:
             self.mass_p = np.bincount(self.e_idx, minlength=num_p) / num_e
 
             # labels come from centroids
-            if self.has_label:
+            if self.label_p:
                 self.label_e = self.label_p[self.e_idx]
 
             # gradient descent with momentum and decay

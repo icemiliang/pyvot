@@ -50,7 +50,7 @@ def fig2img(fig):
     return Image.frombytes("RGBA", (w, h), buf.tostring())
 
 
-def random_sample(num, dim, sampling='unisquare', has_label=True):
+def random_sample(num, dim, sampling='unisquare'):
     """ randomly sample the area with dirac measures
 
     """
@@ -71,10 +71,8 @@ def random_sample(num, dim, sampling='unisquare', has_label=True):
         cov = [[.1, 0], [0, .1]]
         data = np.random.multivariate_normal(mean, cov, num).clip(-0.99, 0.99)
 
-    if has_label:
-        label = -np.ones(num).astype(int)
-        return data, label
-    return data, None
+    label = -np.ones(num).astype(int)
+    return data, label
 
 
 def plot_map(data, idx, color_map='viridis'):

@@ -31,9 +31,10 @@ cov = [[.08, 0], [0, .08]]
 N = 50
 data = np.random.multivariate_normal(mean, cov, N).clip(-0.99, 0.99)
 
-# data = np.loadtxt('data/p.csv', delimiter=',')
-data = torch.from_numpy(data).float().to('cpu')
+device = 'cpu'
+data = torch.from_numpy(data).float().to(device)
 ot = VotAP(data, ratio=1000)
+# ot = VotAP(data[:,1:], ratio=1000)
 
 # ----- map ------ #
 tick = time.clock()
@@ -41,8 +42,11 @@ tick = time.clock()
 ot.map(sampling='unisquare', max_iter=300)
 tock = time.clock()
 print('total time: {0:.4f}'.format(tock-tick))
-# TODO Area preserving usually requires a pre-defined boundary. \
-#  That is beyond the scope of the demo.
+# TODO Area preserving usually requires a pre-defined boundary.
+#  That is beyond the scope of the demo. Missing the boundary condition,
+#  this area-preserving demo might not produce accurate maps near the boundary.
+#  This can be visualized by drawing the Voronoi diagram or Delaunay triangulation
+#  and one might see slight intersection near the boundary centroids in some cases.
 
 ot.data_e = ot.data_e.cpu().numpy()
 ot.e_idx = ot.e_idx.cpu().numpy()
@@ -76,4 +80,3 @@ plt.scatter(X_p_after[:, 0], X_p_after[:, 1], marker='o', facecolors='none', lin
 plt.tight_layout(pad=1.0, w_pad=1.5, h_pad=0.5)
 # plt.savefig("ot_area_preserve.png")
 plt.show()
-# TODO plot Voronoi diagram

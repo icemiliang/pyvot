@@ -8,6 +8,8 @@ from skimage import transform as tf
 import imageio
 import utils
 import torch
+import numpy as np
+from scipy.spatial.distance import cdist
 
 
 class VotAP:
@@ -48,17 +50,18 @@ class VotAP:
         num_p = self.data_p.shape[0]
         num_e = self.ratio * num_p
         dim = self.data_p.shape[1]
-        self.data_e, _ = utils.random_sample(num_e, dim, sampling=sampling, has_label=self.label_p)
+        self.data_e, _ = utils.random_sample(num_e, dim, sampling=sampling)
         self.data_e = torch.from_numpy(self.data_e).float().to(self.device)
 
-        base_dist = torch.cdist(self.data_p, self.data_e, p=2)
+        base_dist = torch.cdist(self.data_p, self.data_e, p=2)**2
         self.e_idx = torch.argmin(base_dist, dim=0)
         h = torch.zeros(num_p).float().to(self.device)
         imgs = []
-        dh = 0
+        dh = torch.zeros(num_p).float().to(self.device)
 
         for i in range(max_iter):
             dist = base_dist - h[:, None]
+
             # find nearest p for each e
             self.e_idx = torch.argmin(dist, dim=0)
 
@@ -75,7 +78,7 @@ class VotAP:
                 lr *= 0.9
             h -= lr * dh
 
-            # check if converge and return max derivative
+            # check if converge
             max_change = torch.max(dh / self.mass_p)
             if max_change.numel() > 1:
                 max_change = max_change[0]
@@ -97,7 +100,7 @@ class VotAP:
         bincount = torch.bincount(self.e_idx).float()
         if 0 in bincount:
             print('Empty cluster found, optimal transport did not converge\nTry larger lr or max_iter')
-            return
+            # return
         for i in range(self.data_p.shape[1]):
             # update p to the centroid of their correspondences
             self.data_p[:, i] = torch.bincount(self.e_idx, weights=self.data_e[:, i], minlength=num_p).float() / bincount
