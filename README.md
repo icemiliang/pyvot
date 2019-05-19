@@ -17,6 +17,7 @@ is available in [test/](test/).
 * SciPy >= 1.1.0 (for regularization)
 * scikit-image >= 0.14.1 (for geometric transformation)
 * Matplotlib >= 3.0.2 (for demo)
+* PyTorch >= 1.1.0 (only for the pytorch version)
 
 ## References
 #### Citing the package
