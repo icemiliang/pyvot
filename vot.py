@@ -1,7 +1,7 @@
 # PyVot
 # Variational Wasserstein Clustering
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: May 15th 2019
+# Date: May 19th 2019
 
 
 import warnings
@@ -114,8 +114,8 @@ class Vot:
         for i in range(max_iter):
             # update dist matrix
             cost = cost_base - h[:, np.newaxis]
-            # find nearest p for each e and add mass to p
-            self.e_idx = np.argmin(cost, axis = 0)
+            # find nearest p for each e
+            self.e_idx = np.argmin(cost, axis=0)
             # labels come from centroids
             self.e_predict = self.p_label[self.e_idx]
             self.p_mass = np.bincount(self.e_idx, weights=self.e_mass, minlength=self.num_p)
@@ -395,14 +395,14 @@ class VotAP:
 
         for i in range(max_iter):
             dist = base_dist - h[:, None]
-            # find nearest p for each e and add mass to p
+            # find nearest p for each e
             self.e_idx = np.argmin(dist, axis=0)
 
             # calculate total mass of each cell
             self.mass_p = np.bincount(self.e_idx, minlength=num_p) / num_e
 
             # labels come from centroids
-            if self.has_label:
+            if self.label_p:
                 self.label_e = self.label_p[self.e_idx]
 
             # gradient descent with momentum and decay

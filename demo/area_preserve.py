@@ -27,7 +27,7 @@ from scipy.spatial import Delaunay
 
 # ----- set up ot ------ #
 mean = [0, 0]
-cov = [[.08, 0], [0, .04]]
+cov = [[.08, 0], [0, .08]]
 N = 50
 data = np.random.multivariate_normal(mean, cov, N).clip(-0.99, 0.99)
 ot = VotAP(data, ratio=1000)
@@ -38,8 +38,11 @@ tick = time.clock()
 ot.map(sampling='unisquare', max_iter=300)
 tock = time.clock()
 print('total time: {0:.4f}'.format(tock-tick))
-# TODO Area preserving usually requires a pre-defined boundary. \
-#  That is beyond the scope of the demo.
+# TODO Area preserving usually requires a pre-defined boundary.
+#  That is beyond the scope of the demo. Missing the boundary condition,
+#  this area-preserving demo might not produce accurate maps near the boundary.
+#  This can be visualized by drawing the Voronoi diagram or Delaunay triangulation
+#  and one may see slight intersection near the boundary centroids.
 
 # ----- plot before ----- #
 X_p_before = np.copy(ot.data_p_original)
