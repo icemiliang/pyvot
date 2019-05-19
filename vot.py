@@ -30,28 +30,28 @@ class Vot:
         import_data : dump data into internal numpy arrays
         """
 
-        p_data = np.loadtxt(pfilename, delimiter=",")
-        e_data = np.loadtxt(efilename, delimiter=",")
+        data_p = np.loadtxt(pfilename, delimiter=",")
+        data_e = np.loadtxt(efilename, delimiter=",")
 
         if label and mass:
-            self.import_data(p_data[:, 2:], e_data[:, 2:],
-                             yp=p_data[:, 0], ye=e_data[:, 0],
-                             mass_p=p_data[:, 1], mass_e=e_data[:, 0])
+            self.import_data(data_p[:, 2:], data_e[:, 2:],
+                             yp=data_p[:, 0], ye=data_e[:, 0],
+                             mass_p=data_p[:, 1], mass_e=data_e[:, 0])
         elif label and not mass:
-            self.import_data(p_data[:, 1:], e_data[:, 1:],
-                             yp=p_data[:, 0], ye=e_data[:, 0])
+            self.import_data(data_p[:, 1:], data_e[:, 1:],
+                             yp=data_p[:, 0], ye=data_e[:, 0])
         elif not label and mass:
-            self.import_data(p_data[:, 1:], e_data[:, 1:],
-                             mass_p=p_data[:, 0], mass_e=e_data[:, 0])
+            self.import_data(data_p[:, 1:], data_e[:, 1:],
+                             mass_p=data_p[:, 0], mass_e=data_e[:, 0])
         else:
-            self.import_data(p_data, e_data)
+            self.import_data(data_p, data_e)
 
-    def import_data(self, Xp, Xe, yp=None, ye=None, mass_p=None, mass_e=None):
+    def import_data(self, data_p, data_e, yp=None, ye=None, mass_p=None, mass_e=None):
         """ import data from numpy arrays
 
         Args:
-            Xp np.ndarray(np,dim+): initial coordinates of p
-            Xe np.ndarray(ne,dim+): coordinates of e
+            data_p np.ndarray(np,dim+): initial coordinates of p
+            data_e np.ndarray(ne,dim+): coordinates of e
             yp np.ndarray(num_p,): labels of p
             ye np.ndarray(num_e,): initial labels of e
             mass_p np.ndarray(num_p,): weights of p
@@ -62,21 +62,21 @@ class Vot:
         import_data_file : import data from csv files
         """
 
-        self.num_p = np.size(Xp, 0)
-        self.num_e = np.size(Xe, 0)
+        self.num_p = np.size(data_p, 0)
+        self.num_e = np.size(data_e, 0)
 
-        self.p_label = yp.astype(int) if not yp is None else -np.ones(self.num_p).astype(int)
-        self.e_label = ye.astype(int) if not yp is None else -np.ones(self.num_e).astype(int)
+        self.label_p = yp.astype(int) if not yp is None else -np.ones(self.num_p).astype(int)
+        self.label_e = ye.astype(int) if not yp is None else -np.ones(self.num_e).astype(int)
 
         self.p_dirac = mass_p if not mass_p is None else np.ones(self.num_p)/self.num_p
         self.e_mass = mass_e if not mass_e is None else np.ones(self.num_e)/self.num_e
 
-        self.p_coor = Xp
-        self.e_coor = Xe
-        self.p_coor_original = np.copy(Xp)
+        self.data_p = data_p
+        self.data_e = data_e
+        self.data_p_original = np.copy(data_p)
 
-        # "p_mass" is the sum of its corresponding e's weights, its own weight is "p_dirac"
-        self.p_mass = np.zeros(self.num_p)
+        # "mass_p" is the sum of its corresponding e's weights, its own weight is "p_dirac"
+        self.mass_p = np.zeros(self.num_p)
 
         if abs(np.sum(self.p_dirac) - np.sum(self.e_mass)) > 1e-6:
             warnings.warn("Total mass of e does not equal to total mass of p")
@@ -94,12 +94,12 @@ class Vot:
         """
 
         for iter_p in range(max_iter_p):
-            cost_base = cdist(self.p_coor, self.e_coor, 'sqeuclidean')
-            self.update_map(cost_base, max_iter_h, lr=lr)
+            base_dist = cdist(self.data_p, self.data_e, 'sqeuclidean')
+            self.update_map(base_dist, max_iter_h, lr=lr)
             if self.update_p(iter_p, reg_type, reg):
                 break
 
-    def update_map(self, cost_base, max_iter, lr=0.2, beta=0.9, lr_decay=50):
+    def update_map(self, base_dist, max_iter, lr=0.2, beta=0.9, lr_decay=50):
         """ update each p to the centroids of its cluster
 
         Args:
@@ -113,17 +113,17 @@ class Vot:
         h = np.zeros(self.num_p)
         for i in range(max_iter):
             # update dist matrix
-            cost = cost_base - h[:, np.newaxis]
-            # find nearest p for each e
-            self.e_idx = np.argmin(cost, axis=0)
+            dist = base_dist - h[:, np.newaxis]
+            # find nearest p for each e and add mass to p
+            self.e_idx = np.argmin(dist, axis=0)
             # labels come from centroids
-            self.e_predict = self.p_label[self.e_idx]
-            self.p_mass = np.bincount(self.e_idx, weights=self.e_mass, minlength=self.num_p)
+            self.e_predict = self.label_p[self.e_idx]
+            self.mass_p = np.bincount(self.e_idx, weights=self.e_mass, minlength=self.num_p)
             # update gradient and h
-            dh = self.p_mass - self.p_dirac
+            dh = self.mass_p - self.p_dirac
 
             # gradient descent with momentum and decay
-            dh = beta * dh + (1-beta) * (self.p_mass - self.p_dirac)
+            dh = beta * dh + (1-beta) * (self.mass_p - self.p_dirac)
             if i != 0 and i % lr_decay == 0:
                 lr *= 0.9
             h -= lr * dh
@@ -133,7 +133,7 @@ class Vot:
             if isinstance(index, np.ndarray):
                 index = index[0]
             max_change = dh[index]
-            max_change_pct = max_change * 100 / self.p_mass[index]
+            max_change_pct = max_change * 100 / self.mass_p[index]
             if max_change_pct <= 1:
                 break
 
@@ -173,12 +173,12 @@ class Vot:
             print('Empty cluster found, optimal transport probably did not converge\n'
                   'Try larger lr or max_iter after checking the measures.')
             return False
-        for i in range(self.p_coor.shape[1]):
+        for i in range(self.data_p.shape[1]):
             # update p to the centroid of their correspondences
-            p_target = np.bincount(self.e_idx, weights=self.e_coor[:, i], minlength=self.num_p) / bincount
-            change_pct = np.amax(np.abs((self.p_coor[:, i] - p_target)/self.p_coor[:, i]))
+            p_target = np.bincount(self.e_idx, weights=self.data_e[:, i], minlength=self.num_p) / bincount
+            change_pct = np.amax(np.abs((self.data_p[:, i] - p_target) / self.data_p[:, i]))
             max_change_pct = max(max_change_pct, change_pct)
-            self.p_coor[:, i] = p_target
+            self.data_p[:, i] = p_target
         print("iter {0:d}: max centroid change {1:.2f}%".format(iter_p, 100 * max_change_pct))
         # return max p coor change
         return True if max_change_pct < 0.01 else False
@@ -220,10 +220,10 @@ class Vot:
 
             return np.sum((p - p0) ** 2.0) + reg * reg_term
 
-        if np.unique(self.p_label).size == 1:
+        if np.unique(self.label_p).size == 1:
             warnings.warn("All known samples belong to the same class")
 
-        p0 = np.zeros_like(self.p_coor)
+        p0 = np.zeros_like(self.data_p)
 
         max_change_pct = 0.0
         # update p to the centroid of its clustered e samples
@@ -235,15 +235,15 @@ class Vot:
             return False
         for i in range(p0.shape[1]):
             # update p to the centroid of their correspondences
-            p_target = np.bincount(self.e_idx, weights=self.e_coor[:, i], minlength=self.num_p) / bincount
-            change_pct = np.amax(np.abs((self.p_coor[:, i] - p_target)/self.p_coor[:, i]))
+            p_target = np.bincount(self.e_idx, weights=self.data_e[:, i], minlength=self.num_p) / bincount
+            change_pct = np.amax(np.abs((self.data_p[:, i] - p_target) / self.data_p[:, i]))
             max_change_pct = max(max_change_pct, change_pct)
             p0[:, i] = p_target
         print("iter {0:d}: max centroid change {1:.2f}%".format(iter_p, 100 * max_change_pct))
 
         # regularize
-        res = minimize(f, self.p_coor, method='BFGS', args=(p0, self.p_label, reg))
-        self.p_coor = res.x.reshape(p0.shape)
+        res = minimize(f, self.data_p, method='BFGS', args=(p0, self.label_p, reg))
+        self.data_p = res.x.reshape(p0.shape)
         # return max change
         return True if max_change_pct < 0.01 else False
 
@@ -275,9 +275,9 @@ class Vot:
             p = p.reshape(p0.shape)
             return np.sum((p-p0)**2.0) + reg * np.sum((p-pa)**2.0)
 
-        assert self.p_coor.shape[1] == 2, "dim has to be 2 for geometric transformation"
+        assert self.data_p.shape[1] == 2, "dim has to be 2 for geometric transformation"
 
-        p0 = np.zeros_like(self.p_coor)
+        p0 = np.zeros_like(self.data_p)
         max_change_pct = 0.0
         # update p to the centroid of its clustered e samples
         bincount = np.bincount(self.e_idx)
@@ -288,16 +288,16 @@ class Vot:
             return False
         for i in range(p0.shape[1]):
             # update p to the centroid of their correspondences
-            p_target = np.bincount(self.e_idx, weights=self.e_coor[:, i], minlength=self.num_p) / bincount
-            change_pct = np.amax(np.abs((self.p_coor[:, i] - p_target)/self.p_coor[:, i]))
+            p_target = np.bincount(self.e_idx, weights=self.data_e[:, i], minlength=self.num_p) / bincount
+            change_pct = np.amax(np.abs((self.data_p[:, i] - p_target) / self.data_p[:, i]))
             max_change_pct = max(max_change_pct, change_pct)
             p0[:, i] = p_target
         print("iter {0:d}: max centroid change {1:.2f}%".format(iter_p, 100 * max_change_pct))
         pa = np.zeros(p0.shape)
 
-        for idx, l in np.ndenumerate(np.unique(self.p_label)):
-            idx_p_label = self.p_label == l
-            p_sub = self.p_coor[idx_p_label, :]
+        for idx, l in np.ndenumerate(np.unique(self.label_p)):
+            idx_p_label = self.label_p == l
+            p_sub = self.data_p[idx_p_label, :]
             p0_sub = p0[idx_p_label, :]
             # TODO estimating a high-dimensional transformation?
             T = tf.EuclideanTransform()
@@ -306,8 +306,8 @@ class Vot:
             T.estimate(p_sub, p0_sub)
             pa[idx_p_label, :] = T(p_sub)
 
-        res = minimize(f, self.p_coor, method='BFGS', args=(p0, pa, reg))
-        self.p_coor = res.x.reshape(p0.shape)
+        res = minimize(f, self.data_p, method='BFGS', args=(p0, pa, reg))
+        self.data_p = res.x.reshape(p0.shape)
         # return max change
         return True if max_change_pct < 0.01 else False
 

@@ -38,17 +38,17 @@ print("running Wasserstein clustering...")
 ot.cluster(0, max_iter_p=5)  # 0: w/o regularization
 
 # ----- plot before ----- #
-p_coor_before = ot.p_coor_original
+p_coor_before = ot.data_p_original
 plt.figure(figsize=(12, 8))
 
 cp = [utils.color_blue, utils.color_red]
-cp = [cp[label] for _,label in np.ndenumerate(ot.p_label)]
+cp = [cp[label] for _,label in np.ndenumerate(ot.label_p)]
 plt.subplot(231); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('w/o reg before')
-plt.scatter(ot.e_coor[:,0], ot.e_coor[:,1], marker='.', color=utils.color_light_grey, zorder=2)
+plt.scatter(ot.data_e[:, 0], ot.data_e[:, 1], marker='.', color=utils.color_light_grey, zorder=2)
 plt.scatter(p_coor_before[:,0], p_coor_before[:,1], marker='o', color=cp, zorder=3)
 
 # ------ plot map ------- #
-p_coor_after = np.copy(ot.p_coor)
+p_coor_after = np.copy(ot.data_p)
 map = [[tuple(p1),tuple(p2)] for p1, p2 in zip(p_coor_before.tolist(), p_coor_after.tolist())]
 lines = mc.LineCollection(map, colors=utils.color_light_grey)
 fig232 = plt.subplot(232); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('w/o reg map')
@@ -61,9 +61,9 @@ le = np.copy(ot.e_predict)
 ce = [utils.color_light_blue, utils.color_light_red]
 ce = [ce[label] for _, label in np.ndenumerate(le)]
 cp = [utils.color_dark_blue, utils.color_red]
-cp = [cp[label] for _, label in np.ndenumerate(ot.p_label)]
+cp = [cp[label] for _, label in np.ndenumerate(ot.label_p)]
 plt.subplot(233); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('w/o reg after')
-plt.scatter(ot.e_coor[:,0], ot.e_coor[:,1], marker='.', color=ce, zorder=2)
+plt.scatter(ot.data_e[:, 0], ot.data_e[:, 1], marker='.', color=ce, zorder=2)
 plt.scatter(p_coor_after[:,0], p_coor_after[:,1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=3)
 
 # -------------------------------------- #
@@ -88,13 +88,13 @@ ot_reg.cluster(max_iter_p=1)
 
 # ----- plot before ----- #
 cp = [utils.color_blue, utils.color_red]
-cp = [cp[label] for _, label in np.ndenumerate(ot_reg.p_label)]
+cp = [cp[label] for _, label in np.ndenumerate(ot_reg.label_p)]
 plt.subplot(234); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('w/ reg before')
-plt.scatter(ot_reg.e_coor[:,0], ot_reg.e_coor[:,1], marker='.', color=utils.color_light_grey, zorder=2)
+plt.scatter(ot_reg.data_e[:, 0], ot_reg.data_e[:, 1], marker='.', color=utils.color_light_grey, zorder=2)
 plt.scatter(p_coor_before[:,0], p_coor_before[:,1], marker='o', color=cp, zorder=3)
 
 # ------- plot map ------ #
-p_coor_after = np.copy(ot_reg.p_coor)
+p_coor_after = np.copy(ot_reg.data_p)
 map = [[tuple(p1),tuple(p2)] for p1,p2 in zip(p_coor_before.tolist(), p_coor_after.tolist())]
 lines = mc.LineCollection(map, colors=utils.color_light_grey)
 fig235 = plt.subplot(235); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('w/ reg map')
@@ -107,9 +107,9 @@ le = np.copy(ot_reg.e_predict)
 ce = [utils.color_light_blue, utils.color_light_red]
 ce = [ce[label] for _, label in np.ndenumerate(le)]
 cp = [utils.color_dark_blue, utils.color_red]
-cp = [cp[label] for _, label in np.ndenumerate(ot_reg.p_label)]
+cp = [cp[label] for _, label in np.ndenumerate(ot_reg.label_p)]
 plt.subplot(236); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('w/ reg after')
-plt.scatter(ot.e_coor[:,0], ot_reg.e_coor[:,1], marker='.', color=ce, zorder=2)
+plt.scatter(ot.data_e[:, 0], ot_reg.data_e[:, 1], marker='.', color=ce, zorder=2)
 plt.scatter(p_coor_after[:,0], p_coor_after[:,1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=3)
 
 # ---- plot and save ---- #
