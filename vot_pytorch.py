@@ -69,6 +69,8 @@ class Vot:
         self.p_dirac = mass_p if mass_p is not None else torch.ones(num_p).float().to(self.device) / num_p
         self.mass_e = mass_e if mass_e is not None else torch.ones(num_e).float().to(self.device) / num_e
 
+        self.h = torch.zeros(num_p).float().to(self.device)
+
         assert torch.max(self.data_p) <= 1 and torch.min(self.data_p) >= -1,\
             "Input output boundary (-1, 1)."
 
@@ -101,11 +103,12 @@ class Vot:
             bool: convergence or not, determined by max derivative change
         """
         num_p = self.data_p.shape[0]
-        h = torch.zeros(num_p).float().to(self.device)
+
+        self.h[self.h != 0] = 0
 
         for i in range(max_iter):
             # update dist matrix
-            dist = base_dist - h[:, None]
+            dist = base_dist - self.h[:, None]
             # find nearest p for each e and add mass to p
             self.e_idx = torch.argmin(dist, dim=0)
             # labels come from centroids
@@ -118,7 +121,7 @@ class Vot:
             dh = beta * dh + (1-beta) * (self.mass_p - self.p_dirac)
             if i != 0 and i % lr_decay == 0:
                 lr *= 0.9
-            h -= lr * dh
+            self.h -= lr * dh
 
             # check if converge
             max_change = torch.max(dh / self.mass_p)
@@ -180,7 +183,66 @@ class Vot:
         return True if max_change_pct < 0.01 else False
 
     def update_p_reg_potential(self, iter_p, reg=0.01):
-        pass
+        """ update each p to the centroids of its cluster,
+            regularized by intra-class distances
+
+        Args:
+            iter_p int: index of the iteration of updating p
+            reg float: regularizer weight
+
+        Returns:
+            bool: convergence or not, determined by max p change
+        """
+
+        def f(p, p0, label=None, reg=0.01):
+            """ objective function incorporating labels
+
+            Args:
+                p  np.array(np,dim):   p
+                p0 np.array(np,dim):  centroids of e
+                label np.array(np,): labels of p
+                reg float: regularizer weight
+
+            Returns:
+                float: f = sum(|p-p0|^2) + reg * sum(1(li == lj)*|pi-pj|^2)
+            """
+
+            reg_term = 0.0
+            for l in torch.unique(label):
+                p_sub = p[label == l, :]
+                reg_term += torch.pow(torch.pdist(p_sub, p=2), 2).sum()
+
+            return torch.sum((p - p0) ** 2.0) + reg * reg_term
+
+        if torch.unique(self.label_p).size == 1:
+            warnings.warn("All known samples belong to the same class")
+
+        p0 = torch.zeros_like(self.data_p)
+        num_p = self.data_p.shape[0]
+        max_change_pct = 0.0
+        # update p to the centroid of its clustered e samples
+        bincount = torch.bincount(self.e_idx).float()
+        if 0 in bincount:
+            print('Empty cluster found, optimal transport probably did not converge\n'
+                  'Abort this round of updating'
+                  'Try larger lr or max_iter after checking the measures.')
+            return False
+        for i in range(p0.shape[1]):
+            # update p to the centroid of their correspondences
+            p_target = torch.bincount(self.e_idx, weights=self.data_e[:, i], minlength=num_p) / bincount
+            change_pct = torch.max(torch.abs((self.data_p[:, i] - p_target) / self.data_p[:, i]))
+            max_change_pct = max(max_change_pct, change_pct)
+            p0[:, i] = p_target
+        print("iter {0:d}: max centroid change {1:.2f}%".format(iter_p, 100 * max_change_pct))
+
+        loss = f(self.data_p, p0, self.label_p, reg)
+        # TODO set constants and variables and backprop
+
+        # regularize
+        res = minimize(f, self.data_p, method='BFGS', args=(p0, self.label_p, reg))
+        self.data_p = res.x.reshape(p0.shape)
+        # return max change
+        return True if max_change_pct < 0.01 else False
 
     def update_p_reg_transform(self, iter_p, reg=0.01):
         pass
@@ -272,7 +334,7 @@ class VotAP:
         self.data_e, _ = utils.random_sample(num_e, dim, sampling=sampling)
         self.data_e = torch.from_numpy(self.data_e).float().to(self.device)
 
-        base_dist = torch.cdist(self.data_p, self.data_e, p=2)**2
+        base_dist = torch.cdist(self.data_p, self.data_e, p=2).float().to(self.device)**2
         self.e_idx = torch.argmin(base_dist, dim=0)
         h = torch.zeros(num_p).float().to(self.device)
         imgs = []
