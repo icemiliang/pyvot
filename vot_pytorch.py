@@ -8,6 +8,7 @@ import imageio
 import utils
 import torch
 import warnings
+import torch.optim as optim
 
 
 class Vot:
@@ -41,6 +42,9 @@ class Vot:
         self.data_e = data_e.float().to(device)
         self.data_p_original = self.data_p.clone()
         self.data_e_original = self.data_e.clone()
+
+        self.data_p.requires_grad_(True)
+
         num_p = data_p.shape[0]
         num_e = data_e.shape[0]
 
@@ -48,8 +52,8 @@ class Vot:
             raise Exception('label_p is neither a numpy array not a pytorch tensor')
         if label_e is not None and not isinstance(label_e, torch.Tensor):
             raise Exception('label_e is neither a numpy array not a pytorch tensor')
-        self.label_p = label_p
-        self.label_e = label_e
+        self.label_p = label_p.int()
+        self.label_e = label_e.int()
 
         if mass_p is not None and not isinstance(mass_p, torch.Tensor):
             raise Exception('label_p is neither a numpy array not a pytorch tensor')
@@ -235,12 +239,16 @@ class Vot:
             p0[:, i] = p_target
         print("iter {0:d}: max centroid change {1:.2f}%".format(iter_p, 100 * max_change_pct))
 
-        loss = f(self.data_p, p0, self.label_p, reg)
         # TODO set constants and variables and backprop
 
         # regularize
-        res = minimize(f, self.data_p, method='BFGS', args=(p0, self.label_p, reg))
-        self.data_p = res.x.reshape(p0.shape)
+        optimizer = optim.SGD([self.data_p], lr=0.05)
+        for _ in range(10):
+            optimizer.zero_grad()
+            loss = f(self.data_p, p0, self.label_p, reg=0.1)
+            loss.backward()
+            optimizer.step()
+
         # return max change
         return True if max_change_pct < 0.01 else False
 
