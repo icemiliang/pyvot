@@ -25,45 +25,67 @@ import sklearn.datasets
 import matplotlib.pyplot as plt
 import matplotlib.collections as mc
 # import vot stuffs
-import vot
+from vot_pytorch import Vot
 import utils
+import torch
 
 
 # Generate data
-Ne = 5000
-Np = 100
-Xe, ye = sklearn.datasets.make_moons(n_samples=Ne, noise=0.05, random_state=1)
-Xp, yp = sklearn.datasets.make_moons(n_samples=Np, noise=0.05, random_state=1)
-Xp -= [0.5, 0.25]
-Xe -= [0.5, 0.25]
+num_e = 5000
+num_p = 100
+data_e, label_e = sklearn.datasets.make_moons(n_samples=num_e, noise=0.05, random_state=1)
+data_p, label_p = sklearn.datasets.make_moons(n_samples=num_p, noise=0.05, random_state=1)
+data_p = (data_p - [0.5, 0.25]) / 2
+data_e = (data_e - [0.5, 0.25]) / 2
+
+data_p = np.clip(data_p, -0.99, 0.99)
+data_e = np.clip(data_e, -0.99, 0.99)
 
 theta = np.radians(45)
 c, s = np.cos(theta), np.sin(theta)
 R = np.array(((c, -s), (s, c)))
-Xp = Xp.dot(R)
-yp = yp.transpose()
+data_p = data_p.dot(R)
+label_p = label_p.transpose()
 
-Xp1 = Xp.copy()
-Xe1 = Xe.copy()
+data_p1 = data_p.copy()
+data_e1 = data_e.copy()
 
 # -------------------------------------- #
 # --------- w/o regularization --------- #
 # -------------------------------------- #
 
 # ------- run WM -------- #
-ot = vot.Vot()
-# ot.import_data_from_file('data/p.csv','data/e.csv')
-ot.import_data(Xp, Xe, yp=yp, ye=ye)
+use_gpu = False
+if use_gpu and torch.cuda.is_available():
+    device = 'cuda:0'
+else:
+    device = 'cpu'
+data_p = torch.from_numpy(data_p)
+data_e = torch.from_numpy(data_e)
+label_p = torch.from_numpy(label_p)
+label_e = torch.from_numpy(label_e)
+
+ot = Vot(data_p=data_p, data_e=data_e,
+         label_p=label_p, label_e=label_e,
+         device=device, verbose=False)
 print("running Wasserstein clustering...")
 tick = time.time()
-ot.cluster(0, max_iter_p=5)  # 0: w/o regularization
+ot.cluster(0, max_iter_h=3000, max_iter_p=1)  # 0: w/o regularization
 tock = time.time()
-print("total running time : {} seconds".format(tock-tick))
+print('total time: {0:.4f}'.format(tock-tick))
 
 # ----- plot before ----- #
+ot.data_p = ot.data_p.detach().cpu().numpy()
+ot.data_e = ot.data_e.cpu().numpy()
+ot.data_p_original = ot.data_p_original.cpu().numpy()
+ot.data_e_original = ot.data_e_original.cpu().numpy()
+ot.label_p = ot.label_p.int().cpu().numpy()
+ot.label_e = ot.label_e.int().cpu().numpy()
+ot.e_predict = ot.e_predict.int().cpu().numpy()
+
 p_coor_before = ot.data_p_original
 plt.figure(figsize=(12, 7))
-xmin, xmax, ymin, ymax = -2.0, 2.0, -1.5, 1.5
+xmin, xmax, ymin, ymax = -1.0, 1.0, -1.0, 1.0
 
 cp = [utils.color_blue, utils.color_red]
 cp = [cp[label] for _, label in np.ndenumerate(ot.label_p)]
@@ -90,16 +112,20 @@ plt.subplot(233); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); pl
 plt.scatter(ot.data_e[:, 0], ot.data_e[:, 1], marker='.', color=ce, zorder=2)
 plt.scatter(p_coor_after[:, 0], p_coor_after[:, 1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=3)
 
+
 # -------------------------------------- #
 # --------- w/ regularization ---------- #
 # -------------------------------------- #
 
 # ------- run RWM ------- #
-ot_reg = vot.Vot()
-ot_reg.import_data(Xp1, Xe1, yp=yp, ye=ye)
+data_p1 = torch.from_numpy(data_p1)
+data_e1 = torch.from_numpy(data_e1)
+ot_reg = Vot(data_p=data_p1, data_e=data_e1,
+             label_p=label_p, label_e=label_e,
+             device=device, verbose=False)
 print("running regularized Wasserstein clustering...")
 tick = time.time()
-ot_reg.cluster(reg_type='transform', reg=0.01, max_iter_p=5)
+ot_reg.cluster(reg_type='transform', reg=100, max_iter_h=3000, max_iter_p=1)
 tock = time.time()
 print("total running time : {} seconds".format(tock-tick))
 
@@ -107,9 +133,19 @@ print("total running time : {} seconds".format(tock-tick))
 # This almost does not change the correspondence but can give better positions.
 # This is optional.
 print("[optional] distribute centroids into target domain...")
-ot_reg.cluster(max_iter_p=1)
+# ot_reg.cluster(max_iter_p=1)
+
 
 # ----- plot before ----- #
+ot_reg.data_p = ot_reg.data_p.detach().cpu().numpy()
+ot_reg.data_e = ot_reg.data_e.cpu().numpy()
+ot_reg.data_p_original = ot_reg.data_p_original.cpu().numpy()
+ot_reg.data_e_original = ot_reg.data_e_original.cpu().numpy()
+ot_reg.label_p = ot_reg.label_p.int().cpu().numpy()
+ot_reg.label_e = ot_reg.label_e.int().cpu().numpy()
+ot_reg.e_predict = ot_reg.e_predict.int().cpu().numpy()
+
+
 cp = [utils.color_blue, utils.color_red]
 cp = [cp[label] for _, label in np.ndenumerate(ot_reg.label_p)]
 plt.subplot(234); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); plt.title('w/ reg before')

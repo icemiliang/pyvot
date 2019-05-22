@@ -7,6 +7,7 @@ import numpy as np
 from PIL import Image
 import warnings
 import matplotlib.pyplot as plt
+import torch
 
 
 color_blue = [0.12, 0.56, 1]
@@ -87,3 +88,81 @@ def plot_map(data, idx, color_map='viridis'):
     plt.title('Area-preserving mapping')
     plt.scatter(data[:, 0], data[:, 1], s=1, marker='o', color=color(idx))
     return fig
+
+
+def rigid_transform_3d_pytorch(p1, p2):
+    assert len(p1) == len(p2)
+
+    center_p1 = torch.mean(p1, dim=0, keepdim=True)
+    center_p2 = torch.mean(p2, dim=0, keepdim=True)
+
+    # centre the points
+    pp1 = p1 - center_p1
+    pp2 = p2 - center_p2
+
+    # dot is matrix multiplication for array
+    H = torch.mm(pp1.t(), pp2)
+
+    U, S, Vt = torch.svd(H)
+
+    R = torch.mm(Vt.t(), U.t())
+
+    # reflection
+    if np.linalg.det(R.numpy()) < 0:
+        print("Reflection detected")
+        Vt[2, :] *= -1
+        R = torch.mm(Vt.t(), U.t())
+
+    t = torch.mm(-R, center_p1.t()) + center_p2.t()
+
+    return R, t
+
+
+def rigid_transform_3d(A, B):
+    assert len(A) == len(B)
+    if A.shape[1] == 2:
+        A = np.append(A, np.zeros((A.shape[0], 1)), 1)
+        B = np.append(B, np.zeros((B.shape[0], 1)), 1)
+    elif A.shape[1] != 3:
+        raise Exception("expected 2d or 3d points")
+
+    N = A.shape[0]
+
+    centroid_A = np.mean(A, axis=0, keepdims=True)
+    centroid_B = np.mean(B, axis=0, keepdims=True)
+
+    # centre the points
+    AA = A - np.tile(centroid_A, (N, 1))
+    BB = B - np.tile(centroid_B, (N, 1))
+
+    # dot is matrix multiplication for array
+    H = np.matmul(np.transpose(AA), BB)
+
+    U, S, Vt = np.linalg.svd(H)
+
+    R = Vt.T * U.T
+
+    # special reflection case
+    if np.linalg.det(R) < 0:
+        Vt[2, :] *= -1
+        R = Vt.T * U.T
+
+    t = np.matmul(-R, centroid_A.T) + centroid_B.T
+
+    return R, t
+
+
+def estimate_transform_target(A, B):
+    expand_dim = False
+    if A.shape[1] == 2:
+        A = np.append(A, np.zeros((A.shape[0], 1)), 1)
+        B = np.append(B, np.zeros((B.shape[0], 1)), 1)
+        expand_dim = True
+    elif A.shape[1] != 3:
+        raise Exception("expected 2d or 3d points")
+
+    R, t = rigid_transform_3d(A, B)
+    At = np.matmul(R, A.T) + t
+    if expand_dim:
+        At = At[:-1, :]
+    return At.T

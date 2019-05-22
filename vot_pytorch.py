@@ -9,7 +9,7 @@ import utils
 import torch
 import warnings
 import torch.optim as optim
-
+import numpy as np
 
 class Vot:
     """ variational optimal transportation """
@@ -49,14 +49,14 @@ class Vot:
         num_e = data_e.shape[0]
 
         if label_p is not None and not isinstance(label_p, torch.Tensor):
-            raise Exception('label_p is neither a numpy array not a pytorch tensor')
+            raise Exception('label_p is not a pytorch tensor')
         if label_e is not None and not isinstance(label_e, torch.Tensor):
-            raise Exception('label_e is neither a numpy array not a pytorch tensor')
+            raise Exception('label_e is not a pytorch tensor')
         self.label_p = label_p.int()
         self.label_e = label_e.int()
 
         if mass_p is not None and not isinstance(mass_p, torch.Tensor):
-            raise Exception('label_p is neither a numpy array not a pytorch tensor')
+            raise Exception('label_p is not a pytorch tensor')
         if mass_p is not None:
             self.p_dirac = mass_p
         else:
@@ -239,10 +239,8 @@ class Vot:
             p0[:, i] = p_target
         print("iter {0:d}: max centroid change {1:.2f}%".format(iter_p, 100 * max_change_pct))
 
-        # TODO set constants and variables and backprop
-
         # regularize
-        optimizer = optim.SGD([self.data_p], lr=0.05)
+        optimizer = optim.Adam([self.data_p], lr=0.05)
         for _ in range(10):
             optimizer.zero_grad()
             loss = f(self.data_p, p0, self.label_p, reg=0.1)
@@ -253,7 +251,65 @@ class Vot:
         return True if max_change_pct < 0.01 else False
 
     def update_p_reg_transform(self, iter_p, reg=0.01):
-        pass
+        """ update each p to the centroids of its cluster,
+            regularized by intra-class distances
+
+        Args:
+            iter_p int: index of the iteration of updating p
+            reg float: regularizer weight
+
+        Returns:
+            bool: convergence or not, determined by max p change
+        """
+        # TODO transformation for each class?
+        def f(p, p0, pt, label=None, reg=0.01):
+            """ objective function incorporating labels
+
+            Args:
+                p  np.array(np,dim):   p
+                p0 np.array(np,dim):  centroids of e
+                label np.array(np,): labels of p
+                reg float: regularizer weight
+
+            Returns:
+                float: f = sum(|p-p0|^2) + reg * sum(1(li == lj)*|pi-pj|^2)
+            """
+
+            return torch.mean((p - p0) ** 2) + reg * torch.mean((p - pt) ** 2)
+            # return torch.mean((p - p0) ** 2)
+
+        p0 = torch.zeros_like(self.data_p)
+        num_p = self.data_p.shape[0]
+        max_change_pct = 0.0
+        # update p to the centroid of its clustered e samples
+        bincount = torch.bincount(self.e_idx).float()
+        if 0 in bincount:
+            print('Empty cluster found, optimal transport probably did not converge\n'
+                  'Aborting this round of updating'
+                  'Try larger lr or max_iter after checking the measures.')
+            return False
+        # update p to the centroid of their correspondences
+        for i in range(p0.shape[1]):
+            p_target = torch.bincount(self.e_idx, weights=self.data_e[:, i], minlength=num_p) / bincount
+            change_pct = torch.max(torch.abs((self.data_p[:, i] - p_target) / self.data_p[:, i]))
+            max_change_pct = max(max_change_pct, change_pct)
+            p0[:, i] = p_target
+        print("iter {0:d}: max centroid change {1:.2f}%".format(iter_p, 100 * max_change_pct))
+
+        pt = self.data_p.clone().detach().cpu().numpy()
+        pt = utils.estimate_transform_target(pt, p0.cpu().numpy())
+        pt = torch.from_numpy(pt).float().to(self.device)
+
+        # regularize
+        optimizer = optim.Adam([self.data_p], lr=0.05)
+        for _ in range(100):
+            optimizer.zero_grad()
+            loss = f(self.data_p, p0, pt, self.label_p, reg=reg)
+            loss.backward()
+            optimizer.step()
+
+        # return max change
+        return True if max_change_pct < 0.01 else False
 
 
 class VotAP:
