@@ -70,7 +70,7 @@ ot = Vot(data_p=data_p, data_e=data_e,
          device=device, verbose=False)
 print("running Wasserstein clustering...")
 tick = time.time()
-ot.cluster(0, max_iter_h=3000, max_iter_p=1)  # 0: w/o regularization
+ot.cluster(0, max_iter_h=3000, max_iter_p=5)  # 0: w/o regularization
 tock = time.time()
 print('total time: {0:.4f}'.format(tock-tick))
 
@@ -125,7 +125,7 @@ ot_reg = Vot(data_p=data_p1, data_e=data_e1,
              device=device, verbose=False)
 print("running regularized Wasserstein clustering...")
 tick = time.time()
-ot_reg.cluster(reg_type='transform', reg=100, max_iter_h=3000, max_iter_p=1)
+ot_reg.cluster(reg_type='transform', reg=100, max_iter_h=3000, max_iter_p=5)
 tock = time.time()
 print("total running time : {} seconds".format(tock-tick))
 
@@ -133,7 +133,7 @@ print("total running time : {} seconds".format(tock-tick))
 # This almost does not change the correspondence but can give better positions.
 # This is optional.
 print("[optional] distribute centroids into target domain...")
-# ot_reg.cluster(max_iter_p=1)
+ot_reg.cluster(0, max_iter_p=1)
 
 
 # ----- plot before ----- #

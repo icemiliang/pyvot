@@ -296,9 +296,12 @@ class Vot:
             p0[:, i] = p_target
         print("iter {0:d}: max centroid change {1:.2f}%".format(iter_p, 100 * max_change_pct))
 
-        pt = self.data_p.clone().detach().cpu().numpy()
-        pt = utils.estimate_transform_target(pt, p0.cpu().numpy())
-        pt = torch.from_numpy(pt).float().to(self.device)
+        # pt = self.data_p.clone().detach().cpu().numpy()
+        # pt = utils.estimate_transform_target_pytorch(pt, p0.cpu().numpy())
+        # pt = torch.from_numpy(pt).float().to(self.device)
+
+        pt = self.data_p.clone().detach()
+        pt = utils.estimate_transform_target_pytorch(pt, p0)
 
         # regularize
         optimizer = optim.Adam([self.data_p], lr=0.05)

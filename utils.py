@@ -91,20 +91,14 @@ def plot_map(data, idx, color_map='viridis'):
 
 
 def rigid_transform_3d_pytorch(p1, p2):
-    assert len(p1) == len(p2)
-
     center_p1 = torch.mean(p1, dim=0, keepdim=True)
     center_p2 = torch.mean(p2, dim=0, keepdim=True)
 
-    # centre the points
     pp1 = p1 - center_p1
     pp2 = p2 - center_p2
 
-    # dot is matrix multiplication for array
     H = torch.mm(pp1.t(), pp2)
-
     U, S, Vt = torch.svd(H)
-
     R = torch.mm(Vt.t(), U.t())
 
     # reflection
@@ -118,51 +112,58 @@ def rigid_transform_3d_pytorch(p1, p2):
     return R, t
 
 
-def rigid_transform_3d(A, B):
-    assert len(A) == len(B)
-    if A.shape[1] == 2:
-        A = np.append(A, np.zeros((A.shape[0], 1)), 1)
-        B = np.append(B, np.zeros((B.shape[0], 1)), 1)
-    elif A.shape[1] != 3:
-        raise Exception("expected 2d or 3d points")
+def rigid_transform_3d(p1, p2):
+    center_p1 = np.mean(p1, axis=0, keepdims=True)
+    center_p2 = np.mean(p2, axis=0, keepdims=True)
 
-    N = A.shape[0]
+    pp1 = p1 - center_p1
+    pp2 = p2 - center_p2
 
-    centroid_A = np.mean(A, axis=0, keepdims=True)
-    centroid_B = np.mean(B, axis=0, keepdims=True)
-
-    # centre the points
-    AA = A - np.tile(centroid_A, (N, 1))
-    BB = B - np.tile(centroid_B, (N, 1))
-
-    # dot is matrix multiplication for array
-    H = np.matmul(np.transpose(AA), BB)
+    H = np.matmul(pp1.T, pp2)
 
     U, S, Vt = np.linalg.svd(H)
 
-    R = Vt.T * U.T
+    R = np.matmul(Vt.T, U.T)
 
     # special reflection case
     if np.linalg.det(R) < 0:
         Vt[2, :] *= -1
-        R = Vt.T * U.T
+        R = np.matmul(Vt.T, U.T)
 
-    t = np.matmul(-R, centroid_A.T) + centroid_B.T
+    t = np.matmul(-R, center_p1.T) + center_p2.T
 
     return R, t
 
 
-def estimate_transform_target(A, B):
+def estimate_transform_target(p1, p2):
+    assert len(p1) == len(p2)
     expand_dim = False
-    if A.shape[1] == 2:
-        A = np.append(A, np.zeros((A.shape[0], 1)), 1)
-        B = np.append(B, np.zeros((B.shape[0], 1)), 1)
+    if p1.shape[1] == 2:
+        p1 = np.append(p1, np.zeros((p1.shape[0], 1)), 1)
+        p2 = np.append(p2, np.zeros((p2.shape[0], 1)), 1)
         expand_dim = True
-    elif A.shape[1] != 3:
+    elif p1.shape[1] != 3:
         raise Exception("expected 2d or 3d points")
 
-    R, t = rigid_transform_3d(A, B)
-    At = np.matmul(R, A.T) + t
+    R, t = rigid_transform_3d(p1, p2)
+    At = np.matmul(R, p1.T) + t
     if expand_dim:
         At = At[:-1, :]
     return At.T
+
+
+def estimate_transform_target_pytorch(p1, p2):
+    assert len(p1) == len(p2)
+    expand_dim = False
+    if p1.shape[1] == 2:
+        p1 = torch.cat((p1, torch.zeros((p1.shape[0], 1))), dim=1)
+        p2 = torch.cat((p2, torch.zeros((p2.shape[0], 1))), dim=1)
+        expand_dim = True
+    elif p1.shape[1] != 3:
+        raise Exception("expected 2d or 3d points")
+
+    R, t = rigid_transform_3d_pytorch(p1, p2)
+    At = torch.mm(R, p1.t()) + t
+    if expand_dim:
+        At = At[:-1, :]
+    return At.t()
