@@ -1,6 +1,6 @@
 # Area Preserving via Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: May 15th 2019
+# Date: May 30th 2019
 
 
 """

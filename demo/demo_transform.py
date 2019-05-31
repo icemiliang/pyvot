@@ -1,6 +1,6 @@
 # Regularized Wasserstein Means (RWM)
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: MArch 6th 2019
+# Date: March 6th 2019
 
 """
 ===========================================
