@@ -102,7 +102,7 @@ def rigid_transform_3d_pytorch(p1, p2):
     R = torch.mm(Vt.t(), U.t())
 
     # reflection
-    if np.linalg.det(R.numpy()) < 0:
+    if np.linalg.det(R.cpu().numpy()) < 0:
         print("Reflection detected")
         Vt[2, :] *= -1
         R = torch.mm(Vt.t(), U.t())
@@ -156,8 +156,8 @@ def estimate_transform_target_pytorch(p1, p2):
     assert len(p1) == len(p2)
     expand_dim = False
     if p1.shape[1] == 2:
-        p1 = torch.cat((p1, torch.zeros((p1.shape[0], 1))), dim=1)
-        p2 = torch.cat((p2, torch.zeros((p2.shape[0], 1))), dim=1)
+        p1 = torch.cat((p1, torch.zeros((p1.shape[0], 1)).float().to(p1.device)), dim=1)
+        p2 = torch.cat((p2, torch.zeros((p2.shape[0], 1)).float().to(p1.device)), dim=1)
         expand_dim = True
     elif p1.shape[1] != 3:
         raise Exception("expected 2d or 3d points")
