@@ -31,9 +31,13 @@ cov = [[.08, 0], [0, .08]]
 N = 50
 data = np.random.multivariate_normal(mean, cov, N).clip(-0.99, 0.99)
 
-device = 'cpu'
+use_gpu = False
+if use_gpu and torch.cuda.is_available():
+    device = 'cuda:0'
+else:
+    device = 'cpu'
 data = torch.from_numpy(data).float().to(device)
-ot = VotAP(data, ratio=1000)
+ot = VotAP(data, ratio=1000, device=device)
 # ot = VotAP(data[:,1:], ratio=1000)
 
 # ----- map ------ #

@@ -7,6 +7,7 @@ import numpy as np
 from PIL import Image
 import warnings
 import matplotlib.pyplot as plt
+import torch
 
 
 color_blue = [0.12, 0.56, 1]
@@ -87,3 +88,82 @@ def plot_map(data, idx, color_map='viridis'):
     plt.title('Area-preserving mapping')
     plt.scatter(data[:, 0], data[:, 1], s=1, marker='o', color=color(idx))
     return fig
+
+
+def rigid_transform_3d_pytorch(p1, p2):
+    center_p1 = torch.mean(p1, dim=0, keepdim=True)
+    center_p2 = torch.mean(p2, dim=0, keepdim=True)
+
+    pp1 = p1 - center_p1
+    pp2 = p2 - center_p2
+
+    H = torch.mm(pp1.t(), pp2)
+    U, S, Vt = torch.svd(H)
+    R = torch.mm(Vt.t(), U.t())
+
+    # reflection
+    if np.linalg.det(R.cpu().numpy()) < 0:
+        print("Reflection detected")
+        Vt[2, :] *= -1
+        R = torch.mm(Vt.t(), U.t())
+
+    t = torch.mm(-R, center_p1.t()) + center_p2.t()
+
+    return R, t
+
+
+def rigid_transform_3d(p1, p2):
+    center_p1 = np.mean(p1, axis=0, keepdims=True)
+    center_p2 = np.mean(p2, axis=0, keepdims=True)
+
+    pp1 = p1 - center_p1
+    pp2 = p2 - center_p2
+
+    H = np.matmul(pp1.T, pp2)
+
+    U, S, Vt = np.linalg.svd(H)
+
+    R = np.matmul(Vt.T, U.T)
+
+    # special reflection case
+    if np.linalg.det(R) < 0:
+        Vt[2, :] *= -1
+        R = np.matmul(Vt.T, U.T)
+
+    t = np.matmul(-R, center_p1.T) + center_p2.T
+
+    return R, t
+
+
+def estimate_transform_target(p1, p2):
+    assert len(p1) == len(p2)
+    expand_dim = False
+    if p1.shape[1] == 2:
+        p1 = np.append(p1, np.zeros((p1.shape[0], 1)), 1)
+        p2 = np.append(p2, np.zeros((p2.shape[0], 1)), 1)
+        expand_dim = True
+    elif p1.shape[1] != 3:
+        raise Exception("expected 2d or 3d points")
+
+    R, t = rigid_transform_3d(p1, p2)
+    At = np.matmul(R, p1.T) + t
+    if expand_dim:
+        At = At[:-1, :]
+    return At.T
+
+
+def estimate_transform_target_pytorch(p1, p2):
+    assert len(p1) == len(p2)
+    expand_dim = False
+    if p1.shape[1] == 2:
+        p1 = torch.cat((p1, torch.zeros((p1.shape[0], 1)).float().to(p1.device)), dim=1)
+        p2 = torch.cat((p2, torch.zeros((p2.shape[0], 1)).float().to(p1.device)), dim=1)
+        expand_dim = True
+    elif p1.shape[1] != 3:
+        raise Exception("expected 2d or 3d points")
+
+    R, t = rigid_transform_3d_pytorch(p1, p2)
+    At = torch.mm(R, p1.t()) + t
+    if expand_dim:
+        At = At[:-1, :]
+    return At.t()
