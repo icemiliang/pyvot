@@ -99,7 +99,7 @@ class Vot:
             if self.update_p(iter_p, reg_type, reg):
                 break
 
-    def update_map(self, base_dist, max_iter, lr=0.2, beta=0.9, lr_decay=50):
+    def update_map(self, dist, max_iter, lr=0.2, beta=0.9, lr_decay=50):
         """ update each p to the centroids of its cluster
 
         Args:
@@ -110,23 +110,18 @@ class Vot:
             bool: convergence or not, determined by max derivative change
         """
 
-        h = np.zeros(self.num_p)
+        dh = np.zeros(self.num_p)
         for i in range(max_iter):
-            # update dist matrix
-            dist = base_dist - h[:, np.newaxis]
             # find nearest p for each e and add mass to p
             self.e_idx = np.argmin(dist, axis=0)
-            # labels come from centroids
-            self.e_predict = self.label_p[self.e_idx]
             self.mass_p = np.bincount(self.e_idx, weights=self.e_mass, minlength=self.num_p)
-            # update gradient and h
-            dh = self.mass_p - self.p_dirac
 
             # gradient descent with momentum and decay
             dh = beta * dh + (1-beta) * (self.mass_p - self.p_dirac)
             if i != 0 and i % lr_decay == 0:
                 lr *= 0.9
-            h -= lr * dh
+            # update dist matrix
+            dist += lr * dh[:, np.newaxis]
 
             # check if converge and return max derivative
             index = np.argmax(dh)
@@ -136,6 +131,9 @@ class Vot:
             max_change_pct = max_change * 100 / self.mass_p[index]
             if max_change_pct <= 1:
                 break
+        # labels come from centroids
+        if self.label_p.any():
+            self.e_predict = self.label_p[self.e_idx]
 
     def update_p(self, iter_p, reg_type=0, reg=0.01):
         """ update p
@@ -387,29 +385,24 @@ class VotAP:
         num_e = self.ratio * num_p
         dim = self.data_p.shape[1]
         self.data_e, self.label_e = utils.random_sample(num_e, dim, sampling=sampling)
-        base_dist = cdist(self.data_p, self.data_e, 'sqeuclidean')
-        self.e_idx = np.argmin(base_dist, axis=0)
-        h = np.zeros(num_p)
+        dist = cdist(self.data_p, self.data_e, 'sqeuclidean')
+        self.e_idx = np.argmin(dist, axis=0)
         imgs = []
-        dh = 0
+        dh = np.zeros(num_p)
 
         for i in range(max_iter):
-            dist = base_dist - h[:, None]
             # find nearest p for each e
             self.e_idx = np.argmin(dist, axis=0)
 
             # calculate total mass of each cell
             self.mass_p = np.bincount(self.e_idx, minlength=num_p) / num_e
 
-            # labels come from centroids
-            if self.label_p:
-                self.label_e = self.label_p[self.e_idx]
-
             # gradient descent with momentum and decay
             dh = beta * dh + (1-beta) * (self.mass_p - self.p_dirac)
             if i != 0 and i % lr_decay == 0:
                 lr *= 0.9
-            h -= lr * dh
+            # update dist matrix
+            dist += lr * dh[:, np.newaxis]
 
             # check if converge and return max derivative
             index = np.argmax(dh)
@@ -429,6 +422,9 @@ class VotAP:
                 break
         if plot_filename and imgs:
             imageio.mimsave(plot_filename, imgs, fps=4)
+        # labels come from centroids
+        if self.label_p.any():
+            self.label_e = self.label_p[self.e_idx]
 
         # update coordinates of p
         bincount = np.bincount(self.e_idx)

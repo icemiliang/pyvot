@@ -14,7 +14,8 @@ import numpy as np
 class Vot:
     """ variational optimal transportation """
 
-    def __init__(self, data_p, data_e, label_p=None, label_e=None, mass_p=None, mass_e=None, thres=1e-5, ratio=100, verbose=True, device='cpu'):
+    def __init__(self, data_p, data_e, label_p=None, label_e=None,
+                 mass_p=None, mass_e=None, thres=1e-5, verbose=True, device='cpu'):
         """ set up parameters
         Args:
             thres float: threshold to break loops
@@ -52,8 +53,8 @@ class Vot:
             raise Exception('label_p is not a pytorch tensor')
         if label_e is not None and not isinstance(label_e, torch.Tensor):
             raise Exception('label_e is not a pytorch tensor')
-        self.label_p = label_p.int()
-        self.label_e = label_e.int()
+        self.label_p = label_p
+        self.label_e = label_e
 
         if mass_p is not None and not isinstance(mass_p, torch.Tensor):
             raise Exception('label_p is not a pytorch tensor')
@@ -64,7 +65,6 @@ class Vot:
 
         self.thres = thres
         self.verbose = verbose
-        self.ratio = ratio
         self.device = device
 
         # "mass_p" is the sum of its corresponding e's weights, its own weight is "p_dirac"
@@ -91,12 +91,12 @@ class Vot:
         """
 
         for iter_p in range(max_iter_p):
-            base_dist = torch.cdist(self.data_p, self.data_e, p=2).float().to(self.device) ** 2
-            self.update_map(base_dist, max_iter_h, lr=lr)
+            dist = torch.cdist(self.data_p, self.data_e, p=2).float().to(self.device) ** 2
+            self.update_map(dist, max_iter_h, lr=lr)
             if self.update_p(iter_p, reg_type, reg):
                 break
 
-    def update_map(self, base_dist, max_iter, lr=0.2, beta=0.9, lr_decay=50):
+    def update_map(self, dist, max_iter, lr=0.2, beta=0.9, lr_decay=50):
         """ update each p to the centroids of its cluster
 
         Args:
@@ -110,25 +110,22 @@ class Vot:
 
         self.h[self.h != 0] = 0
 
+        dh = 0
+
         for i in range(max_iter):
-            # update dist matrix
-            dist = base_dist - self.h[:, None]
             # find nearest p for each e and add mass to p
             self.e_idx = torch.argmin(dist, dim=0)
-            # labels come from centroids
-            self.e_predict = self.label_p[self.e_idx]
             self.mass_p = torch.bincount(self.e_idx, weights=self.mass_e, minlength=num_p)
-            # update gradient and h
-            dh = self.mass_p - self.p_dirac
 
             # gradient descent with momentum and decay
             dh = beta * dh + (1-beta) * (self.mass_p - self.p_dirac)
             if i != 0 and i % lr_decay == 0:
                 lr *= 0.9
-            self.h -= lr * dh
+            # update dist matrix
+            dist += lr * dh[:, None]
 
             # check if converge
-            max_change = torch.max(dh / self.mass_p)
+            max_change = torch.max(dh / self.p_dirac)
             if max_change.numel() > 1:
                 max_change = max_change[0]
             max_change *= 100
@@ -138,6 +135,9 @@ class Vot:
 
             if max_change <= 1:
                 break
+        # labels come from centroids
+        if self.label_p:
+            self.e_predict = self.label_p[self.e_idx]
 
     def update_p(self, iter_p, reg_type=0, reg=0.01):
         """ update p
@@ -401,30 +401,24 @@ class VotAP:
         self.data_e, _ = utils.random_sample(num_e, dim, sampling=sampling)
         self.data_e = torch.from_numpy(self.data_e).float().to(self.device)
 
-        base_dist = torch.cdist(self.data_p, self.data_e, p=2).float().to(self.device)**2
-        self.e_idx = torch.argmin(base_dist, dim=0)
-        h = torch.zeros(num_p).float().to(self.device)
+        dist = torch.cdist(self.data_p, self.data_e, p=2).float().to(self.device)**2
+        self.e_idx = torch.argmin(dist, dim=0)
+
         imgs = []
         dh = torch.zeros(num_p).float().to(self.device)
 
         for i in range(max_iter):
-            dist = base_dist - h[:, None]
-
             # find nearest p for each e
             self.e_idx = torch.argmin(dist, dim=0)
 
             # calculate total mass of each cell
             self.mass_p = torch.bincount(self.e_idx, minlength=num_p).float().to(self.device) / num_e
 
-            # labels come from centroids
-            if self.label_p:
-                self.label_e = self.label_p[self.e_idx]
-
             # gradient descent with momentum and decay
             dh = beta * dh + (1-beta) * (self.mass_p - self.p_dirac)
             if i != 0 and i % lr_decay == 0:
                 lr *= 0.9
-            h -= lr * dh
+            dist += lr * dh[:, None]
 
             # check if converge
             max_change = torch.max(dh / self.mass_p)
@@ -443,6 +437,9 @@ class VotAP:
                 break
         if plot_filename and imgs:
             imageio.mimsave(plot_filename, imgs, fps=4)
+        # labels come from centroids
+        if self.label_p:
+            self.label_e = self.label_p[self.e_idx]
 
         # update coordinates of p
         bincount = torch.bincount(self.e_idx).float()
