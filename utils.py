@@ -3,6 +3,7 @@
 # Author: Liang Mi <icemiliang@gmail.com>
 # Date: May 30th 2019
 
+
 import numpy as np
 from PIL import Image
 import warnings
@@ -21,22 +22,17 @@ color_light_grey = [0.7, 0.7, 0.7]
 
 
 def fig2data(fig):
-    # draw the renderer
     fig.canvas.draw()
 
-    # Get the RGBA buffer from the figure
     w, h = fig.canvas.get_width_height()
     buf = np.fromstring(fig.canvas.tostring_argb(), dtype=np.uint8)
     buf.shape = (w, h, 4)
 
-    # canvas.tostring_argb give pixmap in ARGB mode.
-    # Roll the ALPHA channel to have it in RGBA mode
     buf = np.roll(buf, 3, axis=2)
     return buf
 
 
 def fig2img(fig):
-    # put the figure pixmap into a numpy array
     buf = fig2data(fig)
     w, h = buf.shape[0], buf.shape[1]
     return Image.frombytes("RGBA", (w, h), buf.tostring())
@@ -89,12 +85,11 @@ def rigid_transform_3d_pytorch(p1, p2):
     pp2 = p2 - center_p2
 
     H = torch.mm(pp1.t(), pp2)
-    U, S, Vt = torch.svd(H)
+    U, _, Vt = torch.svd(H)
     R = torch.mm(Vt.t(), U.t())
 
     # reflection
     if np.linalg.det(R.cpu().numpy()) < 0:
-        print("Reflection detected")
         Vt[2, :] *= -1
         R = torch.mm(Vt.t(), U.t())
 
@@ -111,9 +106,7 @@ def rigid_transform_3d(p1, p2):
     pp2 = p2 - center_p2
 
     H = np.matmul(pp1.T, pp2)
-
-    U, S, Vt = np.linalg.svd(H)
-
+    U, _, Vt = np.linalg.svd(H)
     R = np.matmul(Vt.T, U.T)
 
     # reflection
