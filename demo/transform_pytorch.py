@@ -1,14 +1,14 @@
 # Regularized Wasserstein Means (RWM)
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: MArch 6th 2019
+# Date: March 30th 2019
 
 """
 ===========================================
        Regularized Wasserstein Means
 ===========================================
 
-This demo shows that regularizing the centroids by using class labels
-and pairwise distances can benefit domain adaptation applications.
+This demo shows that regularizing the centroids by using prior
+geometric transformation can benefit domain adaptation applications.
 
 Predicted labels of the empirical samples come from the centroids.
 It is equivalent to 1NN w.r.t. the power Euclidean distance.

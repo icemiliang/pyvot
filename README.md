@@ -6,8 +6,7 @@ This package includes the prototype code for computing Monge's optimal transport
 In practice, we consider a collection of dense Dirac samples as an approximation.  
 * This program implements gradient descent instead of Newton's method to avoid computing convex hulls so that it can handle high-dimensional data. 
 * The picture below shows the results from original Wasserstein clustering [2] and regularized Wasserstein clustering [3]. 
-More examples can be found in [demo/](demo/README.md). Demos for the GPU version (under development)
-is available in [test/](test/). 
+More examples can be found in [demo/](demo/README.md).
 
 ![alt text](demo/pics/rwm_potential.png?raw=true)
 

@@ -1,7 +1,8 @@
 # PyVot
 # Variational Wasserstein Clustering
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: May 15th 2019
+# Date: May 30th 2019
+
 
 import numpy as np
 from PIL import Image
@@ -21,31 +22,17 @@ color_light_grey = [0.7, 0.7, 0.7]
 
 
 def fig2data(fig):
-    """
-    @brief Convert a Matplotlib figure to a 4D numpy array with RGBA channels and return it
-    @param fig a matplotlib figure
-    @return a numpy 3D array of RGBA values
-    """
-    # draw the renderer
     fig.canvas.draw()
 
-    # Get the RGBA buffer from the figure
     w, h = fig.canvas.get_width_height()
     buf = np.fromstring(fig.canvas.tostring_argb(), dtype=np.uint8)
     buf.shape = (w, h, 4)
 
-    # canvas.tostring_argb give pixmap in ARGB mode. Roll the ALPHA channel to have it in RGBA mode
     buf = np.roll(buf, 3, axis=2)
     return buf
 
 
 def fig2img(fig):
-    """
-    @brief Convert a Matplotlib figure to a PIL Image in RGBA format and return it
-    @param fig a matplotlib figure
-    @return a Python Imaging Library ( PIL ) image
-    """
-    # put the figure pixmap into a numpy array
     buf = fig2data(fig)
     w, h = buf.shape[0], buf.shape[1]
     return Image.frombytes("RGBA", (w, h), buf.tostring())
@@ -98,12 +85,11 @@ def rigid_transform_3d_pytorch(p1, p2):
     pp2 = p2 - center_p2
 
     H = torch.mm(pp1.t(), pp2)
-    U, S, Vt = torch.svd(H)
+    U, _, Vt = torch.svd(H)
     R = torch.mm(Vt.t(), U.t())
 
     # reflection
     if np.linalg.det(R.cpu().numpy()) < 0:
-        print("Reflection detected")
         Vt[2, :] *= -1
         R = torch.mm(Vt.t(), U.t())
 
@@ -120,12 +106,10 @@ def rigid_transform_3d(p1, p2):
     pp2 = p2 - center_p2
 
     H = np.matmul(pp1.T, pp2)
-
-    U, S, Vt = np.linalg.svd(H)
-
+    U, _, Vt = np.linalg.svd(H)
     R = np.matmul(Vt.T, U.T)
 
-    # special reflection case
+    # reflection
     if np.linalg.det(R) < 0:
         Vt[2, :] *= -1
         R = np.matmul(Vt.T, U.T)
@@ -154,15 +138,22 @@ def estimate_transform_target(p1, p2):
 
 def estimate_transform_target_pytorch(p1, p2):
     assert len(p1) == len(p2)
+
+    # Mask out nan which came from empty clusters
+    mask = torch.isnan(p2).any(dim=1)
+
     expand_dim = False
     if p1.shape[1] == 2:
         p1 = torch.cat((p1, torch.zeros((p1.shape[0], 1)).float().to(p1.device)), dim=1)
-        p2 = torch.cat((p2, torch.zeros((p2.shape[0], 1)).float().to(p1.device)), dim=1)
+        p2 = torch.cat((p2, torch.zeros((p2.shape[0], 1)).float().to(p2.device)), dim=1)
         expand_dim = True
     elif p1.shape[1] != 3:
         raise Exception("expected 2d or 3d points")
 
-    R, t = rigid_transform_3d_pytorch(p1, p2)
+    p11 = p1[~mask]
+    p22 = p2[~mask]
+
+    R, t = rigid_transform_3d_pytorch(p11, p22)
     At = torch.mm(R, p1.t()) + t
     if expand_dim:
         At = At[:-1, :]

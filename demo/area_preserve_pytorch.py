@@ -1,6 +1,6 @@
 # Area Preserving via Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: May 15th 2019
+# Date: May 30th 2019
 
 
 """
@@ -28,7 +28,7 @@ import torch
 # ----- set up ot ------ #
 mean = [0, 0]
 cov = [[.08, 0], [0, .08]]
-N = 50
+N = 100
 data = np.random.multivariate_normal(mean, cov, N).clip(-0.99, 0.99)
 
 use_gpu = False
@@ -37,13 +37,13 @@ if use_gpu and torch.cuda.is_available():
 else:
     device = 'cpu'
 data = torch.from_numpy(data).float().to(device)
-ot = VotAP(data, ratio=1000, device=device)
+ot = VotAP(data, ratio=200, device=device, sampling='unisquare')
 # ot = VotAP(data[:,1:], ratio=1000)
 
 # ----- map ------ #
 tick = time.clock()
 # ot.map(sampling='unisquare', plot_filename='area_preserve_pytorch.gif', max_iter=300)
-ot.map(sampling='unisquare', max_iter=300)
+ot.map(max_iter=500)
 tock = time.clock()
 print('total time: {0:.4f}'.format(tock-tick))
 # TODO Area preserving usually requires a pre-defined boundary.
