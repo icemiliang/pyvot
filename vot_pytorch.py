@@ -136,7 +136,7 @@ class Vot:
         if self.label_p is not None:
             self.e_predict = self.label_p[self.e_idx]
 
-    def update_p(self, iter_p, reg_type=0, reg=0.01):
+    def update_p(self, iter_p=0, reg_type=0, reg=0.01):
         """ update p
 
         Args:
@@ -244,7 +244,7 @@ class Vot:
 
         # regularize
         optimizer = optim.SGD([self.data_p], lr=0.05)
-        for _ in range(100):
+        for _ in range(10):
             optimizer.zero_grad()
             loss = f(self.data_p, p0, self.label_p, reg=reg)
             loss.backward()
@@ -361,9 +361,7 @@ class VotAP:
         self.dist = torch.cdist(self.data_p, self.data_e, p=2).float().to(self.device)**2
         self.e_idx = torch.argmin(self.dist, dim=0)
 
-        self.label_e = None
-
-    def map(self, plot_filename=None, beta=0.9, max_iter=2000, lr=0.3, lr_decay=100):
+    def map(self, plot_filename=None, beta=0.9, max_iter=1000, lr=0.2, lr_decay=100):
         """ map p into the area
 
         Args:
@@ -381,7 +379,8 @@ class VotAP:
             data_e pytorch floattensor: coordinates of e
             label_e pytorch inttensor: label of e
             base_dist pytorch floattensor: pairwise distance between p and e
-            dh  pytorch floattensor: gradient of h, the VOT optimizer
+            h  pytorch floattensor: VOT optimizer, "height vector
+            dh  pytorch floattensor: gradient of h
             max_change pytorch floattensor: maximum gradient change
             max_change_pct pytorch floattensor: relative maximum gradient change
             imgs list: list of plots to show mapping progress
@@ -391,17 +390,17 @@ class VotAP:
         """
         num_p = self.data_p.shape[0]
         num_e = self.ratio * num_p
+        dim = self.data_p.shape[1]
 
         imgs = []
+        # dh = torch.zeros(num_p).float().to(self.device)
         dh = 0
 
         for i in range(max_iter):
             # find nearest p for each e
             self.e_idx = torch.argmin(self.dist, dim=0)
-
             # calculate total mass of each cell
             self.mass_p = torch.bincount(self.e_idx, minlength=num_p).float().to(self.device) / num_e
-            # print("mass_p: {}".format(self.mass_p.sum()))
             # gradient descent with momentum and decay
             dh = beta * dh + (1-beta) * (self.mass_p - self.p_dirac)
             if i != 0 and i % lr_decay == 0:
