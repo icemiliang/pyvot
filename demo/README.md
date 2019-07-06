@@ -5,7 +5,7 @@ Below shows some examples of using PyVot.
 
 #### A quick comparison to Sinkhorn OT
 Suppose we want to align 100 samples to another 100 samples. 
-VOT will produce a one-to-one map while Sinkhorn produces a 
+VOT produces a one-to-one map while Sinkhorn yields a 
 many-to-may map due to the nature of these two maps. As a result,
 for each source sample, Sinkhorn will give a weighted average location of its
 multiple targets. A more comprehensive comparison between VOT and Sinkhorn OT is a todo.
