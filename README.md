@@ -63,4 +63,4 @@ Mi, Liang, Wen Zhang, and Yalin Wang. "Regularized Wasserstein Means Based on Va
 [3] Mi, Liang, Wen Zhang, and Yalin Wang. "[Regularized Wasserstein Means Based on Variational Transportation.](http://arxiv.org/abs/1812.00338)" arXiv preprint arXiv:1812.00338 (2018).
 
 ## Contact
-Please contact Liang Mi icemiliang@gmail.com for any issues. 
+Please contact Liang Mi icemiliang@gmail.com for any issues. Pull requests and issues are welcome.
