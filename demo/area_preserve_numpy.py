@@ -1,6 +1,6 @@
 # Area Preserving via Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: May 15th 2019
+# Date: July 6th 2019
 
 
 """
@@ -25,18 +25,18 @@ import numpy as np
 from scipy.spatial import Delaunay
 
 
-# ----- set up ot ------ #
+# ----- set up vot ------ #
 mean = [0, 0]
 cov = [[.08, 0], [0, .08]]
 N = 50
 data = np.random.multivariate_normal(mean, cov, N).clip(-0.99, 0.99)
-ot = VotAP(data, ratio=1000)
+ot = VotAP(data, sampling='square', ratio=1000)
 
 # ----- map ------ #
-tick = time.clock()
-# ot.map(sampling='unisquare', plot_filename='area_preserve.gif', max_iter=300)
-ot.map(sampling='unisquare', max_iter=300)
-tock = time.clock()
+tick = time.time()
+# vot.map(plot_filename='area_preserve.gif', max_iter=300)
+ot.map(max_iter=300)
+tock = time.time()
 print('total time: {0:.4f}'.format(tock-tick))
 # TODO Area preserving usually requires a pre-defined boundary.
 #  That is beyond the scope of the demo. Missing the boundary condition,

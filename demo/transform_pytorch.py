@@ -1,6 +1,6 @@
 # Regularized Wasserstein Means (RWM)
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: March 30th 2019
+# Date: July 6th 2019
 
 """
 ===========================================
@@ -31,7 +31,7 @@ import torch
 
 
 # Generate data
-num_e = 5000
+num_e = 2000
 num_p = 100
 data_e, label_e = sklearn.datasets.make_moons(n_samples=num_e, noise=0.05, random_state=1)
 data_p, label_p = sklearn.datasets.make_moons(n_samples=num_p, noise=0.05, random_state=1)
@@ -49,6 +49,7 @@ label_p = label_p.transpose()
 
 data_p1 = data_p.copy()
 data_e1 = data_e.copy()
+
 
 # -------------------------------------- #
 # --------- w/o regularization --------- #
@@ -70,7 +71,7 @@ ot = Vot(data_p=data_p, data_e=data_e,
          device=device, verbose=False)
 print("running Wasserstein clustering...")
 tick = time.time()
-ot.cluster(0, max_iter_h=3000, max_iter_p=5)  # 0: w/o regularization
+ot.cluster(0, max_iter_h=5000, max_iter_p=5, lr=0.2, lr_decay=500)  # 0: w/o regularization
 tock = time.time()
 print('total time: {0:.4f}'.format(tock-tick))
 
@@ -125,15 +126,14 @@ ot_reg = Vot(data_p=data_p1, data_e=data_e1,
              device=device, verbose=False)
 print("running regularized Wasserstein clustering...")
 tick = time.time()
-ot_reg.cluster(reg_type='transform', reg=100, max_iter_h=3000, max_iter_p=5)
+ot_reg.cluster(reg_type='transform', reg=20, max_iter_h=5000, lr=0.2, max_iter_p=5)
 tock = time.time()
 print("total running time : {} seconds".format(tock-tick))
 
-# Compute OT one more time to disperse the centroids into the empirical domain.
-# This almost does not change the correspondence but can give better positions.
-# This is optional.
+# Compute vanilla OT one more time to disperse the centroids into the empirical domain.
+# This optional step almost does not change the correspondence but gives better positions.
 print("[optional] distribute centroids into target domain...")
-ot_reg.cluster(0, max_iter_p=1)
+ot_reg.cluster(0, max_iter_h=5000, lr=0.1, max_iter_p=1)
 
 
 # ----- plot before ----- #

@@ -16,76 +16,78 @@ import utils
 class Vot:
     """ variational optimal transportation """
 
-    def import_data_from_file(self, pfilename, efilename, mass=False, label=True):
-        """ import data from csv files
+    def __init__(self, data_p, data_e, label_p=None, label_e=None,
+                 mass_p=None, mass_e=None, thres=1e-5, verbose=True):
+        """ set up parameters
 
         Args:
-            pfilename string: filename of p
-            efilename string: filename of e
-            mass  bool: whether data has a mass column
-            label bool: whether data has a label column
+            thres float: threshold to break loops
+            data_p numpy ndarray: initial coordinates of p
+            label_p numpy ndarray: labels of p
+            mass_p numpy ndarray: weights of p
 
-        See Also
-        --------
-        import_data : dump data into internal numpy arrays
+        Atts:
+            thres    float: Threshold to break loops
+            lr       float: Learning rate
+            verbose   bool: console output verbose flag
+            num_p      int: number of p
+            data_p     numpy ndarray: coordinates of p
+            data_e     numpy ndarray: coordinates of e
+            label_p    numpy ndarray: labels of p
+            label_e    numpy ndarray: labels of e
+            mass_p     numpy ndarray: mass of clusters of p
+            mass_e     numpy ndarray: mass of e
+            dirac_p    numpy ndarray: dirac measure of p
         """
 
-        data_p = np.loadtxt(pfilename, delimiter=",")
-        data_e = np.loadtxt(efilename, delimiter=",")
-
-        if label and mass:
-            self.import_data(data_p[:, 2:], data_e[:, 2:],
-                             yp=data_p[:, 0], ye=data_e[:, 0],
-                             mass_p=data_p[:, 1], mass_e=data_e[:, 0])
-        elif label and not mass:
-            self.import_data(data_p[:, 1:], data_e[:, 1:],
-                             yp=data_p[:, 0], ye=data_e[:, 0])
-        elif not label and mass:
-            self.import_data(data_p[:, 1:], data_e[:, 1:],
-                             mass_p=data_p[:, 0], mass_e=data_e[:, 0])
-        else:
-            self.import_data(data_p, data_e)
-
-    def import_data(self, data_p, data_e, yp=None, ye=None, mass_p=None, mass_e=None):
-        """ import data from numpy arrays
-
-        Args:
-            data_p np.ndarray(np,dim+): initial coordinates of p
-            data_e np.ndarray(ne,dim+): coordinates of e
-            yp np.ndarray(num_p,): labels of p
-            ye np.ndarray(num_e,): initial labels of e
-            mass_p np.ndarray(num_p,): weights of p
-            mass_e np.ndarray(num_e,): weights of e
-
-        See Also
-        --------
-        import_data_file : import data from csv files
-        """
-
-        self.num_p = np.size(data_p, 0)
-        self.num_e = np.size(data_e, 0)
-
-        self.label_p = yp.astype(int) if not yp is None else -np.ones(self.num_p).astype(int)
-        self.label_e = ye.astype(int) if not yp is None else -np.ones(self.num_e).astype(int)
-
-        self.p_dirac = mass_p if not mass_p is None else np.ones(self.num_p)/self.num_p
-        self.e_mass = mass_e if not mass_e is None else np.ones(self.num_e)/self.num_e
-
+        if not isinstance(data_p, np.ndarray):
+            raise Exception('data_p is not a numpy ndarray')
+        if not isinstance(data_e, np.ndarray):
+            raise Exception('data_e is not a numpy ndarray')
         self.data_p = data_p
         self.data_e = data_e
-        self.data_p_original = np.copy(data_p)
+        self.data_p_original = self.data_p.copy()
+        self.data_e_original = self.data_e.copy()
 
-        # "mass_p" is the sum of its corresponding e's weights, its own weight is "p_dirac"
-        self.mass_p = np.zeros(self.num_p)
+        num_p = data_p.shape[0]
+        num_e = data_e.shape[0]
 
-        if abs(np.sum(self.p_dirac) - np.sum(self.e_mass)) > 1e-6:
-            warnings.warn("Total mass of e does not equal to total mass of p")
+        if label_p is not None and not isinstance(label_p, np.ndarray):
+            raise Exception('label_p is not a numpy ndarray')
+        if label_e is not None and not isinstance(label_e, np.ndarray):
+            raise Exception('label_e is not a numpy ndarray')
+        self.label_p = label_p
+        self.label_e = label_e
 
-    def cluster(self, reg_type=0, reg=0.01, lr=0.2, max_iter_p=10, max_iter_h=2000):
+        if mass_p is not None and not isinstance(mass_p, np.ndarray):
+            raise Exception('label_p is not a numpy ndarray')
+        if mass_p is not None:
+            self.dirac_p = mass_p
+        else:
+            self.dirac_p = np.ones(num_p) / num_p
+
+        self.thres = thres
+        self.verbose = verbose
+
+        # "mass_p" is the sum of its corresponding e's weights, its own weight is "dirac_p"
+        self.mass_p = np.zeros(num_p)
+
+        self.dirac_p = mass_p if mass_p is not None else np.ones(num_p) / num_p
+        self.mass_e = mass_e if mass_e is not None else np.ones(num_e) / num_e
+
+        if np.max(self.data_p) <= 1 and np.min(self.data_p) >= -1:
+            warnings.warn("Input output boundary (-1, 1).")
+
+    def cluster(self, reg_type=0, reg=0.01, lr=0.2, max_iter_p=10, max_iter_h=2000, lr_decay=200):
         """ compute Wasserstein clustering
 
         Args:
-            reg int: flag for regularization, 0 means no regularization
+            reg_type   int: specify regulazation term, 0 means no regularization
+            reg        int: regularization weight
+            max_iter_p int: max num of iteration of clustering
+            max_iter_h int: max num of updating h
+            lr       float: GD learning rate
+            lr_decay float: learning rate decay
 
         See Also
         --------
@@ -94,48 +96,56 @@ class Vot:
         """
 
         for iter_p in range(max_iter_p):
-            base_dist = cdist(self.data_p, self.data_e, 'sqeuclidean')
-            self.update_map(base_dist, max_iter_h, lr=lr)
+            dist = cdist(self.data_p, self.data_e) ** 2
+            self.update_map(dist, max_iter_h, lr=lr, lr_decay=lr_decay)
             if self.update_p(iter_p, reg_type, reg):
                 break
 
-    def update_map(self, dist, max_iter, lr=0.2, beta=0.9, lr_decay=50):
+    def update_map(self, dist, max_iter=3000, lr=0.2, beta=0.9, lr_decay=200):
         """ update each p to the centroids of its cluster
 
         Args:
-            iter_p int: iteration index of clustering
-            iter_h int: iteration index of transportation
+            dist    numpy ndarray: dist matrix across p and e
+            max_iter   int: max num of iterations
+            lr       float: gradient descent learning rate
+            beta     float: GD momentum
+            lr_decay float: learning rate decay
 
         Returns:
             bool: convergence or not, determined by max derivative change
         """
 
-        dh = np.zeros(self.num_p)
+        num_p = self.data_p.shape[0]
+        dh = 0
+
         for i in range(max_iter):
             # find nearest p for each e and add mass to p
             self.e_idx = np.argmin(dist, axis=0)
-            self.mass_p = np.bincount(self.e_idx, weights=self.e_mass, minlength=self.num_p)
+            self.mass_p = np.bincount(self.e_idx, weights=self.mass_e, minlength=num_p)
 
             # gradient descent with momentum and decay
-            dh = beta * dh + (1-beta) * (self.mass_p - self.p_dirac)
+            dh = beta * dh + (1-beta) * (self.mass_p - self.dirac_p)
             if i != 0 and i % lr_decay == 0:
-                lr *= 0.9
+                lr *= 0.5
             # update dist matrix
-            dist += lr * dh[:, np.newaxis]
+            dist += lr * dh[:, None]
 
-            # check if converge and return max derivative
-            index = np.argmax(dh)
-            if isinstance(index, np.ndarray):
-                index = index[0]
-            max_change = dh[index]
-            max_change_pct = max_change * 100 / self.mass_p[index]
-            if max_change_pct <= 1:
+            # check if converge
+            max_change = np.max(dh / self.dirac_p)
+            if max_change.size > 1:
+                max_change = max_change[0]
+            max_change *= 100
+
+            if self.verbose and i % 10 == 0:
+                print("{0:d}: max gradient {1:.2f}%".format(i, max_change))
+
+            if max_change <= 1:
                 break
         # labels come from centroids
-        if self.label_p.any():
+        if self.label_p is not None:
             self.e_predict = self.label_p[self.e_idx]
 
-    def update_p(self, iter_p, reg_type=0, reg=0.01):
+    def update_p(self, iter_p=0, reg_type=0, reg=0.01):
         """ update p
 
         Args:
@@ -164,19 +174,26 @@ class Vot:
             bool: convergence or not, determined by max p change
         """
 
+        num_p = self.data_p.shape[0]
+
         max_change_pct = 0.0
         # update p to the centroid of its clustered e samples
-        bincount = np.bincount(self.e_idx)
+        bincount = np.bincount(self.e_idx, minlength=num_p)
         if 0 in bincount:
             print('Empty cluster found, optimal transport probably did not converge\n'
                   'Try larger lr or max_iter after checking the measures.')
-            return False
+            # return False
+        eps = 1e-8
         for i in range(self.data_p.shape[1]):
-            # update p to the centroid of their correspondences
-            p_target = np.bincount(self.e_idx, weights=self.data_e[:, i], minlength=self.num_p) / bincount
-            change_pct = np.amax(np.abs((self.data_p[:, i] - p_target) / self.data_p[:, i]))
+            # update p to the centroid of their correspondences one dimension at a time
+            p_target = np.bincount(self.e_idx, weights=self.data_e[:, i], minlength=num_p) / bincount
+            change_pct = np.max(np.abs((self.data_p[:, i] - p_target) / (self.data_p[:, i])+eps))
             max_change_pct = max(max_change_pct, change_pct)
             self.data_p[:, i] = p_target
+
+        # replace nan by original data
+        mask = np.isnan(self.data_p).any(axis=1)
+        self.data_p[mask] = self.data_p_original[mask].copy()
         print("iter {0:d}: max centroid change {1:.2f}%".format(iter_p, 100 * max_change_pct))
         # return max p coor change
         return True if max_change_pct < 0.01 else False
@@ -208,7 +225,7 @@ class Vot:
 
             p = p.reshape(p0.shape)
             reg_term = 0.0
-            for idx, l in np.ndenumerate(np.unique(label)):
+            for l in np.unique(label):
                 p_sub = p[label == l, :]
                 # pairwise distance with smaller memory burden
                 # |pi - pj|^2 = pi^2 + pj^2 - 2*pi*pj
@@ -222,6 +239,7 @@ class Vot:
             warnings.warn("All known samples belong to the same class")
 
         p0 = np.zeros_like(self.data_p)
+        num_p = self.data_p.shape[0]
 
         max_change_pct = 0.0
         # update p to the centroid of its clustered e samples
@@ -233,7 +251,7 @@ class Vot:
             return False
         for i in range(p0.shape[1]):
             # update p to the centroid of their correspondences
-            p_target = np.bincount(self.e_idx, weights=self.data_e[:, i], minlength=self.num_p) / bincount
+            p_target = np.bincount(self.e_idx, weights=self.data_e[:, i], minlength=num_p) / bincount
             change_pct = np.amax(np.abs((self.data_p[:, i] - p_target) / self.data_p[:, i]))
             max_change_pct = max(max_change_pct, change_pct)
             p0[:, i] = p_target
@@ -258,36 +276,23 @@ class Vot:
             bool: convergence or not, determined by max p change
         """
 
-        def f(p, p0, pa, reg=0.01):
-            """ objective function regularized by affine transformations
-
-            Args:
-                p  np.array(np,dim): p
-                p0 np.array(np,dim): centroids of e
-                pa np.array(np,dim): target position of p after affine
-                reg float: regularizer weight
-
-            Returns:
-                float: f = sum(|p-p0|^2) + reg * sum(|p-pa|^2)
-            """
-            p = p.reshape(p0.shape)
-            return np.sum((p-p0)**2.0) + reg * np.sum((p-pa)**2.0)
-
         assert self.data_p.shape[1] == 2, "dim has to be 2 for geometric transformation"
 
-        p0 = np.zeros_like(self.data_p)
+        p0 = np.zeros(self.data_p.shape)
+        num_p = self.data_p.shape[0]
         max_change_pct = 0.0
         # update p to the centroid of its clustered e samples
-        bincount = np.bincount(self.e_idx)
+        bincount = np.bincount(self.e_idx, minlength=num_p)
         if 0 in bincount:
             print('Empty cluster found, optimal transport probably did not converge\n'
-                  'Abort this round of updating'
+                  'Aborting this round of updating'
                   'Try larger lr or max_iter after checking the measures.')
-            return False
+            # return False
+        eps = 1e-8
         for i in range(p0.shape[1]):
-            # update p to the centroid of their correspondences
-            p_target = np.bincount(self.e_idx, weights=self.data_e[:, i], minlength=self.num_p) / bincount
-            change_pct = np.amax(np.abs((self.data_p[:, i] - p_target) / self.data_p[:, i]))
+            # update p to the centroid of their correspondences one dimension at a time
+            p_target = np.bincount(self.e_idx, weights=self.data_e[:, i], minlength=num_p) / bincount
+            change_pct = np.max(np.abs((self.data_p[:, i] - p_target) / (self.data_p[:, i]) + eps))
             max_change_pct = max(max_change_pct, change_pct)
             p0[:, i] = p_target
         print("iter {0:d}: max centroid change {1:.2f}%".format(iter_p, 100 * max_change_pct))
@@ -304,8 +309,12 @@ class Vot:
             T.estimate(p_sub, p0_sub)
             pa[idx_p_label, :] = T(p_sub)
 
-        res = minimize(f, self.data_p, method='BFGS', args=(p0, pa, reg))
-        self.data_p = res.x.reshape(p0.shape)
+        pt = self.data_p.copy()
+        T = tf.EuclideanTransform()
+        T.estimate(pt, p0)
+        pt = T(pt)
+
+        self.data_p = 1 / (1 + reg) * p0 + reg / (1 + reg) * pt
         # return max change
         return True if max_change_pct < 0.01 else False
 
@@ -315,46 +324,60 @@ class VotAP:
     # p are the centroids
     # e are the area samples
 
-    def __init__(self, data, label=None, mass_p=None, thres=1e-5, ratio=100, verbose=True):
+    def __init__(self, data, sampling='square', label=None, mass_p=None, thres=1e-5, ratio=100, verbose=False):
         """ set up parameters
         Args:
             thres float: threshold to break loops
             ratio float: the ratio of num of e to the num of p
-            data np.ndarray(np,dim+): initial coordinates of p
-            label np.ndarray(num_p,): labels of p
-            mass_p np.ndarray(num_p,): weights of p
+            data numpy ndarray: initial coordinates of p
+            label numpy ndarray: labels of p
+            mass_p numpy ndarray: weights of p
 
         Atts:
             thres    float: Threshold to break loops
             lr       float: Learning rate
-            ratio    float: ratio of num_e to num_p
             verbose   bool: console output verbose flag
-            num_p      int: number of p
-            X_p    numpy ndarray: coordinates of p
-            y_p    numpy ndarray: labels of p
-            mass_p numpy ndarray: mass of clusters of p
-
+            data_p    numpy ndarray: coordinates of p
+            label_p   numpy ndarray: labels of p
+            mass_p    numpy ndarray: mass of clusters of p
+            dirac_p   numpy ndarray: dirac measure of p
         """
+
+        if not isinstance(data, np.ndarray):
+            raise Exception('input is not a numpy ndarray')
+        self.data_p = data
+        self.data_p_original = self.data_p.copy()
+        num_p = data.shape[0]
+
+        if label is not None and not isinstance(label, np.ndarray):
+            raise Exception('label is neither a numpy array not a numpy ndarray')
+        self.label_p = label
+
+        if mass_p is not None and not isinstance(mass_p, np.ndarray):
+            raise Exception('label is neither a numpy array not a numpy ndarray')
+        if mass_p:
+            self.dirac_p = mass_p
+        else:
+            self.dirac_p = np.ones(num_p) / num_p
+
         self.thres = thres
         self.verbose = verbose
-        self.p_dirac = None
-        self.ratio = ratio
 
-        self.has_mass = mass_p is not None
-        self.has_label = label is not None
-
-        num_p = data.shape[0]
-        self.label_p = label.astype(int) if not label is None else -np.ones(num_p).astype(int)
-        self.p_dirac = mass_p if not mass_p is None else np.ones(num_p) / num_p
-        self.data_p = data
-        self.data_p_original = data.copy()
-        # "mass_p" is the sum of its corresponding e's weights, its own weight is "p_dirac"
+        # "mass_p" is the sum of its corresponding e's weights, its own weight is "dirac_p"
         self.mass_p = np.zeros(num_p)
 
-        assert np.amax(self.data_p) <= 1 and np.amin(self.data_p) >= -1,\
+        assert np.max(self.data_p) <= 1 and np.min(self.data_p) >= -1,\
             "Input output boundary (-1, 1)."
 
-    def map(self, sampling='unisquare', plot_filename=None, beta=0.9, max_iter=1000, lr=0.2, lr_decay=50):
+        num_p = self.data_p.shape[0]
+        num_e = int(ratio * num_p)
+        dim = self.data_p.shape[1]
+        self.data_e, _ = utils.random_sample(num_e, dim, sampling=sampling)
+
+        self.dist = cdist(self.data_p, self.data_e)**2
+        self.e_idx = np.argmin(self.dist, axis=0)
+
+    def map(self, plot_filename=None, beta=0.9, max_iter=1000, lr=0.2, lr_decay=100):
         """ map p into the area
 
         Args:
@@ -365,72 +388,53 @@ class VotAP:
             lr float: learning rate
             lr_decay float: learning rate decay
 
-        Atts:
-            num_p int: number of p
-            num_e int: number of e
-            dim int: dimentionality
-            data_e numpy ndarray: coordinates of e
-            label_e numpy ndarray: label of e
-            base_dist numpy ndarray: pairwise distance between p and e
-            h  numpy ndarray: VOT optimizer, "height vector
-            dh  numpy ndarray: gradient of h
-            max_change float: maximum gradient change
-            max_change_pct float: relative maximum gradient change
-            imgs list: list of plots to show mapping progress
-            e_idx numpy ndarray: p index of every e
-
         :return:
         """
+
         num_p = self.data_p.shape[0]
-        num_e = self.ratio * num_p
-        dim = self.data_p.shape[1]
-        self.data_e, self.label_e = utils.random_sample(num_e, dim, sampling=sampling)
-        dist = cdist(self.data_p, self.data_e, 'sqeuclidean')
-        self.e_idx = np.argmin(dist, axis=0)
+        num_e = self.data_e.shape[0]
+
         imgs = []
-        dh = np.zeros(num_p)
+        dh = 0
 
         for i in range(max_iter):
             # find nearest p for each e
-            self.e_idx = np.argmin(dist, axis=0)
+            self.e_idx = np.argmin(self.dist, axis=0)
 
             # calculate total mass of each cell
             self.mass_p = np.bincount(self.e_idx, minlength=num_p) / num_e
-
             # gradient descent with momentum and decay
-            dh = beta * dh + (1-beta) * (self.mass_p - self.p_dirac)
+            dh = beta * dh + (1-beta) * (self.mass_p - self.dirac_p)
             if i != 0 and i % lr_decay == 0:
                 lr *= 0.9
-            # update dist matrix
-            dist += lr * dh[:, np.newaxis]
+            self.dist += lr * dh[:, None]
 
-            # check if converge and return max derivative
-            index = np.argmax(dh)
-            if isinstance(index, np.ndarray):
-                index = index[0]
-            max_change = dh[index]
-            max_change_pct = max_change * 100 / self.mass_p[index]
+            # check if converge
+            max_change = np.max(dh / self.dirac_p)
+            if max_change.size > 1:
+                max_change = max_change[0]
+            max_change *= 100
 
             if self.verbose and i % 10 == 0:
-                print("{0:d}: max gradient {1:g} ({2:.2f}%)".format(i, max_change, max_change_pct))
+                print("{0:d}: max gradient {1:.2f}%".format(i, max_change))
             # plot to gif, TODO this is time consuming, got a better way?
             if plot_filename:
                 fig = utils.plot_map(self.data_e, self.e_idx / (num_p - 1))
                 img = utils.fig2data(fig)
                 imgs.append(img)
-            if max_change_pct <= 1:
+            if max_change <= 1:
                 break
         if plot_filename and imgs:
             imageio.mimsave(plot_filename, imgs, fps=4)
         # labels come from centroids
-        if self.label_p.any():
+        if self.label_p is not None:
             self.label_e = self.label_p[self.e_idx]
 
         # update coordinates of p
-        bincount = np.bincount(self.e_idx)
+        bincount = np.bincount(self.e_idx, minlength=num_p)
         if 0 in bincount:
             print('Empty cluster found, optimal transport did not converge\nTry larger lr or max_iter')
-            return
+            # return
         for i in range(self.data_p.shape[1]):
             # update p to the centroid of their correspondences
             self.data_p[:, i] = np.bincount(self.e_idx, weights=self.data_e[:, i], minlength=num_p) / bincount

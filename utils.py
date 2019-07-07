@@ -3,7 +3,6 @@
 # Author: Liang Mi <icemiliang@gmail.com>
 # Date: May 30th 2019
 
-
 import numpy as np
 from PIL import Image
 import warnings
@@ -38,7 +37,7 @@ def fig2img(fig):
     return Image.frombytes("RGBA", (w, h), buf.tostring())
 
 
-def random_sample(num, dim, sampling='unisquare'):
+def random_sample(num, dim, sampling='square'):
     """ randomly sample the area with dirac measures
 
     """
@@ -46,10 +45,16 @@ def random_sample(num, dim, sampling='unisquare'):
 
     if num * dim > 1e8:
         warnings.warn("Sampling the area will take too much memory.")
-    if sampling == 'unisquare':
-        data = np.random.random((num, dim)) * 2 - 1
-    elif sampling == 'unicircle':
-        r = np.random.uniform(low=0, high=1, size=num)  # radius
+    if sampling == 'square':
+        data = np.random.random((num, dim)) * 1.98 - 1
+    elif sampling == 'disk':
+        r = np.random.uniform(low=0, high=0.99, size=num)  # radius
+        theta = np.random.uniform(low=0, high=2 * np.pi, size=num)  # angle
+        x = np.sqrt(r) * np.cos(theta)
+        y = np.sqrt(r) * np.sin(theta)
+        data = np.concatenate((x[:, None], y[:, None]), axis=1)
+    elif sampling == 'circle':
+        r = np.random.uniform(low=0.8, high=0.99, size=num)  # radius
         theta = np.random.uniform(low=0, high=2 * np.pi, size=num)  # angle
         x = np.sqrt(r) * np.cos(theta)
         y = np.sqrt(r) * np.sin(theta)
@@ -72,7 +77,6 @@ def plot_map(data, idx, color_map='viridis'):
     plt.xlim(-1, 1)
     plt.ylim(-1, 1)
     plt.grid(True)
-    plt.title('Area-preserving mapping')
     plt.scatter(data[:, 0], data[:, 1], s=1, marker='o', color=color(idx))
     return fig
 
@@ -85,7 +89,7 @@ def rigid_transform_3d_pytorch(p1, p2):
     pp2 = p2 - center_p2
 
     H = torch.mm(pp1.t(), pp2)
-    U, _, Vt = torch.svd(H)
+    U, S, Vt = torch.svd(H)
     R = torch.mm(Vt.t(), U.t())
 
     # reflection
@@ -106,7 +110,9 @@ def rigid_transform_3d(p1, p2):
     pp2 = p2 - center_p2
 
     H = np.matmul(pp1.T, pp2)
+
     U, _, Vt = np.linalg.svd(H)
+
     R = np.matmul(Vt.T, U.T)
 
     # reflection
