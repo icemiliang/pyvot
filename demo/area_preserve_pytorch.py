@@ -16,11 +16,17 @@ convex hulls.
 For now, PyVot assumes that the range in each dimension is (-1,1).
 """
 
+from __future__ import print_function
+from __future__ import division
+# import non-vot stuffs
+import os
+import sys
+import time
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from vot_pytorch import VotAP
 import matplotlib.pyplot as plt
 import matplotlib.collections as mc
 import utils
-import time
 import numpy as np
 import torch
 
@@ -57,7 +63,7 @@ ot.data_p = ot.data_p.cpu().numpy()
 
 # ----- plot before ----- #
 X_p_before = np.copy(ot.data_p_original)
-plt.figure(figsize=(12, 4))
+plt.figure(figsize=(12, 3.5))
 plt.subplot(131); plt.xlim(-1, 1); plt.ylim(-1, 1); plt.grid(True); plt.title('before')
 plt.scatter(X_p_before[:, 0], X_p_before[:, 1], marker='o', color=utils.color_red, zorder=3)
 

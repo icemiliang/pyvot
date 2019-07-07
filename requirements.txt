@@ -1,0 +1,9 @@
+numpy==1.16.2
+scikit-image==0.14.2
+scipy==1.2.1
+matplotlib==3.0.3
+POT==0.5.1
+imageio==2.5.0
+scikit-learn==0.20.3
+https://download.pytorch.org/whl/cu100/torch-1.1.0-cp35-cp35m-linux_x86_64.whl
+https://download.pytorch.org/whl/cu100/torchvision-0.3.0-cp35-cp35m-linux_x86_64.whl
