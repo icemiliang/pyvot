@@ -1,6 +1,6 @@
 # Area Preserving via Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: May 30th 2019
+# Date: July 6th 2019
 
 
 """
@@ -30,7 +30,7 @@ cov = [[.05, 0], [0, .05]]
 N = 50
 data = np.random.multivariate_normal(mean, cov, N).clip(-0.99, 0.99)
 
-use_gpu = True
+use_gpu = False
 if use_gpu and torch.cuda.is_available():
     device = 'cuda:0'
 else:

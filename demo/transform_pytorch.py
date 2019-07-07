@@ -1,6 +1,6 @@
 # Regularized Wasserstein Means (RWM)
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: May 30th 2019
+# Date: July 6th 2019
 
 """
 ===========================================
@@ -49,6 +49,7 @@ label_p = label_p.transpose()
 
 data_p1 = data_p.copy()
 data_e1 = data_e.copy()
+
 
 # -------------------------------------- #
 # --------- w/o regularization --------- #
@@ -129,9 +130,8 @@ ot_reg.cluster(reg_type='transform', reg=10, max_iter_h=5000, lr=0.5, max_iter_p
 tock = time.time()
 print("total running time : {} seconds".format(tock-tick))
 
-# Compute OT one more time to disperse the centroids into the empirical domain.
-# This almost does not change the correspondence but can give better positions.
-# This is optional.
+# Compute vanilla OT one more time to disperse the centroids into the empirical domain.
+# This optional step almost does not change the correspondence but gives better positions.
 print("[optional] distribute centroids into target domain...")
 ot_reg.cluster(0, max_iter_h=5000, lr=0.1, max_iter_p=1)
 

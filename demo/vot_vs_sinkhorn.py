@@ -24,8 +24,6 @@ from scipy.spatial.distance import cdist
 mean, cov = [0, 0], [[.08, 0], [0, .08]]
 N, M = 100, 100
 data_p = np.random.multivariate_normal(mean, cov, N).clip(-0.99, 0.99)
-while data_p.shape[0] != N:
-    data_p = np.random.multivariate_normal(mean, cov, N).clip(-0.99, 0.99)
 p_coor_before = data_p.copy()
 data_e, _ = utils.random_sample(M, 2, sampling='disk')
 plt.close('all')
