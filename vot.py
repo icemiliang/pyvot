@@ -19,28 +19,31 @@ class Vot:
     def __init__(self, data_p, data_e, label_p=None, label_e=None,
                  mass_p=None, mass_e=None, thres=1e-5, verbose=True):
         """ set up parameters
+
         Args:
             thres float: threshold to break loops
-            ratio float: the ratio of num of e to the num of p
-            data_p pytorch floattensor: initial coordinates of p
-            label_p pytorch inttensor: labels of p
-            mass_p pytorch floattensor: weights of p
+            data_p numpy ndarray: initial coordinates of p
+            label_p numpy ndarray: labels of p
+            mass_p numpy ndarray: weights of p
 
         Atts:
             thres    float: Threshold to break loops
             lr       float: Learning rate
-            ratio    float: ratio of num_e to num_p
             verbose   bool: console output verbose flag
             num_p      int: number of p
-            X_p    pytorch floattensor: coordinates of p
-            y_p    pytorch inttensor: labels of p
-            mass_p pytorch floattensor: mass of clusters of p
-
+            data_p     numpy ndarray: coordinates of p
+            data_e     numpy ndarray: coordinates of e
+            label_p    numpy ndarray: labels of p
+            label_e    numpy ndarray: labels of e
+            mass_p     numpy ndarray: mass of clusters of p
+            mass_e     numpy ndarray: mass of e
+            dirac_p    numpy ndarray: dirac measure of p
         """
+
         if not isinstance(data_p, np.ndarray):
-            raise Exception('data_p is not a pytorch tensor')
+            raise Exception('data_p is not a numpy ndarray')
         if not isinstance(data_e, np.ndarray):
-            raise Exception('data_e is not a pytorch tensor')
+            raise Exception('data_e is not a numpy ndarray')
         self.data_p = data_p
         self.data_e = data_e
         self.data_p_original = self.data_p.copy()
@@ -50,26 +53,26 @@ class Vot:
         num_e = data_e.shape[0]
 
         if label_p is not None and not isinstance(label_p, np.ndarray):
-            raise Exception('label_p is not a pytorch tensor')
+            raise Exception('label_p is not a numpy ndarray')
         if label_e is not None and not isinstance(label_e, np.ndarray):
-            raise Exception('label_e is not a pytorch tensor')
+            raise Exception('label_e is not a numpy ndarray')
         self.label_p = label_p
         self.label_e = label_e
 
         if mass_p is not None and not isinstance(mass_p, np.ndarray):
-            raise Exception('label_p is not a pytorch tensor')
+            raise Exception('label_p is not a numpy ndarray')
         if mass_p is not None:
-            self.p_dirac = mass_p
+            self.dirac_p = mass_p
         else:
-            self.p_dirac = np.ones(num_p) / num_p
+            self.dirac_p = np.ones(num_p) / num_p
 
         self.thres = thres
         self.verbose = verbose
 
-        # "mass_p" is the sum of its corresponding e's weights, its own weight is "p_dirac"
+        # "mass_p" is the sum of its corresponding e's weights, its own weight is "dirac_p"
         self.mass_p = np.zeros(num_p)
 
-        self.p_dirac = mass_p if mass_p is not None else np.ones(num_p) / num_p
+        self.dirac_p = mass_p if mass_p is not None else np.ones(num_p) / num_p
         self.mass_e = mass_e if mass_e is not None else np.ones(num_e) / num_e
 
         if np.max(self.data_p) <= 1 and np.min(self.data_p) >= -1:
@@ -79,7 +82,12 @@ class Vot:
         """ compute Wasserstein clustering
 
         Args:
-            reg int: flag for regularization, 0 means no regularization
+            reg_type   int: specify regulazation term, 0 means no regularization
+            reg        int: regularization weight
+            max_iter_p int: max num of iteration of clustering
+            max_iter_h int: max num of updating h
+            lr       float: GD learning rate
+            lr_decay float: learning rate decay
 
         See Also
         --------
@@ -93,18 +101,21 @@ class Vot:
             if self.update_p(iter_p, reg_type, reg):
                 break
 
-    def update_map(self, dist, max_iter, lr=0.2, beta=0.9, lr_decay=200):
+    def update_map(self, dist, max_iter=3000, lr=0.2, beta=0.9, lr_decay=200):
         """ update each p to the centroids of its cluster
 
         Args:
-            iter_p int: iteration index of clustering
-            iter_h int: iteration index of transportation
+            dist    numpy ndarray: dist matrix across p and e
+            max_iter   int: max num of iterations
+            lr       float: gradient descent learning rate
+            beta     float: GD momentum
+            lr_decay float: learning rate decay
 
         Returns:
             bool: convergence or not, determined by max derivative change
         """
-        num_p = self.data_p.shape[0]
 
+        num_p = self.data_p.shape[0]
         dh = 0
 
         for i in range(max_iter):
@@ -113,14 +124,14 @@ class Vot:
             self.mass_p = np.bincount(self.e_idx, weights=self.mass_e, minlength=num_p)
 
             # gradient descent with momentum and decay
-            dh = beta * dh + (1-beta) * (self.mass_p - self.p_dirac)
+            dh = beta * dh + (1-beta) * (self.mass_p - self.dirac_p)
             if i != 0 and i % lr_decay == 0:
                 lr *= 0.5
             # update dist matrix
             dist += lr * dh[:, None]
 
             # check if converge
-            max_change = np.max(dh / self.p_dirac)
+            max_change = np.max(dh / self.dirac_p)
             if max_change.size > 1:
                 max_change = max_change[0]
             max_change *= 100
@@ -162,6 +173,7 @@ class Vot:
         Returns:
             bool: convergence or not, determined by max p change
         """
+
         num_p = self.data_p.shape[0]
 
         max_change_pct = 0.0
@@ -312,55 +324,53 @@ class VotAP:
     # p are the centroids
     # e are the area samples
 
-    def __init__(self, data, sampling='square', label=None, mass_p=None, thres=1e-5, ratio=100, verbose=True):
+    def __init__(self, data, sampling='square', label=None, mass_p=None, thres=1e-5, ratio=100, verbose=False):
         """ set up parameters
         Args:
             thres float: threshold to break loops
             ratio float: the ratio of num of e to the num of p
-            data pytorch floattensor: initial coordinates of p
-            label pytorch inttensor: labels of p
-            mass_p pytorch floattensor: weights of p
+            data numpy ndarray: initial coordinates of p
+            label numpy ndarray: labels of p
+            mass_p numpy ndarray: weights of p
 
         Atts:
             thres    float: Threshold to break loops
             lr       float: Learning rate
-            ratio    float: ratio of num_e to num_p
             verbose   bool: console output verbose flag
-            num_p      int: number of p
-            X_p    pytorch floattensor: coordinates of p
-            y_p    pytorch inttensor: labels of p
-            mass_p pytorch floattensor: mass of clusters of p
-
+            data_p    numpy ndarray: coordinates of p
+            label_p   numpy ndarray: labels of p
+            mass_p    numpy ndarray: mass of clusters of p
+            dirac_p   numpy ndarray: dirac measure of p
         """
+
         if not isinstance(data, np.ndarray):
-            raise Exception('input is not a pytorch tensor')
+            raise Exception('input is not a numpy ndarray')
         self.data_p = data
         self.data_p_original = self.data_p.copy()
         num_p = data.shape[0]
 
-        if label and not isinstance(label, np.ndarray):
-            raise Exception('label is neither a numpy array not a pytorch tensor')
+        if label is not None and not isinstance(label, np.ndarray):
+            raise Exception('label is neither a numpy array not a numpy ndarray')
         self.label_p = label
 
-        if mass_p and not isinstance(mass_p, np.ndarray):
-            raise Exception('label is neither a numpy array not a pytorch tensor')
+        if mass_p is not None and not isinstance(mass_p, np.ndarray):
+            raise Exception('label is neither a numpy array not a numpy ndarray')
         if mass_p:
-            self.p_dirac = mass_p
+            self.dirac_p = mass_p
         else:
-            self.p_dirac = np.ones(num_p) / num_p
+            self.dirac_p = np.ones(num_p) / num_p
 
         self.thres = thres
         self.verbose = verbose
-        self.ratio = ratio
 
-        # "mass_p" is the sum of its corresponding e's weights, its own weight is "p_dirac"
+        # "mass_p" is the sum of its corresponding e's weights, its own weight is "dirac_p"
         self.mass_p = np.zeros(num_p)
 
         assert np.max(self.data_p) <= 1 and np.min(self.data_p) >= -1,\
             "Input output boundary (-1, 1)."
 
         num_p = self.data_p.shape[0]
-        num_e = int(self.ratio * num_p)
+        num_e = int(ratio * num_p)
         dim = self.data_p.shape[1]
         self.data_e, _ = utils.random_sample(num_e, dim, sampling=sampling)
 
@@ -378,24 +388,11 @@ class VotAP:
             lr float: learning rate
             lr_decay float: learning rate decay
 
-        Atts:
-            num_p int: number of p
-            num_e int: number of e
-            dim int: dimentionality
-            data_e pytorch floattensor: coordinates of e
-            label_e pytorch inttensor: label of e
-            base_dist pytorch floattensor: pairwise distance between p and e
-            h  pytorch floattensor: VOT optimizer, "height vector
-            dh  pytorch floattensor: gradient of h
-            max_change pytorch floattensor: maximum gradient change
-            max_change_pct pytorch floattensor: relative maximum gradient change
-            imgs list: list of plots to show mapping progress
-            e_idx pytorch inttensor: p index of every e
-
         :return:
         """
+
         num_p = self.data_p.shape[0]
-        num_e = self.ratio * num_p
+        num_e = self.data_e.shape[0]
 
         imgs = []
         dh = 0
@@ -407,13 +404,13 @@ class VotAP:
             # calculate total mass of each cell
             self.mass_p = np.bincount(self.e_idx, minlength=num_p) / num_e
             # gradient descent with momentum and decay
-            dh = beta * dh + (1-beta) * (self.mass_p - self.p_dirac)
+            dh = beta * dh + (1-beta) * (self.mass_p - self.dirac_p)
             if i != 0 and i % lr_decay == 0:
                 lr *= 0.9
             self.dist += lr * dh[:, None]
 
             # check if converge
-            max_change = np.max(dh / self.p_dirac)
+            max_change = np.max(dh / self.dirac_p)
             if max_change.size > 1:
                 max_change = max_change[0]
             max_change *= 100
