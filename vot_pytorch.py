@@ -18,23 +18,25 @@ class Vot:
     def __init__(self, data_p, data_e, label_p=None, label_e=None,
                  mass_p=None, mass_e=None, thres=1e-5, verbose=True, device='cpu'):
         """ set up parameters
+
         Args:
             thres float: threshold to break loops
-            ratio float: the ratio of num of e to the num of p
-            data_p pytorch floattensor: initial coordinates of p
-            label_p pytorch inttensor: labels of p
-            mass_p pytorch floattensor: weights of p
+            data_p numpy ndarray: initial coordinates of p
+            label_p numpy ndarray: labels of p
+            mass_p numpy ndarray: weights of p
 
         Atts:
             thres    float: Threshold to break loops
             lr       float: Learning rate
-            ratio    float: ratio of num_e to num_p
             verbose   bool: console output verbose flag
             num_p      int: number of p
-            X_p    pytorch floattensor: coordinates of p
-            y_p    pytorch inttensor: labels of p
-            mass_p pytorch floattensor: mass of clusters of p
-
+            data_p     pytorch floattensor: coordinates of p
+            data_e     pytorch floattensor: coordinates of e
+            label_p    pytorch inttensor: labels of p
+            label_e    pytorch inttensor: labels of e
+            mass_p     pytorch floattensor: mass of clusters of p
+            mass_e     pytorch floattensor: mass of e
+            dirac_p    pytorch floattensor: dirac measure of p
         """
         if not isinstance(data_p, torch.Tensor):
             raise Exception('data_p is not a pytorch tensor')
@@ -60,18 +62,18 @@ class Vot:
         if mass_p is not None and not isinstance(mass_p, torch.Tensor):
             raise Exception('label_p is not a pytorch tensor')
         if mass_p is not None:
-            self.p_dirac = mass_p
+            self.dirac_p = mass_p
         else:
-            self.p_dirac = torch.ones(num_p).float().to(device) / num_p
+            self.dirac_p = torch.ones(num_p).float().to(device) / num_p
 
         self.thres = thres
         self.verbose = verbose
         self.device = device
 
-        # "mass_p" is the sum of its corresponding e's weights, its own weight is "p_dirac"
+        # "mass_p" is the sum of its corresponding e's weights, its own weight is "dirac_p"
         self.mass_p = torch.zeros(num_p).float().to(self.device)
 
-        self.p_dirac = mass_p if mass_p is not None else torch.ones(num_p).float().to(self.device) / num_p
+        self.dirac_p = mass_p if mass_p is not None else torch.ones(num_p).float().to(self.device) / num_p
         self.mass_e = mass_e if mass_e is not None else torch.ones(num_e).float().to(self.device) / num_e
 
         assert torch.max(self.data_p) <= 1 and torch.min(self.data_p) >= -1,\
@@ -81,7 +83,12 @@ class Vot:
         """ compute Wasserstein clustering
 
         Args:
-            reg int: flag for regularization, 0 means no regularization
+            reg_type   int: specify regulazation term, 0 means no regularization
+            reg        int: regularization weight
+            max_iter_p int: max num of iteration of clustering
+            max_iter_h int: max num of updating h
+            lr       float: GD learning rate
+            lr_decay float: learning rate decay
 
         See Also
         --------
@@ -99,12 +106,16 @@ class Vot:
         """ update each p to the centroids of its cluster
 
         Args:
-            iter_p int: iteration index of clustering
-            iter_h int: iteration index of transportation
+            dist    pytorch floattensor: dist matrix across p and e
+            max_iter   int: max num of iterations
+            lr       float: gradient descent learning rate
+            beta     float: GD momentum
+            lr_decay float: learning rate decay
 
         Returns:
             bool: convergence or not, determined by max derivative change
         """
+
         num_p = self.data_p.shape[0]
 
         dh = 0
@@ -115,14 +126,14 @@ class Vot:
             self.mass_p = torch.bincount(self.e_idx, weights=self.mass_e, minlength=num_p)
 
             # gradient descent with momentum and decay
-            dh = beta * dh + (1-beta) * (self.mass_p - self.p_dirac)
+            dh = beta * dh + (1-beta) * (self.mass_p - self.dirac_p)
             if i != 0 and i % lr_decay == 0:
                 lr *= 0.5
             # update dist matrix
             dist += lr * dh[:, None]
 
             # check if converge
-            max_change = torch.max(dh / self.p_dirac)
+            max_change = torch.max(dh / self.dirac_p)
             if max_change.numel() > 1:
                 max_change = max_change[0]
             max_change *= 100
@@ -164,6 +175,7 @@ class Vot:
         Returns:
             bool: convergence or not, determined by max p change
         """
+
         num_p = self.data_p.shape[0]
 
         max_change_pct = 0.0
@@ -204,9 +216,9 @@ class Vot:
             """ objective function incorporating labels
 
             Args:
-                p  np.array(np,dim):   p
-                p0 np.array(np,dim):  centroids of e
-                label np.array(np,): labels of p
+                p  pytorch floattensor:   p
+                p0 pytorch floattensor:  centroids of e
+                label pytorch inttensor: labels of p
                 reg float: regularizer weight
 
             Returns:
@@ -309,21 +321,20 @@ class VotAP:
         Args:
             thres float: threshold to break loops
             ratio float: the ratio of num of e to the num of p
-            data pytorch floattensor: initial coordinates of p
-            label pytorch inttensor: labels of p
-            mass_p pytorch floattensor: weights of p
+            data numpy ndarray: initial coordinates of p
+            label numpy ndarray: labels of p
+            mass_p numpy ndarray: weights of p
 
         Atts:
             thres    float: Threshold to break loops
             lr       float: Learning rate
-            ratio    float: ratio of num_e to num_p
             verbose   bool: console output verbose flag
-            num_p      int: number of p
-            X_p    pytorch floattensor: coordinates of p
-            y_p    pytorch inttensor: labels of p
-            mass_p pytorch floattensor: mass of clusters of p
-
+            data_p    pytorch floattensor: coordinates of p
+            label_p   pytorch inttensor: labels of p
+            mass_p    pytorch floattensor: mass of clusters of p
+            dirac_p   pytorch floattensor: dirac measure of p
         """
+
         if not isinstance(data, torch.Tensor):
             raise Exception('input is not a pytorch tensor')
         self.data_p = data
@@ -337,16 +348,16 @@ class VotAP:
         if mass_p and not isinstance(mass_p, torch.Tensor):
             raise Exception('label is neither a numpy array not a pytorch tensor')
         if mass_p:
-            self.p_dirac = mass_p
+            self.dirac_p = mass_p
         else:
-            self.p_dirac = torch.ones(num_p).float().to(device) / num_p
+            self.dirac_p = torch.ones(num_p).float().to(device) / num_p
 
         self.thres = thres
         self.verbose = verbose
         self.ratio = ratio
         self.device = device
 
-        # "mass_p" is the sum of its corresponding e's weights, its own weight is "p_dirac"
+        # "mass_p" is the sum of its corresponding e's weights, its own weight is "dirac_p"
         self.mass_p = torch.zeros(num_p).float().to(self.device)
 
         assert torch.max(self.data_p) <= 1 and torch.min(self.data_p) >= -1,\
@@ -365,29 +376,14 @@ class VotAP:
         """ map p into the area
 
         Args:
-            sampling string: sampling area
+            sampling      string: sampling area
             plot_filename string: filename of the gif image
-            beta float: gradient descent momentum
+            beta   float: gradient descent momentum
             max_iter int: maximum number of iteration
-            lr float: learning rate
+            lr     float: learning rate
             lr_decay float: learning rate decay
-
-        Atts:
-            num_p int: number of p
-            num_e int: number of e
-            dim int: dimentionality
-            data_e pytorch floattensor: coordinates of e
-            label_e pytorch inttensor: label of e
-            base_dist pytorch floattensor: pairwise distance between p and e
-            h  pytorch floattensor: VOT optimizer, "height vector
-            dh  pytorch floattensor: gradient of h
-            max_change pytorch floattensor: maximum gradient change
-            max_change_pct pytorch floattensor: relative maximum gradient change
-            imgs list: list of plots to show mapping progress
-            e_idx pytorch inttensor: p index of every e
-
-        :return:
         """
+
         num_p = self.data_p.shape[0]
         num_e = self.ratio * num_p
         dim = self.data_p.shape[1]
@@ -402,13 +398,13 @@ class VotAP:
             # calculate total mass of each cell
             self.mass_p = torch.bincount(self.e_idx, minlength=num_p).float().to(self.device) / num_e
             # gradient descent with momentum and decay
-            dh = beta * dh + (1-beta) * (self.mass_p - self.p_dirac)
+            dh = beta * dh + (1-beta) * (self.mass_p - self.dirac_p)
             if i != 0 and i % lr_decay == 0:
                 lr *= 0.9
             self.dist += lr * dh[:, None]
 
             # check if converge
-            max_change = torch.max(dh / self.p_dirac)
+            max_change = torch.max(dh / self.dirac_p)
             if max_change.numel() > 1:
                 max_change = max_change[0]
             max_change *= 100

@@ -31,8 +31,8 @@ import torch
 
 
 # Generate data
-num_e = 300
-num_p = 300
+num_e = 2000
+num_p = 100
 data_e, label_e = sklearn.datasets.make_moons(n_samples=num_e, noise=0.05, random_state=1)
 data_p, label_p = sklearn.datasets.make_moons(n_samples=num_p, noise=0.05, random_state=1)
 data_p = (data_p - [0.5, 0.25]) / 2
@@ -68,10 +68,10 @@ label_e = torch.from_numpy(label_e)
 
 ot = Vot(data_p=data_p, data_e=data_e,
          label_p=label_p, label_e=label_e,
-         device=device, verbose=True)
+         device=device, verbose=False)
 print("running Wasserstein clustering...")
 tick = time.time()
-ot.cluster(0, max_iter_h=5000, max_iter_p=1, lr=0.5, lr_decay=500)  # 0: w/o regularization
+ot.cluster(0, max_iter_h=5000, max_iter_p=5, lr=0.2, lr_decay=500)  # 0: w/o regularization
 tock = time.time()
 print('total time: {0:.4f}'.format(tock-tick))
 
@@ -123,10 +123,10 @@ data_p1 = torch.from_numpy(data_p1)
 data_e1 = torch.from_numpy(data_e1)
 ot_reg = Vot(data_p=data_p1, data_e=data_e1,
              label_p=label_p, label_e=label_e,
-             device=device, verbose=True)
+             device=device, verbose=False)
 print("running regularized Wasserstein clustering...")
 tick = time.time()
-ot_reg.cluster(reg_type='transform', reg=10, max_iter_h=5000, lr=0.5, max_iter_p=5)
+ot_reg.cluster(reg_type='transform', reg=20, max_iter_h=5000, lr=0.2, max_iter_p=5)
 tock = time.time()
 print("total running time : {} seconds".format(tock-tick))
 
