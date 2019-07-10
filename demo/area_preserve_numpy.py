@@ -39,7 +39,7 @@ ot = VotAP(data, sampling='square', ratio=1000)
 
 # ----- map ------ #
 tick = time.time()
-# vot.map(plot_filename='area_preserve.gif', max_iter=300)
+# ot.map(plot_filename='area_preserve.gif', max_iter=300)
 ot.map(max_iter=300)
 tock = time.time()
 print('total time: {0:.4f}'.format(tock-tick))

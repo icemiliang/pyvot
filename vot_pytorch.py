@@ -9,7 +9,6 @@ import utils
 import torch
 import warnings
 import torch.optim as optim
-import numpy as np
 
 
 class Vot:

@@ -418,7 +418,7 @@ class VotAP:
             if self.verbose and i % 10 == 0:
                 print("{0:d}: max gradient {1:.2f}%".format(i, max_change))
             # plot to gif, TODO this is time consuming, got a better way?
-            if plot_filename:
+            if plot_filename and i % 10 == 0:
                 fig = utils.plot_map(self.data_e, self.e_idx / (num_p - 1))
                 img = utils.fig2data(fig)
                 imgs.append(img)

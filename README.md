@@ -16,12 +16,17 @@ More examples can be found in [demo/](demo/README.md).
 ![alt text](demo/pics/vot_vs_sinkhorn.png?raw=true)
 
 ## Dependencies
-* Python >= 3.5
-* NumPy >= 1.15.4
-* SciPy >= 1.1.0 (for regularization)
-* scikit-image >= 0.14.1 (for geometric transformation)
-* Matplotlib >= 3.0.2 (for demo)
-* PyTorch >= 1.1.0 (only for the pytorch version)
+
+See requirements.txt for details.
+
+* Python
+* NumPy
+* SciPy
+* Imageio
+* scikit-image
+* scikit-learn
+* Matplotlib
+* PyTorch
 
 ## References
 #### Citing the package
@@ -58,4 +63,4 @@ Mi, Liang, Wen Zhang, and Yalin Wang. "Regularized Wasserstein Means Based on Va
 [3] Mi, Liang, Wen Zhang, and Yalin Wang. "[Regularized Wasserstein Means Based on Variational Transportation.](http://arxiv.org/abs/1812.00338)" arXiv preprint arXiv:1812.00338 (2018).
 
 ## Contact
-Please contact Liang Mi icemiliang@gmail.com for any issues. 
+Please contact Liang Mi icemiliang@gmail.com for any issues. Pull requests and issues are welcome.

@@ -54,8 +54,8 @@ lines = mc.LineCollection(ot_map, colors=utils.color_light_grey)
 fig232 = plt.subplot(232); plt.xlim(minx, maxx); plt.ylim(miny, maxy); plt.grid(True);
 plt.title('VOT map ({0:.4f} s)'.format(tock-tick))
 fig232.add_collection(lines)
-plt.scatter(p_coor_before[:, 0], p_coor_before[:, 1], marker='x', color=utils.color_red, zorder=3)
-plt.scatter(vot.data_p[:, 0], vot.data_p[:, 1], marker='+', color=utils.color_dark_blue, zorder=2)
+plt.scatter(p_coor_before[:, 0], p_coor_before[:, 1], marker='+', color=utils.color_dark_blue, zorder=2)
+plt.scatter(vot.data_p[:, 0], vot.data_p[:, 1], marker='x', color=utils.color_red, zorder=3)
 
 # ------ plot after ----- #
 plt.subplot(233); plt.xlim(minx, maxx); plt.ylim(miny, maxy); plt.grid(True); plt.title('VOT after')
