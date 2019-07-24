@@ -75,8 +75,8 @@ class Vot:
         self.dirac_p = mass_p if mass_p is not None else np.ones(num_p) / num_p
         self.mass_e = mass_e if mass_e is not None else np.ones(num_e) / num_e
 
-        if np.max(self.data_p) <= 1 and np.min(self.data_p) >= -1:
-            warnings.warn("Input output boundary (-1, 1).")
+        assert np.max(self.data_p) <= 1 and np.min(self.data_p) >= -1,\
+            "Input output boundary (-1, 1)."
 
     def cluster(self, reg_type=0, reg=0.01, lr=0.2, max_iter_p=10, max_iter_h=2000, lr_decay=200):
         """ compute Wasserstein clustering
