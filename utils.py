@@ -20,6 +20,11 @@ color_light_red = [1.0, 0.54, 0.5]
 color_light_grey = [0.7, 0.7, 0.7]
 
 
+def assert_boundary(data):
+    assert data.max() < 1, warnings.warn("Data out of boundary (-1, 1).")
+    assert -1 < data.min(), warnings.warn("Data out of boundary (-1, 1).")
+
+
 def fig2data(fig):
     fig.canvas.draw()
 
@@ -39,7 +44,7 @@ def fig2img(fig):
 
 def random_sample(num, dim, sampling='square'):
     """ randomly sample the area with dirac measures
-
+        area boundary: [-0.99, 0.99] in each dimension
     """
     data = None
 
@@ -59,7 +64,7 @@ def random_sample(num, dim, sampling='square'):
         x = np.sqrt(r) * np.cos(theta)
         y = np.sqrt(r) * np.sin(theta)
         data = np.concatenate((x[:, None], y[:, None]), axis=1)
-    elif sampling == 'gaussian':
+    elif sampling == 'gaussian' or sampling == 'gauss':
         mean = [0, 0]
         cov = [[.1, 0], [0, .1]]
         data = np.random.multivariate_normal(mean, cov, num).clip(-0.99, 0.99)
@@ -88,41 +93,39 @@ def rigid_transform_3d_pytorch(p1, p2):
     pp1 = p1 - center_p1
     pp2 = p2 - center_p2
 
-    H = torch.mm(pp1.t(), pp2)
-    U, S, Vt = torch.svd(H)
-    R = torch.mm(Vt.t(), U.t())
+    h = torch.mm(pp1.t(), pp2)
+    u, _, v = torch.svd(h)
+    r = torch.mm(v.t(), u.t())
 
     # reflection
-    if np.linalg.det(R.cpu().numpy()) < 0:
-        Vt[2, :] *= -1
-        R = torch.mm(Vt.t(), U.t())
+    if np.linalg.det(r.cpu().numpy()) < 0:
+        v[2, :] *= -1
+        r = torch.mm(v.t(), u.t())
 
-    t = torch.mm(-R, center_p1.t()) + center_p2.t()
+    t = torch.mm(-r, center_p1.t()) + center_p2.t()
 
-    return R, t
+    return r, t
 
 
-def rigid_transform_3d(p1, p2):
+def rigid_transform_3d_numpy(p1, p2):
     center_p1 = np.mean(p1, axis=0, keepdims=True)
     center_p2 = np.mean(p2, axis=0, keepdims=True)
 
     pp1 = p1 - center_p1
     pp2 = p2 - center_p2
 
-    H = np.matmul(pp1.T, pp2)
-
-    U, _, Vt = np.linalg.svd(H)
-
-    R = np.matmul(Vt.T, U.T)
+    h = np.matmul(pp1.T, pp2)
+    u, _, v = np.linalg.svd(h)
+    r = np.matmul(v.T, u.T)
 
     # reflection
-    if np.linalg.det(R) < 0:
-        Vt[2, :] *= -1
-        R = np.matmul(Vt.T, U.T)
+    if np.linalg.det(r) < 0:
+        v[2, :] *= -1
+        r = np.matmul(v.T, u.T)
 
-    t = np.matmul(-R, center_p1.T) + center_p2.T
+    t = np.matmul(-r, center_p1.T) + center_p2.T
 
-    return R, t
+    return r, t
 
 
 def estimate_transform_target(p1, p2):
@@ -135,8 +138,10 @@ def estimate_transform_target(p1, p2):
     elif p1.shape[1] != 3:
         raise Exception("expected 2d or 3d points")
 
-    R, t = rigid_transform_3d(p1, p2)
-    At = np.matmul(R, p1.T) + t
+    # TODO downsample points if too many
+
+    r, t = rigid_transform_3d_numpy(p1, p2)
+    At = np.matmul(r, p1.T) + t
     if expand_dim:
         At = At[:-1, :]
     return At.T
@@ -156,11 +161,12 @@ def estimate_transform_target_pytorch(p1, p2):
     elif p1.shape[1] != 3:
         raise Exception("expected 2d or 3d points")
 
+    # TODO downsample points if too many
     p11 = p1[~mask]
     p22 = p2[~mask]
 
-    R, t = rigid_transform_3d_pytorch(p11, p22)
-    At = torch.mm(R, p1.t()) + t
+    r, t = rigid_transform_3d_pytorch(p11, p22)
+    At = torch.mm(r, p1.t()) + t
     if expand_dim:
         At = At[:-1, :]
     return At.t()

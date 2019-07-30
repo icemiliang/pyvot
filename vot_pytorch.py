@@ -78,6 +78,210 @@ class Vot:
         assert torch.max(self.data_p) <= 1 and torch.min(self.data_p) >= -1,\
             "Input output boundary (-1, 1)."
 
+    def cluster(self, lr=0.2, max_iter_p=10, max_iter_h=2000, lr_decay=200):
+        """ compute Wasserstein clustering
+
+        Args:
+            reg_type   int: specify regulazation term, 0 means no regularization
+            reg        int: regularization weight
+            max_iter_p int: max num of iteration of clustering
+            max_iter_h int: max num of updating h
+            lr       float: GD learning rate
+            lr_decay float: learning rate decay
+
+        See Also
+        --------
+        update_p : update p
+        update_map: compute optimal transportation
+        """
+
+        for iter_p in range(max_iter_p):
+            dist = torch.cdist(self.data_p, self.data_e, p=2).float().to(self.device) ** 2
+            self.update_map(dist, max_iter_h, lr=lr, lr_decay=lr_decay)
+            if self.update_p(iter_p):
+                break
+
+    def update_map(self, dist, max_iter, lr=0.2, beta=0.9, lr_decay=200):
+        """ update each p to the centroids of its cluster
+
+        Args:
+            dist    pytorch floattensor: dist matrix across p and e
+            max_iter   int: max num of iterations
+            lr       float: gradient descent learning rate
+            beta     float: GD momentum
+            lr_decay float: learning rate decay
+
+        Returns:
+            bool: convergence or not, determined by max derivative change
+        """
+
+        num_p = self.data_p.shape[0]
+
+        dh = 0
+
+        for i in range(max_iter):
+            # find nearest p for each e and add mass to p
+            self.e_idx = torch.argmin(dist, dim=0)
+            self.mass_p = torch.bincount(self.e_idx, weights=self.mass_e, minlength=num_p)
+
+            # gradient descent with momentum and decay
+            dh = beta * dh + (1-beta) * (self.mass_p - self.dirac_p)
+            if i != 0 and i % lr_decay == 0:
+                lr *= 0.5
+            # update dist matrix
+            dist += lr * dh[:, None]
+
+            # check if converge
+            max_change = torch.max(dh / self.dirac_p)
+            if max_change.numel() > 1:
+                max_change = max_change[0]
+            max_change *= 100
+
+            if self.verbose and i % 10 == 0:
+                print("{0:d}: max gradient {1:.2f}%".format(i, max_change))
+
+            if max_change <= 1:
+                break
+
+        running_median, previous_median = [], 0
+
+        for i in range(max_iter):
+            e_idx = torch.argmin(dist, dim=0)
+            mass_p = torch.bincount(self.e_idx, weights=self.mass_e, minlength=num_p)
+            dh = beta * dh + (1 - beta) * (mass_p - self.dirac_p) / batch_size
+            if i != 0 and i % lr_decay == 0:
+                lr *= 0.5
+            dist += lr * dh[:, None]
+            max_change = torch.max(dh / self.dirac_p)
+            if max_change.numel() > 1:
+                max_change = max_change[0]
+            max_change *= 100
+            if self.verbose and i % 10 == 0:
+                print("{0:d}: mass diff {1:.2f}%".format(i, max_change))
+
+            if max_change < 1:
+                if self.verbose:
+                    print("{0:d}: mass diff {1:.2f}%".format(i, max_change))
+                break
+
+            # early stop if loss does not decrease TODO better way to early stop?
+            running_median.append(max_change)
+            if len(running_median) >= 100:
+                if previous_median != 0 and \
+                        torch.abs(
+                            torch.median(torch.FloatTensor(running_median)) - previous_median) / previous_median < 0.01:
+                    print("loss saturated, early stopped")
+                    break
+                else:
+                    previous_median = torch.median(torch.FloatTensor(running_median))
+                    running_median = []
+        # labels come from centroids
+        if self.label_p is not None:
+            self.e_predict = self.label_p[self.e_idx]
+
+    def update_p(self, iter_p=0):
+
+        """ update each p to the centroids of its cluster
+
+        Args:
+            iter_p int: iteration index
+
+        Returns:
+            bool: convergence or not, determined by max p change
+        """
+
+        num_p = self.data_p.shape[0]
+
+        max_change_pct = 0.0
+        # update p to the centroid of its clustered e samples
+        bincount = torch.bincount(self.e_idx, minlength=num_p).float().to(self.device)
+        if 0 in bincount:
+            print('Empty cluster found, optimal transport probably did not converge\n'
+                  'Try larger lr or max_iter after checking the measures.')
+            # return False
+        eps = 1e-8
+        for i in range(self.data_p.shape[1]):
+            # update p to the centroid of their correspondences one dimension at a time
+            p_target = torch.bincount(self.e_idx, weights=self.data_e[:, i], minlength=num_p).float().to(self.device) / bincount
+            change_pct = torch.max(torch.abs((self.data_p[:, i] - p_target) / (self.data_p[:, i])+eps))
+            max_change_pct = max(max_change_pct, change_pct)
+            self.data_p[:, i] = p_target
+
+        # replace nan by original data
+        mask = torch.isnan(self.data_p).any(dim=1)
+        self.data_p[mask] = self.data_p_original[mask].clone()
+        print("iter {0:d}: max centroid change {1:.2f}%".format(iter_p, 100 * max_change_pct))
+        # return max p coor change
+        return True if max_change_pct < 0.01 else False
+
+
+class VotReg:
+    """ variational optimal transportation """
+
+    def __init__(self, data_p, data_e, label_p=None, label_e=None,
+                 mass_p=None, mass_e=None, thres=1e-5, verbose=True, device='cpu'):
+        """ set up parameters
+
+        Args:
+            thres float: threshold to break loops
+            data_p numpy ndarray: initial coordinates of p
+            label_p numpy ndarray: labels of p
+            mass_p numpy ndarray: weights of p
+
+        Atts:
+            thres    float: Threshold to break loops
+            lr       float: Learning rate
+            verbose   bool: console output verbose flag
+            num_p      int: number of p
+            data_p     pytorch floattensor: coordinates of p
+            data_e     pytorch floattensor: coordinates of e
+            label_p    pytorch inttensor: labels of p
+            label_e    pytorch inttensor: labels of e
+            mass_p     pytorch floattensor: mass of clusters of p
+            mass_e     pytorch floattensor: mass of e
+            dirac_p    pytorch floattensor: dirac measure of p
+        """
+        if not isinstance(data_p, torch.Tensor):
+            raise Exception('data_p is not a pytorch tensor')
+        if not isinstance(data_e, torch.Tensor):
+            raise Exception('data_e is not a pytorch tensor')
+        self.data_p = data_p.float().to(device)
+        self.data_e = data_e.float().to(device)
+        self.data_p_original = self.data_p.clone()
+        self.data_e_original = self.data_e.clone()
+
+        self.data_p.requires_grad_(True)
+
+        num_p = data_p.shape[0]
+        num_e = data_e.shape[0]
+
+        if label_p is not None and not isinstance(label_p, torch.Tensor):
+            raise Exception('label_p is not a pytorch tensor')
+        if label_e is not None and not isinstance(label_e, torch.Tensor):
+            raise Exception('label_e is not a pytorch tensor')
+        self.label_p = label_p
+        self.label_e = label_e
+
+        if mass_p is not None and not isinstance(mass_p, torch.Tensor):
+            raise Exception('label_p is not a pytorch tensor')
+        if mass_p is not None:
+            self.dirac_p = mass_p
+        else:
+            self.dirac_p = torch.ones(num_p).float().to(device) / num_p
+
+        self.thres = thres
+        self.verbose = verbose
+        self.device = device
+
+        # "mass_p" is the sum of its corresponding e's weights, its own weight is "dirac_p"
+        self.mass_p = torch.zeros(num_p).float().to(self.device)
+
+        self.dirac_p = mass_p if mass_p is not None else torch.ones(num_p).float().to(self.device) / num_p
+        self.mass_e = mass_e if mass_e is not None else torch.ones(num_e).float().to(self.device) / num_e
+
+        assert torch.max(self.data_p) <= 1 and torch.min(self.data_p) >= -1,\
+            "Input output boundary (-1, 1)."
+
     def cluster(self, reg_type=0, reg=0.01, lr=0.2, max_iter_p=10, max_iter_h=2000, lr_decay=200):
         """ compute Wasserstein clustering
 
@@ -308,6 +512,7 @@ class Vot:
         # return max change
         # return True if max_change_pct < 0.01 else False
         return False
+
 
 
 class VotAP:

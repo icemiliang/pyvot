@@ -24,7 +24,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.collections  as mc
 # import vot stuffs
-from vot import Vot
+from vot_numpy import Vot, VotReg
 import utils
 
 # -------------------------------------- #
@@ -35,10 +35,13 @@ data_e = np.loadtxt('data/e.csv', delimiter=",")
 
 # ------- run WM -------- #
 vot = Vot(data_p=data_p[:, 1:], data_e=data_e[:, 1:],
-          label_p=data_p[:, 0], label_e=data_e[:, 0],
-          verbose=False)
+             label_p=data_p[:, 0], label_e=data_e[:, 0],
+             verbose=False)
 print("running Wasserstein clustering...")
-vot.cluster(0, max_iter_p=5)  # 0: w/o regularization
+tick = time.time()
+_, pred_label_e = vot.cluster(max_iter_p=5)  # 0: w/o regularization
+tock = time.time()
+print("total running time : {0:g} seconds".format(tock-tick))
 
 # ----- plot before ----- #
 p_coor_before = vot.data_p_original
@@ -60,7 +63,7 @@ plt.scatter(p_coor_before[:, 0], p_coor_before[:, 1], marker='o', color=cp, zord
 plt.scatter(p_coor_after[:, 0], p_coor_after[:, 1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=2)
 
 # ------ plot after ----- #
-le = np.copy(vot.e_predict)
+le = np.copy(pred_label_e)
 ce = [utils.color_light_blue, utils.color_light_red]
 ce = [ce[int(label)] for _, label in np.ndenumerate(le)]
 cp = [utils.color_dark_blue, utils.color_red]
@@ -79,20 +82,20 @@ data_p = np.loadtxt('data/p.csv', delimiter=",")
 data_e = np.loadtxt('data/e.csv', delimiter=",")
 
 # ------- run WM -------- #
-vot_reg = Vot(data_p=data_p[:, 1:], data_e=data_e[:, 1:],
-          label_p=data_p[:, 0], label_e=data_e[:, 0],
-          verbose=False)
+vot_reg = VotReg(data_p=data_p[:, 1:], data_e=data_e[:, 1:],
+                 label_p=data_p[:, 0], label_e=data_e[:, 0],
+                 verbose=False)
 print("running regularized Wasserstein clustering...")
 tick = time.time()
 vot_reg.cluster(reg_type='potential', reg=0.01, max_iter_p=5)
 tock = time.time()
-print("total running time : {} seconds".format(tock-tick))
+print("total running time : {0:g} seconds".format(tock-tick))
 
 # Compute OT one more time to disperse the centroids into the empirical domain.
 # This almost does not change the correspondence but can give better positions.
 # This is optional.
 print("[optional] distribute centroids into target domain...")
-vot_reg.cluster(max_iter_p=1)
+_, pred_label_e = vot_reg.cluster(max_iter_p=1)
 
 # ----- plot before ----- #
 cp = [utils.color_blue, utils.color_red]
@@ -111,7 +114,7 @@ plt.scatter(p_coor_before[:,0], p_coor_before[:,1], marker='o', color=cp,zorder=
 plt.scatter(p_coor_after[:,0], p_coor_after[:,1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=2)
 
 # ------ plot after ----- #
-le = np.copy(vot_reg.e_predict)
+le = np.copy(pred_label_e)
 ce = [utils.color_light_blue, utils.color_light_red]
 ce = [ce[int(label)] for _, label in np.ndenumerate(le)]
 cp = [utils.color_dark_blue, utils.color_red]

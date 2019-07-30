@@ -21,7 +21,7 @@ from __future__ import division
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from vot import VotAP
+from vot_numpy import VotAP
 import matplotlib.pyplot as plt
 import matplotlib.collections as mc
 import utils
@@ -35,12 +35,12 @@ mean = [0, 0]
 cov = [[.08, 0], [0, .08]]
 N = 50
 data = np.random.multivariate_normal(mean, cov, N).clip(-0.99, 0.99)
-ot = VotAP(data, sampling='square', ratio=1000)
+ot = VotAP(data, sampling='square', ratio=100, verbose=True)
 
 # ----- map ------ #
 tick = time.time()
-# ot.map(plot_filename='area_preserve.gif', max_iter=300)
-ot.map(max_iter=300)
+# vot.map(plot_filename='area_preserve.gif', max_iter=300)
+e_idx, _ = ot.map(max_iter=3000)
 tock = time.time()
 print('total time: {0:.4f}'.format(tock-tick))
 # TODO Area preserving usually requires a pre-defined boundary.
@@ -69,7 +69,7 @@ plt.scatter(X_p_after[:, 0], X_p_after[:, 1], marker='o', facecolors='none', lin
 plt.subplot(133); plt.xlim(-1, 1); plt.ylim(-1, 1); plt.grid(True); plt.title('after')
 plt.scatter(ot.data_e[:, 0], ot.data_e[:, 1], marker='.', color=utils.color_light_grey, zorder=2, s=0.5)
 color = plt.get_cmap('viridis')
-plt.scatter(ot.data_e[:, 0], ot.data_e[:, 1], s=1, marker='o', color=color(ot.e_idx / (N - 1)))
+plt.scatter(ot.data_e[:, 0], ot.data_e[:, 1], s=1, marker='o', color=color(e_idx / (N - 1)))
 plt.scatter(X_p_after[:, 0], X_p_after[:, 1], marker='o', facecolors='none', linewidth=2, color=utils.color_red, zorder=3)
 
 # ---- plot and save ---- #
