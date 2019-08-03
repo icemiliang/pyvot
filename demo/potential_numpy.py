@@ -52,11 +52,11 @@ plt.subplot(231); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); pl
 plt.scatter(vot.data_e[:, 0], vot.data_e[:, 1], marker='.', color=utils.color_light_grey, zorder=2)
 plt.scatter(p_coor_before[:, 0], p_coor_before[:, 1], marker='o', color=cp, zorder=3)
 
-# ------ plot ot_map ------- #
+# ------ plot map ------- #
 p_coor_after = np.copy(vot.data_p)
 ot_map = [[tuple(p1), tuple(p2)] for p1, p2 in zip(p_coor_before.tolist(), p_coor_after.tolist())]
 lines = mc.LineCollection(ot_map, colors=utils.color_light_grey)
-fig232 = plt.subplot(232); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); plt.title('w/o reg ot_map')
+fig232 = plt.subplot(232); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); plt.title('w/o reg map')
 fig232.add_collection(lines)
 plt.scatter(p_coor_before[:, 0], p_coor_before[:, 1], marker='o', color=cp, zorder=3)
 plt.scatter(p_coor_after[:, 0], p_coor_after[:, 1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=2)
@@ -91,13 +91,13 @@ print("total running time : {0:g} seconds".format(tock-tick))
 print("[optional] distribute centroids into target domain...")
 _, pred_label_e = vot_reg.cluster(max_iter_p=1)
 
-# ------- plot ot_map ------ #
+# ------- plot map ------ #
 p_coor_after = np.copy(vot_reg.data_p)
 cp = [utils.color_blue, utils.color_red]
 cp = [cp[int(label)] for label in vot_reg.label_p]
 ot_map = [[tuple(p1), tuple(p2)] for p1, p2 in zip(p_coor_before.tolist(), p_coor_after.tolist())]
 lines = mc.LineCollection(ot_map, colors=utils.color_light_grey)
-fig235 = plt.subplot(235); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); plt.title('w/ reg ot_map')
+fig235 = plt.subplot(235); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); plt.title('w/ reg map')
 fig235.add_collection(lines)
 plt.scatter(p_coor_before[:, 0], p_coor_before[:, 1], marker='o', color=cp, zorder=3)
 plt.scatter(p_coor_after[:, 0], p_coor_after[:, 1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=2)

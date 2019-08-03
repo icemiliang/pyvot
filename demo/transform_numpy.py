@@ -25,7 +25,7 @@ import sklearn.datasets
 import matplotlib.pyplot as plt
 import matplotlib.collections as mc
 # import vot stuffs
-from vot_numpy import VotReg
+from vot_numpy import Vot, VotReg
 import utils
 
 
@@ -53,12 +53,10 @@ data_e1 = data_e.copy()
 # -------------------------------------- #
 
 # ------- run WM -------- #
-vot = VotReg(data_p=data_p, data_e=data_e,
-             label_p=label_p, label_e=label_e,
-             verbose=False)
+vot = Vot(data_p, data_e, label_p, label_e, verbose=False)
 print("running Wasserstein clustering...")
 tick = time.time()
-_, pred_label_e = vot.cluster(0, max_iter_p=5)  # 0: w/o regularization
+_, pred_label_e = vot.cluster(0.5, max_iter_p=5)
 tock = time.time()
 print("total running time : {0:.4f} seconds".format(tock-tick))
 
@@ -83,11 +81,10 @@ plt.scatter(p_coor_before[:, 0], p_coor_before[:, 1], marker='o', color=cp, zord
 plt.scatter(p_coor_after[:, 0], p_coor_after[:, 1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=2)
 
 # ------ plot after ----- #
-le = np.copy(pred_label_e)
 ce = [utils.color_light_blue, utils.color_light_red]
-ce = [ce[int(label)] for _, label in np.ndenumerate(le)]
+ce = [ce[int(label)] for label in pred_label_e]
 cp = [utils.color_dark_blue, utils.color_red]
-cp = [cp[int(label)] for _, label in np.ndenumerate(vot.label_p)]
+cp = [cp[int(label)] for label in vot.label_p]
 plt.subplot(233); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); plt.title('w/o reg after')
 plt.scatter(vot.data_e[:, 0], vot.data_e[:, 1], marker='.', color=ce, zorder=2)
 plt.scatter(p_coor_after[:, 0], p_coor_after[:, 1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=3)
@@ -98,9 +95,7 @@ plt.scatter(p_coor_after[:, 0], p_coor_after[:, 1], marker='o', facecolors='none
 # -------------------------------------- #
 
 # ------- run RWM ------- #
-vot_reg = VotReg(data_p=data_p1, data_e=data_e1,
-                 label_p=label_p, label_e=label_e,
-                 verbose=False)
+vot_reg = VotReg(data_p1, data_e1, label_p, label_e, verbose=False)
 print("running regularized Wasserstein clustering...")
 tick = time.time()
 _, pred_label_e = vot_reg.cluster(reg_type='transform', reg=20, max_iter_p=5)
@@ -113,15 +108,10 @@ print("total running time : {0:.4f} seconds".format(tock-tick))
 print("[optional] distribute centroids into target domain...")
 vot_reg.cluster(max_iter_p=1)
 
-# ----- plot before ----- #
-cp = [utils.color_blue, utils.color_red]
-cp = [cp[int(label)] for _, label in np.ndenumerate(vot_reg.label_p)]
-plt.subplot(234); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); plt.title('w/ reg before')
-plt.scatter(vot_reg.data_e[:, 0], vot_reg.data_e[:, 1], marker='.', color=utils.color_light_grey, zorder=2)
-plt.scatter(p_coor_before[:, 0], p_coor_before[:, 1], marker='o', color=cp, zorder=3)
-
 # ------- plot map ------ #
 p_coor_after = np.copy(vot_reg.data_p)
+cp = [utils.color_blue, utils.color_red]
+cp = [cp[int(label)] for label in vot_reg.label_p]
 ot_map = [[tuple(p1), tuple(p2)] for p1,p2 in zip(p_coor_before.tolist(), p_coor_after.tolist())]
 lines = mc.LineCollection(ot_map, colors=utils.color_light_grey)
 fig235 = plt.subplot(235); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); plt.title('w/ reg map')
@@ -130,11 +120,10 @@ plt.scatter(p_coor_before[:, 0], p_coor_before[:, 1], marker='o', color=cp, zord
 plt.scatter(p_coor_after[:, 0], p_coor_after[:, 1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=2)
 
 # ------ plot after ----- #
-le = np.copy(pred_label_e)
 ce = [utils.color_light_blue, utils.color_light_red]
-ce = [ce[int(label)] for _, label in np.ndenumerate(le)]
+ce = [ce[int(label)] for label in pred_label_e]
 cp = [utils.color_dark_blue, utils.color_red]
-cp = [cp[int(label)] for _, label in np.ndenumerate(vot_reg.label_p)]
+cp = [cp[int(label)] for label in vot_reg.label_p]
 plt.subplot(236); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); plt.title('w/ reg after')
 plt.scatter(vot.data_e[:, 0], vot_reg.data_e[:, 1], marker='.', color=ce, zorder=2)
 plt.scatter(p_coor_after[:, 0], p_coor_after[:, 1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=3)
