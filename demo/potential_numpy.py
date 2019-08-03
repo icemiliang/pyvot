@@ -34,57 +34,51 @@ data_p = np.loadtxt('data/p.csv', delimiter=",")
 data_e = np.loadtxt('data/e.csv', delimiter=",")
 
 # ------- run WM -------- #
-vot = Vot(data_p=data_p[:, 1:], data_e=data_e[:, 1:],
-             label_p=data_p[:, 0], label_e=data_e[:, 0],
-             verbose=False)
+vot = Vot(data_p[:, 1:], data_e[:, 1:], data_p[:, 0], data_e[:, 0], verbose=False)
 print("running Wasserstein clustering...")
 tick = time.time()
-_, pred_label_e = vot.cluster(max_iter_p=5)  # 0: w/o regularization
+_, pred_label_e = vot.cluster(max_iter_p=5)
 tock = time.time()
 print("total running time : {0:g} seconds".format(tock-tick))
 
 # ----- plot before ----- #
 p_coor_before = vot.data_p_original
 plt.figure(figsize=(12, 8))
+xmin, xmax, ymin, ymax = -1.0, 1.0, -1.0, 1.0
 
 cp = [utils.color_blue, utils.color_red]
-cp = [cp[int(label)] for _,label in np.ndenumerate(vot.label_p)]
-plt.subplot(231); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('w/o reg before')
+cp = [cp[int(label)] for label in vot.label_p]
+plt.subplot(231); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); plt.title('w/o reg before')
 plt.scatter(vot.data_e[:, 0], vot.data_e[:, 1], marker='.', color=utils.color_light_grey, zorder=2)
-plt.scatter(p_coor_before[:,0], p_coor_before[:,1], marker='o', color=cp, zorder=3)
+plt.scatter(p_coor_before[:, 0], p_coor_before[:, 1], marker='o', color=cp, zorder=3)
 
-# ------ plot map ------- #
+# ------ plot ot_map ------- #
 p_coor_after = np.copy(vot.data_p)
-map = [[tuple(p1),tuple(p2)] for p1, p2 in zip(p_coor_before.tolist(), p_coor_after.tolist())]
-lines = mc.LineCollection(map, colors=utils.color_light_grey)
-fig232 = plt.subplot(232); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('w/o reg map')
+ot_map = [[tuple(p1), tuple(p2)] for p1, p2 in zip(p_coor_before.tolist(), p_coor_after.tolist())]
+lines = mc.LineCollection(ot_map, colors=utils.color_light_grey)
+fig232 = plt.subplot(232); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); plt.title('w/o reg ot_map')
 fig232.add_collection(lines)
 plt.scatter(p_coor_before[:, 0], p_coor_before[:, 1], marker='o', color=cp, zorder=3)
 plt.scatter(p_coor_after[:, 0], p_coor_after[:, 1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=2)
 
 # ------ plot after ----- #
-le = np.copy(pred_label_e)
 ce = [utils.color_light_blue, utils.color_light_red]
-ce = [ce[int(label)] for _, label in np.ndenumerate(le)]
+ce = [ce[int(label)] for label in pred_label_e]
 cp = [utils.color_dark_blue, utils.color_red]
-cp = [cp[int(label)] for _, label in np.ndenumerate(vot.label_p)]
-plt.subplot(233); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('w/o reg after')
+cp = [cp[int(label)] for label in vot.label_p]
+plt.subplot(233); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); plt.title('w/o reg after')
 plt.scatter(vot.data_e[:, 0], vot.data_e[:, 1], marker='.', color=ce, zorder=2)
-plt.scatter(p_coor_after[:,0], p_coor_after[:,1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=3)
+plt.scatter(p_coor_after[:, 0], p_coor_after[:, 1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=3)
 
 # -------------------------------------- #
 # --------- w/ regularization ---------- #
 # -------------------------------------- #
 
-
 # ------- run RWM ------- #
 data_p = np.loadtxt('data/p.csv', delimiter=",")
 data_e = np.loadtxt('data/e.csv', delimiter=",")
 
-# ------- run WM -------- #
-vot_reg = VotReg(data_p=data_p[:, 1:], data_e=data_e[:, 1:],
-                 label_p=data_p[:, 0], label_e=data_e[:, 0],
-                 verbose=False)
+vot_reg = VotReg(data_p[:, 1:], data_e[:, 1:], data_p[:, 0], data_e[:, 0], verbose=False)
 print("running regularized Wasserstein clustering...")
 tick = time.time()
 vot_reg.cluster(reg_type='potential', reg=0.01, max_iter_p=5)
@@ -97,31 +91,25 @@ print("total running time : {0:g} seconds".format(tock-tick))
 print("[optional] distribute centroids into target domain...")
 _, pred_label_e = vot_reg.cluster(max_iter_p=1)
 
-# ----- plot before ----- #
-cp = [utils.color_blue, utils.color_red]
-cp = [cp[int(label)] for _, label in np.ndenumerate(vot_reg.label_p)]
-plt.subplot(234); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('w/ reg before')
-plt.scatter(vot_reg.data_e[:, 0], vot_reg.data_e[:, 1], marker='.', color=utils.color_light_grey, zorder=2)
-plt.scatter(p_coor_before[:,0], p_coor_before[:,1], marker='o', color=cp, zorder=3)
-
-# ------- plot map ------ #
+# ------- plot ot_map ------ #
 p_coor_after = np.copy(vot_reg.data_p)
-map = [[tuple(p1),tuple(p2)] for p1,p2 in zip(p_coor_before.tolist(), p_coor_after.tolist())]
-lines = mc.LineCollection(map, colors=utils.color_light_grey)
-fig235 = plt.subplot(235); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('w/ reg map')
+cp = [utils.color_blue, utils.color_red]
+cp = [cp[int(label)] for label in vot_reg.label_p]
+ot_map = [[tuple(p1), tuple(p2)] for p1, p2 in zip(p_coor_before.tolist(), p_coor_after.tolist())]
+lines = mc.LineCollection(ot_map, colors=utils.color_light_grey)
+fig235 = plt.subplot(235); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); plt.title('w/ reg ot_map')
 fig235.add_collection(lines)
-plt.scatter(p_coor_before[:,0], p_coor_before[:,1], marker='o', color=cp,zorder=3)
-plt.scatter(p_coor_after[:,0], p_coor_after[:,1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=2)
+plt.scatter(p_coor_before[:, 0], p_coor_before[:, 1], marker='o', color=cp, zorder=3)
+plt.scatter(p_coor_after[:, 0], p_coor_after[:, 1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=2)
 
 # ------ plot after ----- #
-le = np.copy(pred_label_e)
 ce = [utils.color_light_blue, utils.color_light_red]
-ce = [ce[int(label)] for _, label in np.ndenumerate(le)]
+ce = [ce[int(label)] for label in pred_label_e]
 cp = [utils.color_dark_blue, utils.color_red]
-cp = [cp[int(label)] for _, label in np.ndenumerate(vot_reg.label_p)]
-plt.subplot(236); plt.xlim(-1,1); plt.ylim(-1,1); plt.grid(True); plt.title('w/ reg after')
+cp = [cp[int(label)] for label in vot_reg.label_p]
+plt.subplot(236); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); plt.title('w/ reg after')
 plt.scatter(vot.data_e[:, 0], vot_reg.data_e[:, 1], marker='.', color=ce, zorder=2)
-plt.scatter(p_coor_after[:,0], p_coor_after[:,1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=3)
+plt.scatter(p_coor_after[:, 0], p_coor_after[:, 1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=3)
 
 # ---- plot and save ---- #
 plt.tight_layout(pad=1.0, w_pad=1.5, h_pad=0.5)
