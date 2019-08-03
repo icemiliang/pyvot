@@ -78,9 +78,6 @@ class Vot:
         self.thres = thres
         self.verbose = verbose
 
-        # "mass_p" is the sum of its corresponding e's weights, its own weight is "weight_p"
-        self.mass_p = np.zeros(num_p)
-
         self.weight_p = weight_p if weight_p is not None else np.ones(num_p) / num_p
         self.weight_e = weight_e if weight_e is not None else np.ones(num_e) / num_e
 
@@ -139,16 +136,16 @@ class Vot:
         for i in range(max_iter):
             # find nearest p for each e and add mass to p
             e_idx = np.argmin(dist, axis=0)
-            self.mass_p = np.bincount(e_idx, weights=self.weight_e, minlength=num_p)
+            mass_p = np.bincount(e_idx, weights=self.weight_e, minlength=num_p)
             # gradient descent with momentum and decay
-            dh = beta * dh + (1-beta) * (self.mass_p - self.weight_p)
+            dh = beta * dh + (1-beta) * (mass_p - self.weight_p)
             if i != 0 and i % lr_decay == 0:
                 lr *= 0.5
             # update dist matrix
             dist += lr * dh[:, None]
 
             # check if converge
-            max_change = np.max((self.mass_p - self.weight_p)/self.weight_p)
+            max_change = np.max((mass_p - self.weight_p)/self.weight_p)
             if max_change.size > 1:
                 max_change = max_change[0]
             max_change *= 100
@@ -206,7 +203,7 @@ class Vot:
         eps = 1e-8
         for i in range(data_p.shape[1]):
             # update p to the centroid of their correspondences one dimension at a time
-            p_target = np.bincount(e_idx, weights=data_e[:, i], minlength=num_p) / bincount
+            p_target = np.bincount(e_idx, weights=data_e[:, i], minlength=num_p) / (bincount+eps)
             change_pct = np.max(np.abs((data_p[:, i] - p_target) / (data_p[:, i])+eps))
             max_change_pct = max(max_change_pct, change_pct)
             p0[:, i] = p_target
@@ -415,13 +412,13 @@ class VotAP:
     # e are the area samples
     # this is a separate class for area-preserving maps
 
-    def __init__(self, data, sampling='square', label=None, mass_p=None, thres=1e-5, ratio=100, verbose=False):
+    def __init__(self, data, sampling='square', label=None, weight_p=None, thres=1e-5, ratio=100, verbose=False):
         """ set up parameters
         Args:
             data (numpy ndarray): initial coordinates of p
             sampling (string): sampling area shape
             label (numpy ndarray): labels of p
-            mass_p (numpy ndarray): weights of p
+            weight_p (numpy ndarray): weights of p
             thres (float): threshold to break loops
             ratio (float): the ratio of num of e to the num of p
             verbose (bool): boolean flag for verbose console output
@@ -442,7 +439,7 @@ class VotAP:
         if label is not None and not isinstance(label, np.ndarray):
             raise Exception('label is neither a numpy array not a numpy ndarray')
 
-        if mass_p is not None and not isinstance(mass_p, np.ndarray):
+        if weight_p is not None and not isinstance(weight_p, np.ndarray):
             raise Exception('label is neither a numpy array not a numpy ndarray')
 
         self.data_p = data
@@ -450,16 +447,10 @@ class VotAP:
         num_p = self.data_p.shape[0]
 
         self.label_p = label
-        if mass_p:
-            self.weight_p = mass_p
-        else:
-            self.weight_p = np.ones(num_p) / num_p
+        self.weight_p = weight_p if weight_p is not None else np.ones(num_p) / num_p
 
         self.thres = thres
         self.verbose = verbose
-
-        # "mass_p" is the sum of its corresponding e's weights, its own weight is "weight_p"
-        self.mass_p = np.zeros(num_p)
 
         utils.assert_boundary(self.data_p)
 
@@ -499,9 +490,9 @@ class VotAP:
             e_idx = np.argmin(self.dist, axis=0)
 
             # calculate total mass of each cell
-            self.mass_p = np.bincount(e_idx, minlength=num_p) / num_e
+            mass_p = np.bincount(e_idx, minlength=num_p) / num_e
             # gradient descent with momentum and decay
-            dh = beta * dh + (1-beta) * (self.mass_p - self.weight_p)
+            dh = beta * dh + (1-beta) * (mass_p - self.weight_p)
             if i != 0 and i % lr_decay == 0:
                 lr *= 0.9
             self.dist += lr * dh[:, None]
@@ -513,7 +504,7 @@ class VotAP:
                 imgs.append(img)
 
             # check if converge
-            max_change = np.max((self.mass_p - self.weight_p) / self.weight_p)
+            max_change = np.max((mass_p - self.weight_p) / self.weight_p)
             if max_change.size > 1:
                 max_change = max_change[0]
             max_change *= 100
