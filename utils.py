@@ -1,23 +1,25 @@
-# PyVot
-# Variational Wasserstein Clustering
+# PyVot Python Variational Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: May 30th 2019
+# Date: Aug 11th 2019
+# Licence: MIT
 
 import numpy as np
 from PIL import Image
 import warnings
 import matplotlib.pyplot as plt
+import matplotlib.collections as mc
 import torch
 
 
-color_blue = [0.12, 0.56, 1]
-color_light_blue = [0.5, 0.855, 1]
-color_dark_blue = [0.05, 0.28, 0.63]
+COLOR_BLUE = [0.12, 0.56, 1]
+COLOR_LIGHT_BLUE = [0.5, 0.855, 1]
+COLOR_DARK_BLUE = [0.05, 0.28, 0.63]
 
-color_red = [0.8, 0.22, 0]
-color_light_red = [1.0, 0.54, 0.5]
+COLOR_RED = [0.8, 0.22, 0]
+COLOR_LIGHT_RED = [1.0, 0.54, 0.5]
 
-color_light_grey = [0.7, 0.7, 0.7]
+COLOR_LIGHT_GREY = [0.7, 0.7, 0.7]
+COLOR_GREY = [0.5, 0.5, 0.5]
 
 
 def assert_boundary(data):
@@ -155,8 +157,8 @@ def estimate_transform_target_pytorch(p1, p2):
 
     expand_dim = False
     if p1.shape[1] == 2:
-        p1 = torch.cat((p1, torch.zeros((p1.shape[0], 1)).float().to(p1.device)), dim=1)
-        p2 = torch.cat((p2, torch.zeros((p2.shape[0], 1)).float().to(p2.device)), dim=1)
+        p1 = torch.cat((p1, torch.zeros((p1.shape[0], 1)).double().to(p1.device)), dim=1)
+        p2 = torch.cat((p2, torch.zeros((p2.shape[0], 1)).double().to(p2.device)), dim=1)
         expand_dim = True
     elif p1.shape[1] != 3:
         raise Exception("expected 2d or 3d points")
@@ -170,3 +172,49 @@ def estimate_transform_target_pytorch(p1, p2):
     if expand_dim:
         At = At[:-1, :]
     return At.t()
+
+
+def plot_otsamples(data_p, data_e=None, color_p=None, color_e=None, title="", grid=True, marker_p='o', marker_e='.',
+                   size_p=20, size_e=20, xmin=-1.0, xmax=1.0, ymin=-1.0, ymax=1.0):
+    plt.xlim(xmin, xmax)
+    plt.ylim(ymin, ymax)
+    plt.grid(grid)
+    plt.title(title)
+
+    if color_p is not None:
+        assert len(color_p) == 3 \
+               or (color_p.ndim == 2 and color_p.shape[0] == data_p.shape[0] and (color_p.shape[1] == 3 or color_p.shape[1] == 4))
+    else:
+        color_p = COLOR_RED
+    plt.scatter(data_p[:, 0], data_p[:, 1], s=size_p, marker=marker_p, facecolors='none', linewidth=2, color=color_p, zorder=3)
+
+    if data_e is not None:
+        if color_e is not None:
+            assert len(color_e) == 3 \
+                   or (color_e.ndim == 2 and color_e.shape[0] == data_e.shape[0] and (color_e.shape[1] == 3 or color_e.shape[1] == 4))
+        else:
+            color_e = COLOR_LIGHT_GREY
+        plt.scatter(data_e[:, 0], data_e[:, 1], s=size_e, marker=marker_e, color=color_e, zorder=2)
+
+
+def plot_otmap(data_before, data_after, plt_fig, color=None, title="", grid=True, marker='o',
+               xmin=-1.0, xmax=1.0, ymin=-1.0, ymax=1.0):
+
+    plt.xlim(xmin, xmax)
+    plt.ylim(ymin, ymax)
+    plt.grid(grid)
+    plt.title(title)
+
+    ot_map = [[tuple(p1), tuple(p2)] for p1, p2 in zip(data_before.tolist(), data_after.tolist())]
+    lines = mc.LineCollection(ot_map, colors=COLOR_LIGHT_GREY)
+    fig = plt_fig
+    fig.add_collection(lines)
+
+    if color is not None:
+        assert color.shape[0] == 3 \
+               or (color.ndim == 2 and color.shape[0] == color.shape[0] and color.shape[1] == 3)
+    else:
+        color = COLOR_RED
+
+    plt.scatter(data_before[:, 0], data_before[:, 1], marker=marker, color=color, zorder=3)
+    plt.scatter(data_after[:, 0], data_after[:, 1], marker=marker, facecolors='none', linewidth=2, color=color, zorder=2)

@@ -1,9 +1,8 @@
-# Variational Optimal Transportation
+# PyVot Python Variational Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: July 6th 2019
+# Date: Aug 11th 2019
+# Licence: MIT
 
-from __future__ import print_function
-from __future__ import division
 import os
 import sys
 import time
@@ -23,7 +22,7 @@ from scipy.spatial.distance import cdist
 # -------------------- #
 mean, cov = [0, 0], [[.08, 0], [0, .08]]
 # larger N -> faster convergence
-N, K = 10000, 100
+N, K = 100, 100
 np.random.seed(1)
 data_p = np.random.multivariate_normal(mean, cov, K).clip(-0.99, 0.99)
 p_coor_before = data_p.copy()
@@ -52,23 +51,25 @@ vot.update_p(e_idx)
 
 if plot_map:
     # ----- plot before ----- #
-    plt.subplot(331); plt.xlim(minx, maxx); plt.ylim(miny, maxy); plt.grid(True); plt.title('before')
-    plt.scatter(data_e[:, 0], data_e[:, 1], marker='x', color=utils.color_red)
-    plt.scatter(p_coor_before[:, 0], p_coor_before[:, 1], marker='+', color=utils.color_dark_blue)
+    plt.subplot(331)
+    utils.plot_otsamples(vot.data_p_original, vot.data_e, marker_p='+', marker_e='x',
+                         color_p=utils.COLOR_DARK_BLUE, color_e=utils.COLOR_RED, title='before')
 
     # ------ plot map ------- #
     ot_map = [[tuple(p1), tuple(p2)] for p1, p2 in zip(p_coor_before.tolist(), vot.data_p.tolist())]
-    lines = mc.LineCollection(ot_map, colors=utils.color_light_grey)
+    lines = mc.LineCollection(ot_map, colors=utils.COLOR_LIGHT_GREY)
     fig232 = plt.subplot(332); plt.xlim(minx, maxx); plt.ylim(miny, maxy); plt.grid(True);
     plt.title('VOT map ({0:.4f} s)'.format(tock-tick))
     fig232.add_collection(lines)
-    plt.scatter(p_coor_before[:, 0], p_coor_before[:, 1], marker='+', color=utils.color_dark_blue, zorder=2)
-    plt.scatter(vot.data_p[:, 0], vot.data_p[:, 1], marker='x', color=utils.color_red, zorder=3)
+    plt.scatter(p_coor_before[:, 0], p_coor_before[:, 1], marker='+', color=utils.COLOR_DARK_BLUE, zorder=2)
+    plt.scatter(vot.data_p[:, 0], vot.data_p[:, 1], marker='x', color=utils.COLOR_RED, zorder=3)
 
     # ------ plot after ----- #
     plt.subplot(333); plt.xlim(minx, maxx); plt.ylim(miny, maxy); plt.grid(True); plt.title('VOT after')
-    plt.scatter(data_e[:, 0], data_e[:, 1], marker='x', color=utils.color_red)
-    plt.scatter(vot.data_p[:, 0], vot.data_p[:, 1], marker='+', color=utils.color_dark_blue)
+    plt.scatter(data_e[:, 0], data_e[:, 1], marker='x', color=utils.COLOR_RED)
+    plt.scatter(vot.data_p[:, 0], vot.data_p[:, 1], marker='+', color=utils.COLOR_DARK_BLUE)
+
+    utils.plot_otsamples(vot.data_p_original, vot.data_e, color_p=utils.COLOR_DARK_BLUE, color_e=utils.COLOR_RED, title='VOT after')
 
 
 # -------------------- #
@@ -94,14 +95,14 @@ if plot_map:
     plt.subplot(335); plt.xlim(minx, maxx); plt.ylim(miny, maxy); plt.grid(True)
     plt.title('LP OT map ({0:.4f} s)'.format(tock-tick))
     ot.plot.plot2D_samples_mat(p_coor_before, data_e, Gs, color=[.5, .5, 0.5])
-    plt.scatter(data_e[:, 0], data_e[:, 1], marker='x', color=utils.color_red)
-    plt.scatter(p_coor_before[:, 0], p_coor_before[:, 1], marker='+', color=utils.color_dark_blue)
+    plt.scatter(data_e[:, 0], data_e[:, 1], marker='x', color=utils.COLOR_RED)
+    plt.scatter(p_coor_before[:, 0], p_coor_before[:, 1], marker='+', color=utils.COLOR_DARK_BLUE)
 
     # ------ plot after ----- #
     plt.subplot(336); plt.xlim(minx, maxx); plt.ylim(miny, maxy); plt.grid(True)
     plt.title('LP OT after')
-    plt.scatter(data_e[:, 0], data_e[:, 1], marker='x', color=utils.color_red)
-    plt.scatter(data_p[:, 0], data_p[:, 1], marker='+', color=utils.color_dark_blue)
+    plt.scatter(data_e[:, 0], data_e[:, 1], marker='x', color=utils.COLOR_RED)
+    plt.scatter(data_p[:, 0], data_p[:, 1], marker='+', color=utils.COLOR_DARK_BLUE)
 
 
 # -------------------- #
@@ -128,14 +129,14 @@ if plot_map:
     plt.subplot(338); plt.xlim(minx, maxx); plt.ylim(miny, maxy); plt.grid(True)
     plt.title('Sinkhorn OT map ({0:.4f} s)'.format(tock-tick))
     ot.plot.plot2D_samples_mat(p_coor_before, data_e, Gs, color=[.5, .5, 0.5])
-    plt.scatter(data_e[:, 0], data_e[:, 1], marker='x', color=utils.color_red)
-    plt.scatter(p_coor_before[:, 0], p_coor_before[:, 1], marker='+', color=utils.color_dark_blue)
+    plt.scatter(data_e[:, 0], data_e[:, 1], marker='x', color=utils.COLOR_RED)
+    plt.scatter(p_coor_before[:, 0], p_coor_before[:, 1], marker='+', color=utils.COLOR_DARK_BLUE)
 
     # ------ plot after ----- #
     plt.subplot(339); plt.xlim(minx, maxx); plt.ylim(miny, maxy); plt.grid(True)
     plt.title('Sinkhorn OT after')
-    plt.scatter(data_e[:, 0], data_e[:, 1], marker='x', color=utils.color_red)
-    plt.scatter(data_p[:, 0], data_p[:, 1], marker='+', color=utils.color_dark_blue)
+    plt.scatter(data_e[:, 0], data_e[:, 1], marker='x', color=utils.COLOR_RED)
+    plt.scatter(data_p[:, 0], data_p[:, 1], marker='+', color=utils.COLOR_DARK_BLUE)
 
     # -------------------- #
     # ------- PLOT ------- #

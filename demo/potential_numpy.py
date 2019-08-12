@@ -1,6 +1,7 @@
-# Regularized Wasserstein Means (RWM)
+# PyVot Python Variational Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: July 6th 2019
+# Date: Aug 11th 2019
+# Licence: MIT
 
 """
 ===========================================
@@ -13,17 +14,13 @@ and pairwise distances can benefit domain adaptation applications.
 Predicted labels of the empirical samples come from the centroids.
 It is equivalent to 1NN w.r.t. the power Euclidean distance.
 """
-from __future__ import print_function
-from __future__ import division
-# import non-vot stuffs
+
 import os
 import sys
 import time
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.collections as mc
-# import vot stuffs
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from vot_numpy import Vot, VotReg
 import utils
 
@@ -42,33 +39,22 @@ tock = time.time()
 print("total running time : {0:g} seconds".format(tock-tick))
 
 # ----- plot before ----- #
-p_coor_before = vot.data_p_original
 plt.figure(figsize=(12, 8))
-xmin, xmax, ymin, ymax = -1.0, 1.0, -1.0, 1.0
-
-cp = [utils.color_blue, utils.color_red]
-cp = [cp[int(label)] for label in vot.label_p]
-plt.subplot(231); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); plt.title('w/o reg before')
-plt.scatter(vot.data_e[:, 0], vot.data_e[:, 1], marker='.', color=utils.color_light_grey, zorder=2)
-plt.scatter(p_coor_before[:, 0], p_coor_before[:, 1], marker='o', color=cp, zorder=3)
+plt.subplot(231)
+cp = np.array([utils.COLOR_BLUE, utils.COLOR_RED])[vot.label_p.astype(np.int), :]
+utils.plot_otsamples(vot.data_p_original, vot.data_e, color_p=cp, title='w/o reg before')
 
 # ------ plot map ------- #
-p_coor_after = np.copy(vot.data_p)
-ot_map = [[tuple(p1), tuple(p2)] for p1, p2 in zip(p_coor_before.tolist(), p_coor_after.tolist())]
-lines = mc.LineCollection(ot_map, colors=utils.color_light_grey)
-fig232 = plt.subplot(232); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); plt.title('w/o reg map')
-fig232.add_collection(lines)
-plt.scatter(p_coor_before[:, 0], p_coor_before[:, 1], marker='o', color=cp, zorder=3)
-plt.scatter(p_coor_after[:, 0], p_coor_after[:, 1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=2)
+fig232 = plt.subplot(232)
+cp = np.array([utils.COLOR_BLUE, utils.COLOR_RED])[vot.label_p.astype(np.int), :]
+utils.plot_otmap(vot.data_p_original, vot.data_p, fig232, color=cp, title='w/o reg map')
 
 # ------ plot after ----- #
-ce = [utils.color_light_blue, utils.color_light_red]
-ce = [ce[int(label)] for label in pred_label_e]
-cp = [utils.color_dark_blue, utils.color_red]
-cp = [cp[int(label)] for label in vot.label_p]
-plt.subplot(233); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); plt.title('w/o reg after')
-plt.scatter(vot.data_e[:, 0], vot.data_e[:, 1], marker='.', color=ce, zorder=2)
-plt.scatter(p_coor_after[:, 0], p_coor_after[:, 1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=3)
+plt.subplot(233)
+ce = np.array([utils.COLOR_LIGHT_BLUE, utils.COLOR_LIGHT_RED])[pred_label_e.astype(np.int), :]
+cp = np.array([utils.COLOR_DARK_BLUE, utils.COLOR_RED])[vot.label_p.astype(np.int), :]
+utils.plot_otsamples(vot.data_p, vot.data_e, color_p=cp, color_e=ce, title='w/o reg after')
+
 
 # -------------------------------------- #
 # --------- w/ regularization ---------- #
@@ -92,24 +78,15 @@ print("[optional] distribute centroids into target domain...")
 _, pred_label_e = vot_reg.cluster(max_iter_p=1)
 
 # ------- plot map ------ #
-p_coor_after = np.copy(vot_reg.data_p)
-cp = [utils.color_blue, utils.color_red]
-cp = [cp[int(label)] for label in vot_reg.label_p]
-ot_map = [[tuple(p1), tuple(p2)] for p1, p2 in zip(p_coor_before.tolist(), p_coor_after.tolist())]
-lines = mc.LineCollection(ot_map, colors=utils.color_light_grey)
-fig235 = plt.subplot(235); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); plt.title('w/ reg map')
-fig235.add_collection(lines)
-plt.scatter(p_coor_before[:, 0], p_coor_before[:, 1], marker='o', color=cp, zorder=3)
-plt.scatter(p_coor_after[:, 0], p_coor_after[:, 1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=2)
+cp = np.array([utils.COLOR_BLUE, utils.COLOR_RED])[vot_reg.label_p.astype(np.int), :]
+fig235 = plt.subplot(235)
+utils.plot_otmap(vot_reg.data_p_original, vot_reg.data_p, fig235, color=cp, title='w/ reg map')
 
 # ------ plot after ----- #
-ce = [utils.color_light_blue, utils.color_light_red]
-ce = [ce[int(label)] for label in pred_label_e]
-cp = [utils.color_dark_blue, utils.color_red]
-cp = [cp[int(label)] for label in vot_reg.label_p]
-plt.subplot(236); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); plt.title('w/ reg after')
-plt.scatter(vot.data_e[:, 0], vot_reg.data_e[:, 1], marker='.', color=ce, zorder=2)
-plt.scatter(p_coor_after[:, 0], p_coor_after[:, 1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=3)
+plt.subplot(236)
+ce = np.array([utils.COLOR_LIGHT_BLUE, utils.COLOR_LIGHT_RED])[pred_label_e.astype(np.int), :]
+cp = np.array([utils.COLOR_DARK_BLUE, utils.COLOR_RED])[vot_reg.label_p.astype(np.int), :]
+utils.plot_otsamples(vot_reg.data_p, vot_reg.data_e, color_p=cp, color_e=ce, title='w/ reg after')
 
 # ---- plot and save ---- #
 plt.tight_layout(pad=1.0, w_pad=1.5, h_pad=0.5)

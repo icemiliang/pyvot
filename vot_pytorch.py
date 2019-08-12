@@ -1,13 +1,13 @@
 # PyVot Python Variational Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
-# Last modified: July 29th 2019
+# Date: Aug 11th 2019
+# Licence: MIT
 
-
-import imageio
-import utils
 import torch
-import warnings
 import torch.optim as optim
+import imageio
+import warnings
+import utils
 
 
 class Vot:
@@ -135,7 +135,7 @@ class Vot:
         for i in range(max_iter):
             # find nearest p for each e and add mass to p
             e_idx = torch.argmin(dist, dim=0)
-            mass_p = torch.bincount(e_idx, weights=self.weight_e, minlength=num_p)
+            mass_p = torch.bincount(e_idx, weights=self.weight_e, minlength=num_p).double()
             # gradient descent with momentum and decay
             dh = beta * dh + (1-beta) * (mass_p - self.weight_p)
             if i != 0 and i % lr_decay == 0:
@@ -203,7 +203,7 @@ class Vot:
         eps = 1e-8
         for i in range(data_p.shape[1]):
             # update p to the centroid of their correspondences one dimension at a time
-            p_target = torch.bincount(e_idx, weights=data_e[:, i], minlength=num_p) / (bincount+eps)
+            p_target = torch.bincount(e_idx, weights=data_e[:, i], minlength=num_p).double() / (bincount+eps)
             change_pct = torch.max(torch.abs((data_p[:, i] - p_target) / (data_p[:, i])+eps))
             max_change_pct = max(max_change_pct, change_pct)
             p0[:, i] = p_target
@@ -485,7 +485,7 @@ class VotAP:
             e_idx = torch.argmin(self.dist, dim=0)
 
             # calculate total mass of each cell
-            mass_p = torch.bincount(e_idx, minlength=num_p).to(self.device) / num_e
+            mass_p = torch.bincount(e_idx, minlength=num_p).double() / num_e
             # gradient descent with momentum and decay
             dh = beta * dh + (1-beta) * (mass_p - self.weight_p)
             if i != 0 and i % lr_decay == 0:
@@ -539,6 +539,6 @@ class VotAP:
             # return
         for i in range(self.data_p.shape[1]):
             # update p to the centroid of their correspondences
-            self.data_p[:, i] = torch.bincount(e_idx, weights=self.data_e[:, i], minlength=num_p) / bincount
+            self.data_p[:, i] = torch.bincount(e_idx, weights=self.data_e[:, i], minlength=num_p).double() / bincount
 
         return e_idx, pred_label_e

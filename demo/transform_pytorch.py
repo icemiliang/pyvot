@@ -1,6 +1,7 @@
-# Regularized Wasserstein Means (RWM)
+# PyVot Python Variational Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: July 6th 2019
+# Date: Aug 11th 2019
+# Licence: MIT
 
 """
 ===========================================
@@ -13,21 +14,17 @@ geometric transformation can benefit domain adaptation applications.
 Predicted labels of the empirical samples come from the centroids.
 It is equivalent to 1NN w.r.t. the power Euclidean distance.
 """
-from __future__ import print_function
-from __future__ import division
-# import non-vot stuffs
+
 import os
 import sys
 import time
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import torch
 import numpy as np
 import sklearn.datasets
 import matplotlib.pyplot as plt
-import matplotlib.collections as mc
-# import vot stuffs
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from vot_pytorch import Vot, VotReg
 import utils
-import torch
 
 
 # Generate data
@@ -66,48 +63,36 @@ data_e = torch.from_numpy(data_e)
 label_p = torch.from_numpy(label_p)
 label_e = torch.from_numpy(label_e)
 
-ot = Vot(data_p, data_e, label_p, label_e, device=device, verbose=False)
+vot = Vot(data_p, data_e, label_p, label_e, device=device, verbose=False)
 print("running Wasserstein clustering...")
 tick = time.time()
-_, e_predict = ot.cluster(max_iter_h=5000, max_iter_p=5)  # 0: w/o regularization
+_, pred_label_e = vot.cluster(max_iter_h=5000, max_iter_p=5)  # 0: w/o regularization
 tock = time.time()
 print('total time: {0:.4f}'.format(tock-tick))
 
 # ----- plot before ----- #
-ot.data_p = ot.data_p.detach().cpu().numpy()
-ot.data_e = ot.data_e.cpu().numpy()
-ot.data_p_original = ot.data_p_original.cpu().numpy()
-ot.label_p = ot.label_p.int().cpu().numpy()
-ot.label_e = ot.label_e.int().cpu().numpy()
-e_predict = e_predict.int().cpu().numpy()
+plt.figure(figsize=(12, 7))
+xmin, xmax, ymin, ymax = -1.0, 1.0, -.75, .75
 
-plt.figure(figsize=(12, 8))
-xmin, xmax, ymin, ymax = -1.0, 1.0, -1.0, 1.0
-
-cp_base = [utils.color_blue, utils.color_red]
-cp = [cp_base[label] for label in ot.label_p]
-
-
-plt.subplot(231); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); plt.title('w/o reg before')
-plt.scatter(ot.data_e[:, 0], ot.data_e[:, 1], marker='.', color=utils.color_light_grey, zorder=2)
-plt.scatter(ot.data_p_original[:, 0], ot.data_p_original[:, 1], marker='o', color=cp, zorder=3)
+plt.subplot(231)
+cp_base = np.array([utils.COLOR_BLUE, utils.COLOR_RED])
+cp = cp_base[vot.label_p.int(), :]
+utils.plot_otsamples(vot.data_p_original, vot.data_e, color_p=cp, title='w/o reg before',
+                     xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax)
 
 # ------ plot map ------- #
-ot_map = [[tuple(p1), tuple(p2)] for p1, p2 in zip(ot.data_p_original.tolist(), ot.data_p.tolist())]
-lines = mc.LineCollection(ot_map, colors=utils.color_light_grey)
-fig232 = plt.subplot(232); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); plt.title('w/o reg map')
-fig232.add_collection(lines)
-plt.scatter(ot.data_p_original[:, 0], ot.data_p_original[:, 1], marker='o', color=cp, zorder=3)
-plt.scatter(ot.data_p[:, 0], ot.data_p[:, 1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=2)
+fig232 = plt.subplot(232)
+cp_base = [utils.COLOR_BLUE, utils.COLOR_RED]
+cp = np.array([cp_base[int(label)] for label in vot.label_p])
+utils.plot_otmap(vot.data_p_original, vot.data_p, fig232, color=cp, title='w/o reg map',
+                 xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax)
 
 # ------ plot after ----- #
-ce_base = [utils.color_light_blue, utils.color_light_red]
-cp_base = [utils.color_dark_blue, utils.color_red]
-ce = [ce_base[label] for label in e_predict]
-cp = [cp_base[label] for label in ot.label_p]
-plt.subplot(233); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); plt.title('w/o reg after')
-plt.scatter(ot.data_e[:, 0], ot.data_e[:, 1], marker='.', color=ce, zorder=2)
-plt.scatter(ot.data_p[:, 0], ot.data_p[:, 1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=3)
+plt.subplot(233)
+ce = np.array([utils.COLOR_LIGHT_BLUE, utils.COLOR_LIGHT_RED])[pred_label_e.int(), :]
+cp = np.array([utils.COLOR_DARK_BLUE, utils.COLOR_RED])[vot.label_p.int(), :]
+utils.plot_otsamples(vot.data_p, vot.data_e, color_p=cp, color_e=ce, title='w/o reg after',
+                     xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax)
 
 
 # -------------------------------------- #
@@ -117,42 +102,33 @@ plt.scatter(ot.data_p[:, 0], ot.data_p[:, 1], marker='o', facecolors='none', lin
 # ------- run RWM ------- #
 data_p1 = torch.from_numpy(data_p1)
 data_e1 = torch.from_numpy(data_e1)
-ot_reg = VotReg(data_p1, data_e1, label_p, label_e, device=device, verbose=False)
+vot_reg = VotReg(data_p1, data_e1, label_p, label_e, device=device, verbose=False)
 print("running regularized Wasserstein clustering...")
 tick = time.time()
-_, e_predict = ot_reg.cluster(reg_type='transform', reg=20, max_iter_h=3000, max_iter_p=10)
+_, pred_label_e = vot_reg.cluster(reg_type='transform', reg=20, max_iter_h=3000, max_iter_p=10)
 tock = time.time()
 print("total running time : {} seconds".format(tock-tick))
 
-# Compute vanilla OT one more time to disperse the centroids into the empirical domain.
-# This optional step almost does not change the correspondence but gives better positions.
+# Compute OT one more time to disperse the centroids into the empirical domain.
+# This almost does not change the correspondence but can give better positions.
+# This is optional.
 print("[optional] distribute centroids into target domain...")
-ot_reg.cluster(0, max_iter_h=5000, lr=0.1, max_iter_p=1)
+vot_reg.cluster(0, max_iter_h=5000, lr=0.1, max_iter_p=1)
 
-ot_reg.data_p = ot_reg.data_p.detach().cpu().numpy()
-ot_reg.data_e = ot_reg.data_e.cpu().numpy()
-ot_reg.data_p_original = ot_reg.data_p_original.cpu().numpy()
-ot_reg.label_p = ot_reg.label_p.int().cpu().numpy()
-ot_reg.label_e = ot_reg.label_e.int().cpu().numpy()
-e_predict = e_predict.int().cpu().numpy()
 
 # ------- plot map ------ #
-cp_base = [utils.color_blue, utils.color_red]
-cp = [cp_base[label] for label in ot.label_p]
-ot_map = [[tuple(p1), tuple(p2)] for p1,p2 in zip(ot_reg.data_p_original.tolist(), ot_reg.data_p.tolist())]
-lines = mc.LineCollection(ot_map, colors=utils.color_light_grey)
-fig235 = plt.subplot(235); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); plt.title('w/ reg map')
-fig235.add_collection(lines)
-plt.scatter(ot_reg.data_p_original[:, 0], ot_reg.data_p_original[:, 1], marker='o', color=cp, zorder=3)
-plt.scatter(ot_reg.data_p[:, 0], ot_reg.data_p[:, 1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=2)
+cp_base = [utils.COLOR_BLUE, utils.COLOR_RED]
+cp = np.array([cp_base[int(label)] for label in vot_reg.label_p])
+fig235 = plt.subplot(235)
+utils.plot_otmap(vot_reg.data_p_original, vot_reg.data_p.detach(), fig235, color=cp, title='w/ reg map',
+                 xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax)
 
 # ------ plot after ----- #
-cp_base = [utils.color_dark_blue, utils.color_red]
-ce = [ce_base[label] for label in e_predict]
-cp = [cp_base[label] for label in ot.label_p]
-plt.subplot(236); plt.xlim(xmin, xmax); plt.ylim(ymin, ymax); plt.grid(True); plt.title('w/ reg after')
-plt.scatter(ot.data_e[:, 0], ot_reg.data_e[:, 1], marker='.', color=ce, zorder=2)
-plt.scatter(ot_reg.data_p[:, 0], ot_reg.data_p[:, 1], marker='o', facecolors='none', linewidth=2, color=cp, zorder=3)
+plt.subplot(236)
+ce = np.array([utils.COLOR_LIGHT_BLUE, utils.COLOR_LIGHT_RED])[pred_label_e.int(), :]
+cp = np.array([utils.COLOR_DARK_BLUE, utils.COLOR_RED])[vot_reg.label_p.int(), :]
+utils.plot_otsamples(vot_reg.data_p.detach(), vot.data_e, color_p=cp, color_e=ce, title='w/ reg after',
+                     xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax)
 
 # ---- plot and save ---- #
 plt.tight_layout(pad=1.0, w_pad=1.5, h_pad=0.5)

@@ -1,14 +1,13 @@
 # PyVot Python Variational Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
-# Last modified: July 29th 2019
+# Date: Aug 11th 2019
+# Licence: MIT
 
-
-import warnings
 import numpy as np
 from scipy.spatial.distance import cdist
 from scipy.optimize import minimize
-from skimage import transform as tf
 import imageio
+import warnings
 import utils
 
 
