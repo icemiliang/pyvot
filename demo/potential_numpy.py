@@ -27,6 +27,7 @@ import utils
 # -------------------------------------- #
 # --------- w/o regularization --------- #
 # -------------------------------------- #
+# TODO generate data on run time
 data_p = np.loadtxt('data/p.csv', delimiter=",")
 data_e = np.loadtxt('data/e.csv', delimiter=",")
 
