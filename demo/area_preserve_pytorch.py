@@ -53,8 +53,9 @@ vot = VotAP(data, sampling='square', ratio=500, device=device)
 # ----- map ------ #
 tick = time.clock()
 # vot.map(plot_filename='area_preserve_pytorch.gif', max_iter=300)
-e_idx, _ = vot.map(max_iter=300, lr=1)
+e_idx, _ = vot.map(max_iter=300, lr=0.5)
 tock = time.clock()
+
 print('total time: {0:.4f}'.format(tock-tick))
 # Note: Area preserving usually requires a pre-defined boundary.
 #  That is beyond the scope of the demo. Missing the boundary condition,
@@ -69,12 +70,12 @@ utils.plot_otsamples(vot.data_p_original, vot.data_e, title='before')
 
 # ------ plot map ------- #
 fig232 = plt.subplot(232)
-utils.plot_otmap(vot.data_p_original, vot.data_p, fig232, title='vot map')
+utils.plot_otmap(vot.data_p_original, vot.data_p, fig232, title='vot map', facecolor_after='none')
 
 # ------ plot after ----- #
 ce = np.array(plt.get_cmap('viridis')(e_idx.cpu().numpy() / (N - 1)))
 plt.subplot(233)
-utils.plot_otsamples(vot.data_p, vot.data_e, color_e=ce, size_e=5, title='after')
+utils.plot_otsamples(vot.data_p, vot.data_e, color_e=ce, size_e=5, title='after', facecolor_p='none')
 
 
 # ----------------------------------- #
@@ -99,12 +100,12 @@ utils.plot_otsamples(vot2.data_p_original, vot2.data_e, title='before')
 
 # ------ plot map ------- #
 fig235 = plt.subplot(235)
-utils.plot_otmap(vot2.data_p_original, vot2.data_p, fig235, title='vot map')
+utils.plot_otmap(vot2.data_p_original, vot2.data_p, fig235, title='vot map', facecolor_after='none')
 
 # ------ plot after ----- #
 ce = np.array(plt.get_cmap('viridis')(e_idx.cpu().numpy() / (N - 1)))
 plt.subplot(236)
-utils.plot_otsamples(vot2.data_p, vot2.data_e, color_e=ce, size_e=5, title='after')
+utils.plot_otsamples(vot2.data_p, vot2.data_e, color_e=ce, size_e=5, title='after', facecolor_p='none')
 
 # ---- plot and save ---- #
 plt.tight_layout(pad=1.0, w_pad=1.5, h_pad=0.5)

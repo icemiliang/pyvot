@@ -175,18 +175,11 @@ def estimate_transform_target_pytorch(p1, p2):
 
 
 def plot_otsamples(data_p, data_e=None, color_p=None, color_e=None, title="", grid=True, marker_p='o', marker_e='.',
-                   size_p=20, size_e=20, xmin=-1.0, xmax=1.0, ymin=-1.0, ymax=1.0):
+                   facecolor_p=None, size_p=20, size_e=20, xmin=-1.0, xmax=1.0, ymin=-1.0, ymax=1.0):
     plt.xlim(xmin, xmax)
     plt.ylim(ymin, ymax)
     plt.grid(grid)
     plt.title(title)
-
-    if color_p is not None:
-        assert len(color_p) == 3 \
-               or (color_p.ndim == 2 and color_p.shape[0] == data_p.shape[0] and (color_p.shape[1] == 3 or color_p.shape[1] == 4))
-    else:
-        color_p = COLOR_RED
-    plt.scatter(data_p[:, 0], data_p[:, 1], s=size_p, marker=marker_p, facecolors='none', linewidth=2, color=color_p, zorder=3)
 
     if data_e is not None:
         if color_e is not None:
@@ -196,8 +189,19 @@ def plot_otsamples(data_p, data_e=None, color_p=None, color_e=None, title="", gr
             color_e = COLOR_LIGHT_GREY
         plt.scatter(data_e[:, 0], data_e[:, 1], s=size_e, marker=marker_e, color=color_e, zorder=2)
 
+    if color_p is not None:
+        assert len(color_p) == 3 \
+               or (color_p.ndim == 2 and color_p.shape[0] == data_p.shape[0] and (color_p.shape[1] == 3 or color_p.shape[1] == 4))
+    else:
+        color_p = COLOR_RED
+    if facecolor_p == 'none':
+        plt.scatter(data_p[:, 0], data_p[:, 1], s=size_p, marker=marker_p, facecolors='none', linewidth=2, color=color_p, zorder=3)
+    else:
+        plt.scatter(data_p[:, 0], data_p[:, 1], s=size_p, marker=marker_p, linewidth=2, color=color_p, zorder=3)
 
-def plot_otmap(data_before, data_after, plt_fig, color=None, title="", grid=True, marker='o',
+
+def plot_otmap(data_before, data_after, plt_fig, color=None, title="", grid=True, marker='o', facecolor_after=None,
+               facecolor_before=None,
                xmin=-1.0, xmax=1.0, ymin=-1.0, ymax=1.0):
 
     plt.xlim(xmin, xmax)
@@ -216,5 +220,12 @@ def plot_otmap(data_before, data_after, plt_fig, color=None, title="", grid=True
     else:
         color = COLOR_RED
 
-    plt.scatter(data_before[:, 0], data_before[:, 1], marker=marker, color=color, zorder=3)
-    plt.scatter(data_after[:, 0], data_after[:, 1], marker=marker, facecolors='none', linewidth=2, color=color, zorder=2)
+    if facecolor_before == 'none':
+        plt.scatter(data_before[:, 0], data_before[:, 1], marker=marker, facecolors='none', linewidth=2, color=color, zorder=2)
+    else:
+        plt.scatter(data_before[:, 0], data_before[:, 1], marker=marker, linewidth=2, color=color, zorder=2)
+
+    if facecolor_after == 'none':
+        plt.scatter(data_after[:, 0], data_after[:, 1], marker=marker, facecolors='none', linewidth=2, color=color, zorder=2)
+    else:
+        plt.scatter(data_after[:, 0], data_after[:, 1], marker=marker, linewidth=2, color=color, zorder=2)
