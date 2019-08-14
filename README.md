@@ -17,8 +17,6 @@ More examples can be found in [demo/](demo/README.md).
 
 ## Dependencies
 
-See requirements.txt for details.
-
 * Python
 * NumPy
 * SciPy
@@ -27,6 +25,12 @@ See requirements.txt for details.
 * scikit-learn
 * Matplotlib
 * PyTorch
+
+To use pip to install prerequisites:
+```
+pip install --upgrade pip
+pip install -r requirements.txt
+```
 
 ## References
 #### Citing the package

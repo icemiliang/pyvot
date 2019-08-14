@@ -1,23 +1,30 @@
-# PyVot
-# Variational Wasserstein Clustering
+# PyVot Python Variational Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: May 30th 2019
+# Date: Aug 11th 2019
+# Licence: MIT
 
 import numpy as np
 from PIL import Image
 import warnings
 import matplotlib.pyplot as plt
+import matplotlib.collections as mc
 import torch
 
 
-color_blue = [0.12, 0.56, 1]
-color_light_blue = [0.5, 0.855, 1]
-color_dark_blue = [0.05, 0.28, 0.63]
+COLOR_BLUE = [0.12, 0.56, 1]
+COLOR_LIGHT_BLUE = [0.5, 0.855, 1]
+COLOR_DARK_BLUE = [0.05, 0.28, 0.63]
 
-color_red = [0.8, 0.22, 0]
-color_light_red = [1.0, 0.54, 0.5]
+COLOR_RED = [0.8, 0.22, 0]
+COLOR_LIGHT_RED = [1.0, 0.54, 0.5]
 
-color_light_grey = [0.7, 0.7, 0.7]
+COLOR_LIGHT_GREY = [0.7, 0.7, 0.7]
+COLOR_GREY = [0.5, 0.5, 0.5]
+
+
+def assert_boundary(data):
+    assert data.max() < 1, warnings.warn("Data out of boundary (-1, 1).")
+    assert -1 < data.min(), warnings.warn("Data out of boundary (-1, 1).")
 
 
 def fig2data(fig):
@@ -39,7 +46,7 @@ def fig2img(fig):
 
 def random_sample(num, dim, sampling='square'):
     """ randomly sample the area with dirac measures
-
+        area boundary: [-0.99, 0.99] in each dimension
     """
     data = None
 
@@ -59,7 +66,7 @@ def random_sample(num, dim, sampling='square'):
         x = np.sqrt(r) * np.cos(theta)
         y = np.sqrt(r) * np.sin(theta)
         data = np.concatenate((x[:, None], y[:, None]), axis=1)
-    elif sampling == 'gaussian':
+    elif sampling == 'gaussian' or sampling == 'gauss':
         mean = [0, 0]
         cov = [[.1, 0], [0, .1]]
         data = np.random.multivariate_normal(mean, cov, num).clip(-0.99, 0.99)
@@ -88,41 +95,39 @@ def rigid_transform_3d_pytorch(p1, p2):
     pp1 = p1 - center_p1
     pp2 = p2 - center_p2
 
-    H = torch.mm(pp1.t(), pp2)
-    U, S, Vt = torch.svd(H)
-    R = torch.mm(Vt.t(), U.t())
+    h = torch.mm(pp1.t(), pp2)
+    u, _, v = torch.svd(h)
+    r = torch.mm(v.t(), u.t())
 
     # reflection
-    if np.linalg.det(R.cpu().numpy()) < 0:
-        Vt[2, :] *= -1
-        R = torch.mm(Vt.t(), U.t())
+    if np.linalg.det(r.cpu().numpy()) < 0:
+        v[2, :] *= -1
+        r = torch.mm(v.t(), u.t())
 
-    t = torch.mm(-R, center_p1.t()) + center_p2.t()
+    t = torch.mm(-r, center_p1.t()) + center_p2.t()
 
-    return R, t
+    return r, t
 
 
-def rigid_transform_3d(p1, p2):
+def rigid_transform_3d_numpy(p1, p2):
     center_p1 = np.mean(p1, axis=0, keepdims=True)
     center_p2 = np.mean(p2, axis=0, keepdims=True)
 
     pp1 = p1 - center_p1
     pp2 = p2 - center_p2
 
-    H = np.matmul(pp1.T, pp2)
-
-    U, _, Vt = np.linalg.svd(H)
-
-    R = np.matmul(Vt.T, U.T)
+    h = np.matmul(pp1.T, pp2)
+    u, _, v = np.linalg.svd(h)
+    r = np.matmul(v.T, u.T)
 
     # reflection
-    if np.linalg.det(R) < 0:
-        Vt[2, :] *= -1
-        R = np.matmul(Vt.T, U.T)
+    if np.linalg.det(r) < 0:
+        v[2, :] *= -1
+        r = np.matmul(v.T, u.T)
 
-    t = np.matmul(-R, center_p1.T) + center_p2.T
+    t = np.matmul(-r, center_p1.T) + center_p2.T
 
-    return R, t
+    return r, t
 
 
 def estimate_transform_target(p1, p2):
@@ -135,8 +140,10 @@ def estimate_transform_target(p1, p2):
     elif p1.shape[1] != 3:
         raise Exception("expected 2d or 3d points")
 
-    R, t = rigid_transform_3d(p1, p2)
-    At = np.matmul(R, p1.T) + t
+    # TODO downsample points if too many
+
+    r, t = rigid_transform_3d_numpy(p1, p2)
+    At = np.matmul(r, p1.T) + t
     if expand_dim:
         At = At[:-1, :]
     return At.T
@@ -150,17 +157,75 @@ def estimate_transform_target_pytorch(p1, p2):
 
     expand_dim = False
     if p1.shape[1] == 2:
-        p1 = torch.cat((p1, torch.zeros((p1.shape[0], 1)).float().to(p1.device)), dim=1)
-        p2 = torch.cat((p2, torch.zeros((p2.shape[0], 1)).float().to(p2.device)), dim=1)
+        p1 = torch.cat((p1, torch.zeros((p1.shape[0], 1)).double().to(p1.device)), dim=1)
+        p2 = torch.cat((p2, torch.zeros((p2.shape[0], 1)).double().to(p2.device)), dim=1)
         expand_dim = True
     elif p1.shape[1] != 3:
         raise Exception("expected 2d or 3d points")
 
+    # TODO downsample points if too many
     p11 = p1[~mask]
     p22 = p2[~mask]
 
-    R, t = rigid_transform_3d_pytorch(p11, p22)
-    At = torch.mm(R, p1.t()) + t
+    r, t = rigid_transform_3d_pytorch(p11, p22)
+    At = torch.mm(r, p1.t()) + t
     if expand_dim:
         At = At[:-1, :]
     return At.t()
+
+
+def plot_otsamples(data_p, data_e=None, color_p=None, color_e=None, title="", grid=True, marker_p='o', marker_e='.',
+                   facecolor_p=None, size_p=20, size_e=20, xmin=-1.0, xmax=1.0, ymin=-1.0, ymax=1.0):
+    plt.xlim(xmin, xmax)
+    plt.ylim(ymin, ymax)
+    plt.grid(grid)
+    plt.title(title)
+
+    if data_e is not None:
+        if color_e is not None:
+            assert len(color_e) == 3 \
+                   or (color_e.ndim == 2 and color_e.shape[0] == data_e.shape[0] and (color_e.shape[1] == 3 or color_e.shape[1] == 4))
+        else:
+            color_e = COLOR_LIGHT_GREY
+        plt.scatter(data_e[:, 0], data_e[:, 1], s=size_e, marker=marker_e, color=color_e, zorder=2)
+
+    if color_p is not None:
+        assert len(color_p) == 3 \
+               or (color_p.ndim == 2 and color_p.shape[0] == data_p.shape[0] and (color_p.shape[1] == 3 or color_p.shape[1] == 4))
+    else:
+        color_p = COLOR_RED
+    if facecolor_p == 'none':
+        plt.scatter(data_p[:, 0], data_p[:, 1], s=size_p, marker=marker_p, facecolors='none', linewidth=2, color=color_p, zorder=3)
+    else:
+        plt.scatter(data_p[:, 0], data_p[:, 1], s=size_p, marker=marker_p, linewidth=2, color=color_p, zorder=3)
+
+
+def plot_otmap(data_before, data_after, plt_fig, color=None, title="", grid=True, marker='o', facecolor_after=None,
+               facecolor_before=None,
+               xmin=-1.0, xmax=1.0, ymin=-1.0, ymax=1.0):
+
+    plt.xlim(xmin, xmax)
+    plt.ylim(ymin, ymax)
+    plt.grid(grid)
+    plt.title(title)
+
+    ot_map = [[tuple(p1), tuple(p2)] for p1, p2 in zip(data_before.tolist(), data_after.tolist())]
+    lines = mc.LineCollection(ot_map, colors=COLOR_LIGHT_GREY)
+    fig = plt_fig
+    fig.add_collection(lines)
+
+    if color is not None:
+        assert color.shape[0] == 3 \
+               or (color.ndim == 2 and color.shape[0] == color.shape[0] and color.shape[1] == 3)
+    else:
+        color = COLOR_RED
+
+    if facecolor_before == 'none':
+        plt.scatter(data_before[:, 0], data_before[:, 1], marker=marker, facecolors='none', linewidth=2, color=color, zorder=2)
+    else:
+        plt.scatter(data_before[:, 0], data_before[:, 1], marker=marker, linewidth=2, color=color, zorder=2)
+
+    if facecolor_after == 'none':
+        plt.scatter(data_after[:, 0], data_after[:, 1], marker=marker, facecolors='none', linewidth=2, color=color, zorder=2)
+    else:
+        plt.scatter(data_after[:, 0], data_after[:, 1], marker=marker, linewidth=2, color=color, zorder=2)
