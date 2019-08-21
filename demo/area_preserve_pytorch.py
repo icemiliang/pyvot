@@ -22,6 +22,10 @@ import sys
 import time
 import numpy as np
 import torch
+from sys import platform
+if platform == "darwin":
+	import matplotlib
+	matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from vot_pytorch import VotAP

@@ -6,12 +6,16 @@
 import os
 import sys
 import time
-import ot
-import ot.plot
 from scipy.spatial.distance import cdist
 import numpy as np
+from sys import platform
+if platform == "darwin":
+    import matplotlib
+    matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.collections as mc
+import ot
+import ot.plot
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from vot_numpy import Vot
 import utils
