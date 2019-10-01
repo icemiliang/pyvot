@@ -284,6 +284,8 @@ class VotReg(Vot):
             return self.update_p_reg_potential(e_idx, iter_p, reg)
         elif reg_type == 2 or reg_type == 'transform':
             return self.update_p_reg_transform(e_idx, iter_p, reg)
+        elif reg_type == 3 or reg_type == 'triplet':
+            return self.update_p_reg_triplet(e_idx, iter_p, reg)
         else:
             return self.update_p_noreg(e_idx, iter_p)
 
@@ -399,6 +401,61 @@ class VotReg(Vot):
 
         self.data_p = 1 / (1 + reg) * p0 + reg / (1 + reg) * pt
         # return convergence
+        return True if max_change_pct < self.thres else False
+
+    def update_p_reg_triplet(self, e_idx, iter_p=0, reg=0.01, margin=0.1):
+        """ update each p to the centroids of its cluster,
+            regularized by triplet loss
+
+        Args:
+            e_idx (torch Tensor): assignment of e to p
+            iter_p (int): index of the iteration of updating p
+            reg (float): regularizer weight
+
+        Returns:
+            bool: convergence or not, determined by max p change
+        """
+
+        def f(p, p0, mask, reg=0.1, margin=0.1):
+            """ objective function incorporating labels
+
+            Args:
+                p  pytorch floattensor:   p
+                p0 pytorch floattensor:  centroids of e
+                label pytorch inttensor: labels of p
+                reg float: regularizer weight
+
+            Returns:
+                float: f = sum(|p-p0|^2) + reg * sum(1(li == lj)*|pi-pj|^2)
+            """
+
+            dists = (p[None, :] - p[:, None]).pow(2).sum(2)
+
+            positive = dists * mask
+            negative = dists * (1 - mask)
+
+            reg_term = torch.nn.functional.relu(positive - negative + margin).sum()
+            data_term = ((p - p0) ** 2.0).sum()
+
+            return data_term + reg * reg_term
+
+        if torch.unique(self.label_p).size == 1:
+            warnings.warn("All known samples belong to the same class")
+
+        p0, max_change_pct = self.update_p_base(e_idx, self.data_p.detach(), self.data_e)
+
+        if self.verbose:
+            print("it {0:d}: max centroid change {1:.2f}".format(iter_p, max_change_pct))
+
+        # regularize
+        optimizer = optim.SGD([self.data_p], lr=0.05)
+        mask = (self.label_p[None, :] == self.label_p[:, None]).double()
+        for _ in range(10):
+            optimizer.zero_grad()
+            loss = f(self.data_p, p0, mask, reg=reg, margin=margin)
+            loss.backward()
+            optimizer.step()
+        # return convergence or not
         return True if max_change_pct < self.thres else False
 
 
