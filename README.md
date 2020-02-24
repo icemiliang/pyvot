@@ -12,7 +12,7 @@ In practice, we consider a collection of dense Dirac samples as an approximation
 * The picture below shows 10 random nested ellipses averaged according to the Euclidean distance (left) and the Wasserstein distance (right) as computed by our method. Middle is the Euclidean sum after re-centered. Our method also preserves the topology (rainbow colors) of the ellipses. 
 * More examples can be found in [demo/](demo/README.md).
 
-![](./demo/pics/barycenter.png =250x)
+![](./demo/pics/barycenter.png =250x250)
 
 ## Dependencies
 
