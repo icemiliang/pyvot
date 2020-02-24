@@ -1,6 +1,4 @@
-# PyVot Python Variational Optimal Transportation
-# Author: Liang Mi <icemiliang@gmail.com>
-# Date: Aug 11th 2019
+# For ICML 2020 submission #22
 # Licence: MIT
 
 import numpy as np
@@ -61,7 +59,7 @@ def random_sample(num, dim, sampling='square'):
         y = np.sqrt(r) * np.sin(theta)
         data = np.concatenate((x[:, None], y[:, None]), axis=1)
     elif sampling == 'circle':
-        r = np.random.uniform(low=0.8, high=0.99, size=num)  # radius
+        r = np.random.uniform(low=0.7, high=0.99, size=num)  # radius
         theta = np.random.uniform(low=0, high=2 * np.pi, size=num)  # angle
         x = np.sqrt(r) * np.cos(theta)
         y = np.sqrt(r) * np.sin(theta)
@@ -130,6 +128,44 @@ def rigid_transform_3d_numpy(p1, p2):
     return r, t
 
 
+def rigid_transform_3D(A, B):
+    assert len(A) == len(B)
+
+    num_rows, num_cols = A.shape;
+
+    if num_rows != 3:
+        raise Exception("matrix A is not 3xN, it is {}x{}".format(num_rows, num_cols))
+
+    [num_rows, num_cols] = B.shape;
+    if num_rows != 3:
+        raise Exception("matrix B is not 3xN, it is {}x{}".format(num_rows, num_cols))
+
+    # find mean column wise
+    centroid_A = np.mean(A, axis=1)
+    centroid_B = np.mean(B, axis=1)
+
+    # subtract mean
+    Am = A - np.tile(centroid_A, (1, num_cols))
+    Bm = B - np.tile(centroid_B, (1, num_cols))
+
+    # dot is matrix multiplication for array
+    H = Am * np.transpose(Bm)
+
+    # find rotation
+    U, S, Vt = np.linalg.svd(H)
+    R = Vt.T * U.T
+
+    # special reflection case
+    if np.linalg.det(R) < 0:
+        print("det(R) < R, reflection detected!, correcting for it ...\n");
+        Vt[2,:] *= -1
+        R = Vt.T * U.T
+
+    t = -R*centroid_A + centroid_B
+
+    return R, t
+
+
 def estimate_transform_target(p1, p2):
     assert len(p1) == len(p2)
     expand_dim = False
@@ -139,8 +175,6 @@ def estimate_transform_target(p1, p2):
         expand_dim = True
     elif p1.shape[1] != 3:
         raise Exception("expected 2d or 3d points")
-
-    # TODO downsample points if too many
 
     r, t = rigid_transform_3d_numpy(p1, p2)
     At = np.matmul(r, p1.T) + t
@@ -163,19 +197,20 @@ def estimate_transform_target_pytorch(p1, p2):
     elif p1.shape[1] != 3:
         raise Exception("expected 2d or 3d points")
 
-    # TODO downsample points if too many
     p11 = p1[~mask]
     p22 = p2[~mask]
 
     r, t = rigid_transform_3d_pytorch(p11, p22)
-    At = torch.mm(r, p1.t()) + t
+    print(r)
+    print(t)
+    At = torch.mm(r, p1.t().clone()) + t
     if expand_dim:
         At = At[:-1, :]
     return At.t()
 
 
-def plot_otsamples(data_p, data_e=None, color_p=None, color_e=None, title="", grid=True, marker_p='o', marker_e='.',
-                   facecolor_p=None, size_p=20, size_e=20, xmin=-1.0, xmax=1.0, ymin=-1.0, ymax=1.0):
+def scatter_otsamples(data_p, data_e=None, color_p=None, color_e=None, title="", grid=True, marker_p='o', marker_e='.',
+                      facecolor_p=None, size_p=20, size_e=20, xmin=-1.0, xmax=1.0, ymin=-1.0, ymax=1.0, nop=False):
     plt.xlim(xmin, xmax)
     plt.ylim(ymin, ymax)
     plt.grid(grid)
@@ -194,10 +229,64 @@ def plot_otsamples(data_p, data_e=None, color_p=None, color_e=None, title="", gr
                or (color_p.ndim == 2 and color_p.shape[0] == data_p.shape[0] and (color_p.shape[1] == 3 or color_p.shape[1] == 4))
     else:
         color_p = COLOR_RED
-    if facecolor_p == 'none':
-        plt.scatter(data_p[:, 0], data_p[:, 1], s=size_p, marker=marker_p, facecolors='none', linewidth=2, color=color_p, zorder=3)
+    if nop == False:
+        if facecolor_p == 'none':
+            plt.scatter(data_p[:, 0], data_p[:, 1], s=size_p, marker=marker_p, facecolors='none', linewidth=2, color=color_p, zorder=3)
+        else:
+            plt.scatter(data_p[:, 0], data_p[:, 1], s=size_p, marker=marker_p, linewidth=2, color=color_p, zorder=3)
+
+
+def scatter_otsamples3D(data_p, data_e=None, color_p=None, color_e=None, title="", grid=True, marker_p='o', marker_e='.',
+                      facecolor_p=None, size_p=20, size_e=20, xmin=-1.0, xmax=1.0, ymin=-1.0, ymax=1.0, nop=False):
+    plt.xlim(xmin, xmax)
+    plt.ylim(ymin, ymax)
+    plt.grid(grid)
+    plt.title(title)
+
+    if data_e is not None:
+        if color_e is not None:
+            assert len(color_e) == 3 \
+                   or (color_e.ndim == 2 and color_e.shape[0] == data_e.shape[0] and (color_e.shape[1] == 3 or color_e.shape[1] == 4))
+        else:
+            color_e = COLOR_LIGHT_GREY
+        plt.scatter(data_e[:, 0], data_e[:, 1], data_e[:, 1], s=size_e, marker=marker_e, color=color_e, zorder=2)
+
+    if color_p is not None:
+        assert len(color_p) == 3 \
+               or (color_p.ndim == 2 and color_p.shape[0] == data_p.shape[0] and (color_p.shape[1] == 3 or color_p.shape[1] == 4))
     else:
-        plt.scatter(data_p[:, 0], data_p[:, 1], s=size_p, marker=marker_p, linewidth=2, color=color_p, zorder=3)
+        color_p = COLOR_RED
+    if nop == False:
+        if facecolor_p == 'none':
+            plt.scatter(data_p[:, 0], data_p[:, 1], data_p[:, 1], s=size_p, marker=marker_p, facecolors='none', linewidth=2, color=color_p, zorder=3)
+        else:
+            plt.scatter(data_p[:, 0], data_p[:, 1], data_p[:, 1], s=size_p, marker=marker_p, linewidth=2, color=color_p, zorder=3)
+
+
+def plot_otsamples(data_p, data_e=None, color_p=None, color_e=None, linewidth=2, title="", grid=True,
+                   xmin=-1.0, xmax=1.0, ymin=-1.0, ymax=1.0):
+    plt.xlim(xmin, xmax)
+    plt.ylim(ymin, ymax)
+    plt.grid(grid)
+    plt.title(title)
+
+    if data_e is not None:
+        if color_e is not None:
+            assert len(color_e) == 3 \
+                   or (color_e.ndim == 2 and color_e.shape[0] == data_e.shape[0] and (color_e.shape[1] == 3 or color_e.shape[1] == 4))
+        else:
+            color_e = COLOR_LIGHT_GREY
+        plt.plot(data_e[:, 0], data_e[:, 1], c=color_e, zorder=2)
+
+    if color_p is not None:
+        assert len(color_p) == 3 \
+               or (color_p.ndim == 2 and color_p.shape[0] == data_p.shape[0] and (color_p.shape[1] == 3 or color_p.shape[1] == 4))
+    else:
+        color_p = COLOR_RED
+    if color_p == 'none':
+        plt.plot(data_p[:, 0], data_p[:, 1], linewidth=linewidth, c='r', zorder=3)
+    else:
+        plt.plot(data_p[:, 0], data_p[:, 1], linewidth=linewidth, c=color_p, zorder=3)
 
 
 def plot_otmap(data_before, data_after, plt_fig, color=None, title="", grid=True, marker='o', facecolor_after=None,

@@ -83,7 +83,7 @@ class Vot:
         utils.assert_boundary(self.data_p)
         utils.assert_boundary(self.data_e)
 
-    def cluster(self, lr=0.5, max_iter_p=10, max_iter_h=3000, lr_decay=200, early_stop=-1):
+    def cluster(self, lr=0.5, max_iter_p=10, max_iter_h=5000, lr_decay=500, early_stop=-1):
         """ compute Wasserstein clustering
 
         Args:
@@ -458,6 +458,8 @@ class VotAP:
         self.data_e, _ = utils.random_sample(num_e, dim, sampling=sampling)
 
         self.dist = cdist(self.data_p, self.data_e)**2
+        # l2 norm tends to have better convergence than inner products
+        # self.dist = np.sum(self.data_p[:, None] * self.data_e[None, :], axis=2)
 
     def map(self, plot_filename=None, beta=0.9, max_iter=1000, lr=0.5, lr_decay=200, early_stop=100):
         """ map p into the area
