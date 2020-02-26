@@ -59,7 +59,12 @@ Mi, Liang, Wen Zhang, and Yalin Wang. "Regularized Wasserstein Means Based on Va
 
 Mi, Liang, Tianshu Yu, José Bento, Wen Zhang, Baoxin Li, and Yalin Wang, “[Variational Wasserstein Barycenters for Geometric Clustering]()”. 
 ```
-
+@article{mi2020variational,
+    title={Variational Wasserstein Barycenters for Geometric Clustering},
+    author={Liang Mi and Tianshu Yu and Jose Bento and Wen Zhang and Baoxin Li and Yalin Wang},
+    journal={arXiv preprint arXiv:2002.10543},
+    year={2020}
+}
 ```
 
 #### Additional references
