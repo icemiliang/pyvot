@@ -9,11 +9,10 @@ This package includes the prototype code for computing Monge's optimal transport
 In practice, we consider a collection of dense Dirac samples as an approximation.  
 * This program implements gradient descent instead of Newton's method to avoid computing
  convex hulls so that it can handle high-dimensional data. 
-* The picture below shows a quick comparison to Sinkhorn OT to show the essential difference
- between Monge's OT and Kantorovich's OT. 
-More examples can be found in [demo/](demo/README.md).
+* The picture below shows 10 random nested ellipses averaged according to the Euclidean distance (left) and the Wasserstein distance (right) as computed by our method. Middle is the Euclidean sum after re-centered. Our method also preserves the topology (rainbow colors) of the ellipses. 
+* More examples can be found in [demo/](demo/README.md).
 
-![alt text](demo/pics/vot_vs_sinkhorn.png?raw=true)
+<img src="demo/pics/barycenter.png" width="50%">
 
 ## Dependencies
 
@@ -58,6 +57,11 @@ Mi, Liang, Wen Zhang, and Yalin Wang. "Regularized Wasserstein Means Based on Va
 }
 ```
 
+Mi, Liang, Tianshu Yu, José Bento, Wen Zhang, Baoxin Li, and Yalin Wang, “[Variational Wasserstein Barycenters for Geometric Clustering]()”. 
+```
+
+```
+
 #### Additional references
 
 [1] Gu, Xianfeng, Feng Luo, Jian Sun, and S-T. Yau. "[Variational principles for Minkowski type problems, discrete optimal transport, and discrete Monge-Ampere equations.](https://arxiv.org/abs/1302.5472)" arXiv preprint arXiv:1302.5472 (2013).
@@ -65,6 +69,8 @@ Mi, Liang, Wen Zhang, and Yalin Wang. "Regularized Wasserstein Means Based on Va
 [2] Mi, Liang, Wen Zhang, Xianfeng Gu, and Yalin Wang. "[Variational Wasserstein Clustering.](https://arxiv.org/abs/1806.09045)" In Proceedings of the European Conference on Computer Vision (ECCV), pp. 322-337. 2018.
 
 [3] Mi, Liang, Wen Zhang, and Yalin Wang. "[Regularized Wasserstein Means Based on Variational Transportation.](http://arxiv.org/abs/1812.00338)" arXiv preprint arXiv:1812.00338 (2018).
+
+[4] Mi, Liang, Tianshu Yu, José Bento, Wen Zhang, Baoxin Li, and Yalin Wang, “[Variational Wasserstein Barycenters for Geometric Clustering]()”. 
 
 ## Contact
 Please contact Liang Mi icemiliang@gmail.com for any issues. Pull requests and issues are welcome.
