@@ -57,7 +57,7 @@ Mi, Liang, Wen Zhang, and Yalin Wang. "Regularized Wasserstein Means Based on Va
 }
 ```
 
-Mi, Liang, Tianshu Yu, José Bento, Wen Zhang, Baoxin Li, and Yalin Wang, “[Variational Wasserstein Barycenters for Geometric Clustering]()”. 
+Mi, Liang, Tianshu Yu, José Bento, Wen Zhang, Baoxin Li, and Yalin Wang, “Variational Wasserstein Barycenters for Geometric Clustering” arXiv preprint arXiv:2002.10543 (2020). 
 ```
 @article{mi2020variational,
     title={Variational Wasserstein Barycenters for Geometric Clustering},
@@ -75,7 +75,7 @@ Mi, Liang, Tianshu Yu, José Bento, Wen Zhang, Baoxin Li, and Yalin Wang, “[Va
 
 [3] Mi, Liang, Wen Zhang, and Yalin Wang. "[Regularized Wasserstein Means Based on Variational Transportation.](http://arxiv.org/abs/1812.00338)" arXiv preprint arXiv:1812.00338 (2018).
 
-[4] Mi, Liang, Tianshu Yu, José Bento, Wen Zhang, Baoxin Li, and Yalin Wang, “[Variational Wasserstein Barycenters for Geometric Clustering]()”. 
+[4] Mi, Liang, Tianshu Yu, José Bento, Wen Zhang, Baoxin Li, and Yalin Wang, “[Variational Wasserstein Barycenters for Geometric Clustering](http://arxiv.org/abs/2002.10543)”. arXiv preprint arXiv:2002.10543 (2020).
 
 ## Contact
 Please contact Liang Mi icemiliang@gmail.com for any issues. Pull requests and issues are welcome.
