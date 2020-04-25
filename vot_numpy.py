@@ -548,3 +548,185 @@ class VotAP:
             self.data_p[:, i] = np.bincount(e_idx, weights=self.data_e[:, i], minlength=num_p) / bincount
 
         return e_idx, pred_label_e
+
+
+class VOT:
+    def __init__(self, y, x, nu=None, mu=None, lam=None, tol=1e-4, verbose=True):
+
+        # marginals (x, mu)
+        # centroids (y, nu)
+
+        if type(x) is list:
+            x = np.stack(x)
+
+        assert type(x) is np.ndarray, warnings.warn("Marginal(s) should be a numpy array or a list of numpy arrays")
+
+        if x.ndim == 2:
+            x = x[np.newaxis, ...]
+        assert x.ndim == 3, warnings.warn("Marginal(s) should be 2- or 3- dimensional")
+
+        self.y = y.copy()
+        self.x = x
+        self.x_original = y
+
+        self.K = y.shape[0]  # number of centroids
+        self.n = y.shape[1]  # number of dimensions
+        self.N = x.shape[0]  # number of marginals
+
+        self.tol = tol
+        self.verbose = verbose
+
+        self.lam = lam if lam is not None else np.ones(self.N) / self.N
+        self.nu = nu if nu is not None else np.ones(self.K) / self.K
+        if mu is not None:
+            self.mu = mu
+        else:
+            self.mu = []
+            for i in range(self.N):
+                data = x[i]
+                N_i = data.shape[0]
+                self.mu.append(np.ones(N_i) / N_i)
+
+        self.idx = np.zeros_like(self.mu, dtype=np.int64)
+
+        utils.assert_boundary(self.y)
+        for i in range(self.N):
+            utils.assert_boundary(self.x[i])
+
+    def cluster(self, lr=0.5, max_iter_p=10, max_iter_h=3000, lr_decay=200, early_stop=-1, beta=0, reg=0.):
+        """ compute Wasserstein clustering
+        """
+
+        N = len(self.x)
+        for iter_p in range(max_iter_p):
+            for i in range(N):
+                print("solving marginal #" + str(i))
+                dist = (cdist(self.y, self.x[i]) ** 2)
+                output = self.update_map(i, dist, max_iter_h, lr=lr, lr_decay=lr_decay, beta=beta, early_stop=early_stop, reg=reg)
+                self.idx[i] = output['idx']
+
+            if self.update_y(iter_p):
+                break
+        output = dict()
+        output['idx'] = self.idx
+
+        # compute WD
+        wd = 0
+        for i in range(self.N):
+            tmp = self.y[self.idx[i], :]
+            tmp -= self.x[i]
+            tmp = tmp ** 2
+            wd += np.sum(np.sum(tmp, axis=1) * self.mu[i])
+
+        output['wd'] = 2 * wd
+        return output
+
+    def update_map(self, n, dist, max_iter=3000, lr=0.5, beta=0, lr_decay=200, early_stop=200, reg=0.):
+        """ update assignment of each e as the ot_map to p
+        """
+
+        dh = 0
+        idx = None
+        running_median, previous_median = [], 0
+
+        dhs = []
+        idxs = []
+
+        dist_original = 0 if reg == 0 else dist.clone()
+
+        for i in range(max_iter):
+            # find nearest p for each e and add mass to p
+            idx = np.argmin(dist, axis=0)
+
+            mass_p = np.bincount(idx, weights=self.mu[n], minlength=self.K)
+            # gradient descent with momentum and decay
+            dh = beta * dh + (1 - beta) * (mass_p - self.nu)
+            if i != 0 and i % lr_decay == 0:
+                lr *= 0.5
+            # update dist matrix
+            dh *= lr
+            dist += dh[:, None]
+
+            # check if converge
+            if self.verbose and i % 1000 == 0:
+                print(dh)
+            max_change = np.max((mass_p - self.nu) / self.nu)
+            if max_change.size > 1:
+                max_change = max_change[0]
+            max_change *= 100
+
+            if self.verbose and ((i < 20 and i % 1 == 0) or i % 200 == 0):
+                print("{0:d}: mass diff {1:.2f}%".format(i, max_change))
+
+            if max_change < 1:
+                if self.verbose:
+                    print("{0:d}: mass diff {1:.2f}%".format(i, max_change))
+                break
+
+            # early stop if loss does not decrease TODO better way to early stop?
+            if early_stop >= 1:
+                running_median.append(max_change)
+                if len(running_median) >= early_stop:
+                    if previous_median != 0 and\
+                            np.abs(np.median(np.array(running_median))-previous_median) / previous_median < 0.02:
+                        if self.verbose:
+                            print("loss saturated, early stopped")
+                        break
+                    else:
+                        previous_median = np.median(np.array(running_median))
+                        running_median = []
+
+        if reg != 0.:
+            idx = np.argmin(reg / (1 + reg) * dist + 1 / (1 + reg) * dist_original, axis=0)
+
+        output = dict()
+        output['idx'] = idx
+        output['dhs'] = dhs
+        output['idxs'] = idxs
+        return output
+
+    def update_y_base(self, i):
+        """ base function to update each p to the centroids of its cluster
+
+        """
+
+        y0 = np.zeros_like(self.y)
+        max_change_pct = 0.0
+        # update p to the centroid of its clustered e samples
+        bincount = np.bincount(self.idx[i], minlength=self.K)
+        if 0 in bincount:
+            print('Empty cluster found, optimal transport probably did not converge\n'
+                  'Try a different lr or max_iter after checking the measures.')
+            # return False
+        eps = 1e-8
+        for d in range(self.n):
+            # update p to the centroid of their correspondences one dimension at a time
+            mass_center = np.bincount(self.idx[i], weights=self.x[i, :, d], minlength=self.K) / (bincount + eps)
+            change_pct = np.max(np.abs((self.y[:, d] - mass_center) / (self.y[:, d]) + eps))
+            max_change_pct = max(max_change_pct, change_pct)
+            y0[:, d] = mass_center
+
+        # replace nan by original data TODO replace nan by nn barycenter?
+        mask = np.isnan(y0).any(axis=1)
+        y0[mask] = self.y[mask].copy()
+
+        return y0, max_change_pct
+
+    def update_y(self, iter=0):
+        """ update each p to the centroids of its cluster
+
+        """
+
+        max_change_pct = 1e9
+
+        y = np.zeros((self.N, self.K, self.n))
+        for i in range(self.N):
+            y[i], change = self.update_y_base(i)
+            max_change_pct = max(max_change_pct, change)
+
+        self.y = np.sum(y * self.lam[:, None, None], axis=0)
+
+        if self.verbose:
+            print("iter {0:d}: max centroid change {1:.2f}%".format(iter, 100 * max_change_pct))
+
+        return True if max_change_pct < self.tol else False
