@@ -86,7 +86,7 @@ else:
 
 vwb = SVWB(x0, [x1, x2], device=device, verbose=False)
 output = vwb.cluster(max_iter_h=5000, max_iter_p=1)
-e_idx, pred_label_e = output['e_idx'], output['pred_label_e']
+e_idx, pred_label_e = output['idx'], output['pred_label_e']
 
 # scale p
 vwb.data_p /= torch.norm(vwb.data_p, dim=1)[:, None]

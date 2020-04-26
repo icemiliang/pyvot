@@ -70,7 +70,7 @@ x0_copy = torch.from_numpy(x0)
 vwb = VWB(x_copy, [x0_copy], device=device, verbose=False)
 output = vwb.cluster(lr=0.5, max_iter_h=1000, max_iter_p=1, beta=0.5)
 
-e_idx, dhss, e_idxss = output['e_idx'], output['dhss'], output['e_idxss']
+e_idx, dhss, e_idxss = output['idx'], output['dhss'], output['e_idxss']
 
 e_idxss_cat = torch.stack(e_idxss[0])
 e_idxss_cat = e_idxss_cat.numpy()
@@ -104,7 +104,7 @@ x0_copy = torch.from_numpy(x0)
 vwb = UVWB(x_copy, [x0_copy], device=device, verbose=False)
 out = vwb.cluster(lr=0.5, max_iter_h=1000, max_iter_p=1, beta=0.5)
 
-e_idx, dhss, e_idxss = output['e_idx'], output['dhss'], output['e_idxss']
+e_idx, dhss, e_idxss = output['idx'], output['dhss'], output['e_idxss']
 
 e_idxss_cat = torch.stack(e_idxss[0])
 e_idxss_cat = e_idxss_cat.numpy()

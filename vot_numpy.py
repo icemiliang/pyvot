@@ -95,7 +95,7 @@ class Vot:
             lr_decay (float): learning rate decay
 
         Returns:
-            e_idx (numpy ndarray): assignment of e to p
+            idx (numpy ndarray): assignment of e to p
             pred_label_e (numpy ndarray): labels of e that come from nearest p
 
         See Also
@@ -123,7 +123,7 @@ class Vot:
             early_stop (int): early_stop check frequency
 
         Returns:
-            e_idx (numpy ndarray): assignment of e to p
+            idx (numpy ndarray): assignment of e to p
             pred_label_e (numpy ndarray): labels of e that come from nearest p
         """
 
@@ -541,18 +541,20 @@ class VOT:
         self.verbose = verbose
 
         self.lam = lam if lam is not None else np.ones(self.N) / self.N
-        self.nu = nu if nu is not None else 1. / self.K
+
 
         self.idx = []
         self.mu = []
+        self.sum_mu = []
         if mu is not None:
             # copy mu
             if type(mu) is np.ndarray:
                 self.mu = [mu]
             else:
                 self.mu = mu
-            for tmp in self.mu:
-                self.idx.append(np.ones_like(tmp, dtype=np.int64))
+            for m in self.mu:
+                self.idx.append(np.ones_like(m, dtype=np.int64))
+                self.sum_mu.append(np.sum(m))
         else:
             # create uniform mu
             self.mu = []
@@ -561,6 +563,17 @@ class VOT:
                 N_i = self.x[i].shape[0]
                 self.mu.append(1. / N_i)
                 self.idx.append(np.zeros(N_i, dtype=np.int64))
+                self.sum_mu.append(1.)
+
+        if nu is not None:
+            self.nu = nu
+            if abs(self.sum_nu - 1) > 1e-3:
+                self.nu /= self.sum_nu
+                self.sum_nu = 1
+                self.mu = [m / self.sum_nu for m in self.mu]
+        else:
+            self.nu = 1. / self.K
+            self.sum_nu = 1.
 
         # all data should be in (-1, 1) in each dimension
         utils.assert_boundary(self.y)
@@ -571,11 +584,13 @@ class VOT:
         """ compute Wasserstein clustering
         """
 
+        lrs = [lr / m for m in self.sum_mu]
+
         for iter_y in range(max_iter_y):
             for i in range(self.N):
                 print("solving marginal #" + str(i))
                 dist = cdist(self.y, self.x[i], 'sqeuclidean')
-                output = self.update_map(i, dist, max_iter_h, lr=lr, lr_decay=lr_decay, beta=beta, stop=stop, reg=reg)
+                output = self.update_map(i, dist, max_iter_h, lr=lrs[i], lr_decay=lr_decay, beta=beta, stop=stop, reg=reg)
                 self.idx[i] = output['idx']
 
             if self.update_y(iter_y):

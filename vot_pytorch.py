@@ -95,7 +95,7 @@ class Vot:
             lr_decay (float): learning rate decay
 
         Returns:
-            e_idx (pytorch Tensor): assignment of e to p
+            idx (pytorch Tensor): assignment of e to p
             pred_label_e (pytorch Tensor): labels of e that come from nearest p
 
         See Also
@@ -123,7 +123,7 @@ class Vot:
             early_stop (int): early_stop check frequency
 
         Returns:
-            e_idx (pytorch Tensor): assignment of e to p
+            idx (pytorch Tensor): assignment of e to p
             pred_label_e (pytorch Tensor): labels of e that come from nearest p
         """
 
@@ -534,7 +534,7 @@ class VotAP:
             early_stop (int): early_stop checking frequency
 
         :return:
-            e_idx (pytorch Tensor): assignment of e to p
+            idx (pytorch Tensor): assignment of e to p
             pred_label_e (pytorch Tensor): labels of e that come from nearest p
         """
 
@@ -658,7 +658,7 @@ class VWB:
             reg      (float): for regularized k-means
 
         Returns:
-            e_idx (pytorch Tensor): assignment of e to p
+            idx (pytorch Tensor): assignment of e to p
             pred_label_e (pytorch Tensor): labels of e that come from nearest p
 
         See Also
@@ -688,7 +688,7 @@ class VWB:
             if iter_p == max_iter_p - 1:
                 e_idx_return, pred_label_e_return = e_idx, pred_label_e
         output = dict()
-        output['e_idx'] = e_idx_return
+        output['idx'] = e_idx_return
         output['pred_label_e'] = pred_label_e_return
         output['dhss'] = dhss
         output['e_idxss'] = e_idxss
@@ -717,7 +717,7 @@ class VWB:
             reg (float): for regularized k-means
 
         Returns:
-            e_idx (pytorch Tensor): assignment of e to p
+            idx (pytorch Tensor): assignment of e to p
             pred_label_e (pytorch Tensor): labels of e that come from nearest p
         """
 
@@ -861,7 +861,7 @@ class RegVWB(VWB):
             lr_decay (float): learning rate decay
 
         Returns:
-            e_idx (pytorch Tensor): assignment of e to p
+            idx (pytorch Tensor): assignment of e to p
             pred_label_e (pytorch Tensor): labels of e that come from nearest p
 
         See Also
@@ -891,7 +891,7 @@ class RegVWB(VWB):
             if iter_p == max_iter_p - 1:
                 e_idx_return, pred_label_e_return = e_idx, pred_label_e
         output = dict()
-        output['e_idx'] = e_idx_return
+        output['idx'] = e_idx_return
         output['pred_label_e'] = pred_label_e_return
         output['dhss'] = dhss
         output['e_idxss'] = e_idxss
@@ -986,7 +986,7 @@ class SVWB (VWB):
             lr_decay (float): learning rate decay
 
         Returns:
-            e_idx (pytorch Tensor): assignment of e to p
+            idx (pytorch Tensor): assignment of e to p
             pred_label_e (pytorch Tensor): labels of e that come from nearest p
 
         See Also
@@ -1018,7 +1018,7 @@ class SVWB (VWB):
             if iter_p == max_iter_p - 1:
                 e_idx_return, pred_label_e_return = e_idx, pred_label_e
         output = dict()
-        output['e_idx'] = e_idx_return
+        output['idx'] = e_idx_return
         output['pred_label_e'] = pred_label_e_return
         output['dhss'] = dhss
         output['e_idxss'] = e_idxss
@@ -1036,7 +1036,7 @@ class SVWB (VWB):
             early_stop (int): early_stop check frequency
 
         Returns:
-            e_idx (pytorch Tensor): assignment of e to p
+            idx (pytorch Tensor): assignment of e to p
             pred_label_e (pytorch Tensor): labels of e that come from nearest p
         """
 
@@ -1143,7 +1143,7 @@ class UVWB(VWB):
             lr_decay (float): learning rate decay
 
         Returns:
-            e_idx (pytorch Tensor): assignment of e to p
+            idx (pytorch Tensor): assignment of e to p
             pred_label_e (pytorch Tensor): labels of e that come from nearest p
 
         See Also
@@ -1178,7 +1178,7 @@ class UVWB(VWB):
             if iter_p == max_iter_p - 1:
                 e_idx_return, pred_label_e_return = e_idx, pred_label_e
         output = dict()
-        output['e_idx'] = e_idx_return
+        output['idx'] = e_idx_return
         output['pred_label_e'] = pred_label_e_return
         output['dhss'] = dhss
         output['e_idxss'] = e_idxss
@@ -1196,7 +1196,7 @@ class UVWB(VWB):
             early_stop (int): early_stop check frequency
 
         Returns:
-            e_idx (pytorch Tensor): assignment of e to p
+            idx (pytorch Tensor): assignment of e to p
             pred_label_e (pytorch Tensor): labels of e that come from nearest p
         """
 

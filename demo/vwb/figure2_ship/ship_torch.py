@@ -41,7 +41,7 @@ x = torch.from_numpy(x)
 
 vwb = VWB(x, [x1, x2], device=device, verbose=False)
 output = vwb.cluster(max_iter_h=5000, max_iter_p=1)
-e_idx = output['e_idx']
+e_idx = output['idx']
 
 xmin, xmax, ymin, ymax = -1.0, 1.0, -0.5, 0.5
 

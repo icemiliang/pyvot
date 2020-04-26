@@ -159,7 +159,7 @@ x3 = torch.from_numpy(x3.clip(-0.99, 0.99))
 x = torch.from_numpy(C1_16.clip(-0.99, 0.99))
 vwb = VWB(x, [x1], device=device, verbose=False)
 output = vwb.cluster(lr=1, max_iter_h=5000, max_iter_p=1)
-e_idx = output['e_idx']
+e_idx = output['idx']
 x1_vwb_16 = vwb.data_p[e_idx[0], :].cpu().numpy()
 x1_vwb_16 = np.transpose(np.reshape(x1_vwb_16 * 255, (128, 128, 3)), (1, 0, 2))
 imageio.imwrite("x1_vwb_16.png", x1_vwb_16)
@@ -181,7 +181,7 @@ fig1.savefig("x1_histogram_vwb_16.png", dpi=300, bbox_inches='tight')
 x = torch.from_numpy(C2_16.clip(-0.99, 0.99))
 vwb = VWB(x, [x2], device=device, verbose=False)
 output = vwb.cluster(lr=1, max_iter_h=5000, max_iter_p=1)
-e_idx = output['e_idx']
+e_idx = output['idx']
 x2_vwb_16 = vwb.data_p[e_idx[0], :].cpu().numpy()
 x2_vwb_16 = np.transpose(np.reshape(x2_vwb_16 * 255, (128, 128, 3)), (1, 0, 2))
 imageio.imwrite("x2_vwb_16.png", x2_vwb_16)
@@ -203,7 +203,7 @@ fig2.savefig("x2_histogram_vwb_16.png", dpi=300, bbox_inches='tight')
 x = torch.from_numpy(C3_16.clip(-0.99, 0.99))
 vwb = VWB(x, [x3], device=device, verbose=False)
 output = vwb.cluster(lr=1, max_iter_h=5000, max_iter_p=1)
-e_idx = output['e_idx']
+e_idx = output['idx']
 x3_vwb_16 = vwb.data_p[e_idx[0], :].cpu().numpy()
 x3_vwb_16 = np.transpose(np.reshape(x3_vwb_16 * 255, (128, 128, 3)), (1, 0, 2))
 imageio.imwrite("x3_vwb_16.png", x3_vwb_16)
@@ -228,7 +228,7 @@ fig3.savefig("x3_histogram_vwb_16.png", dpi=300, bbox_inches='tight')
 x = torch.from_numpy(C_all_16.clip(-0.99, 0.99))
 vwb = VWB(x, [x1, x2, x3], device=device, verbose=False)
 output = vwb.cluster(lr=1, max_iter_h=5000, max_iter_p=1)
-e_idx = output['e_idx']
+e_idx = output['idx']
 
 
 x1_vwb_all = vwb.data_p[e_idx[0], :].cpu().numpy()

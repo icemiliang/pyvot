@@ -148,7 +148,7 @@ ell_all = [torch.from_numpy(ell).t() for ell in ell_all]
 
 vwb = VWB(ell_all[0][0:-1:5, :], ell_all, device=device, verbose=False)
 output = vwb.cluster(lr=0.5, max_iter_h=3000, max_iter_p=1)
-e_idx = output['e_idx']
+e_idx = output['idx']
 
 fig = plt.figure(4, figsize=(2, 2))
 ax = fig.add_subplot(111)
