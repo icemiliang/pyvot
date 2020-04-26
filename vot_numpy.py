@@ -631,7 +631,7 @@ class VOT:
         for iter in range(max_iter):
             # find nearest y for each x and add mass to y
             if space == 'spherical':
-                idx = np.argmin(dist / np.cos(h)[:, None], dim=0)
+                idx = np.argmin(dist / np.cos(h)[:, None], axis=0)
             else:
                 idx = np.argmin(dist, axis=0)
             if keep_idx:
@@ -706,6 +706,7 @@ class VOT:
         eps = 1e-8
 
         # update y to the centroid of their correspondences one dimension at a time
+        # for spherical domains, use Euclidean barycenter to approximate and project it to the surface
         for n in range(ndim):
             mass_center = np.bincount(idx, weights=x[:, n], minlength=K) / (bincount + eps)
             change_pct = np.max(np.abs((y[:, n] - mass_center) / (y[:, n]) + eps))
@@ -731,6 +732,9 @@ class VOT:
             max_change_pct = max(max_change_pct, change)
 
         self.y = np.sum(y * self.lam[:, None, None], axis=0)
+
+        # if space == 'spherical':
+        #     self.y /= np.linalg.norm(self.y, axis=1, keepdims=True)
 
         if self.verbose:
             print("iter {0:d}: max centroid change {1:.2f}%".format(iter, 100 * max_change_pct))
