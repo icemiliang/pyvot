@@ -55,10 +55,10 @@ tock = time.time()
 print('total time: {0:.4f}'.format(tock-tick))
 
 
-# vot.data_p = vot.data_p.detach().cpu().numpy()
-# vot.data_e = vot.data_e.cpu().numpy()
+# vot.y = vot.y.detach().cpu().numpy()
+# vot.x = vot.x.cpu().numpy()
 # vot.data_p_original = vot.data_p_original.cpu().numpy()
-# vot.label_p = vot.label_p.int().cpu().numpy()
+# vot.label_y = vot.label_y.int().cpu().numpy()
 # vot.label_e = vot.label_e.int().cpu().numpy()
 # pred_label_e = pred_label_e.int().cpu().numpy()
 

@@ -1,6 +1,6 @@
 # PyVot Python Variational Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: Aug 11th 2019
+# Date: April 25th 2020
 # Licence: MIT
 
 """
@@ -20,10 +20,6 @@ import os
 import sys
 import time
 import numpy as np
-from sys import platform
-if platform == "darwin":
-	import matplotlib
-	matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from vot_numpy import VotAP
@@ -61,16 +57,16 @@ print('total time: {0:.4f}'.format(tock-tick))
 # ----- plot before ----- #
 plt.figure(figsize=(12, 8))
 plt.subplot(231)
-utils.plot_otsamples(vot.data_p_original, vot.data_e, title='before', )
+utils.plot_otsamples(vot.data_p_original, vot.x, title='before', )
 
 # ------ plot map ------- #
 fig232 = plt.subplot(232)
-utils.plot_otmap(vot.data_p_original, vot.data_p, fig232, title='vot map', facecolor_after='none')
+utils.plot_otmap(vot.data_p_original, vot.y, fig232, title='vot map', facecolor_after='none')
 
 # ------ plot after ----- #
 ce = np.array(plt.get_cmap('viridis')(e_idx / (N - 1)))
 plt.subplot(233)
-utils.plot_otsamples(vot.data_p, vot.data_e, color_e=ce, size_e=5, title='after', facecolor_p='none')
+utils.plot_otsamples(vot.y, vot.x, color_e=ce, title='after')
 
 
 # ----------------------------------- #
@@ -90,16 +86,16 @@ print('total time: {0:.4f}'.format(tock-tick))
 
 # ----- plot before ----- #
 plt.subplot(234)
-utils.plot_otsamples(vot2.data_p_original, vot2.data_e, title='before')
+utils.plot_otsamples(vot2.data_p_original, vot2.x, title='before')
 
 # ------ plot map ------- #
 fig235 = plt.subplot(235)
-utils.plot_otmap(vot2.data_p_original, vot2.data_p, fig235, title='vot map', facecolor_after='none')
+utils.plot_otmap(vot2.data_p_original, vot2.y, fig235, title='vot map', facecolor_after='none')
 
 # ------ plot after ----- #
 ce = np.array(plt.get_cmap('viridis')(e_idx / (N - 1)))
 plt.subplot(236)
-utils.plot_otsamples(vot2.data_p, vot2.data_e, size_p=30, color_e=ce, size_e=5, title='after', facecolor_p='none')
+utils.plot_otsamples(vot2.y, vot2.x, color_e=ce, title='after')
 
 # ---- plot and save ---- #
 plt.tight_layout(pad=1.0, w_pad=1.5, h_pad=0.5)

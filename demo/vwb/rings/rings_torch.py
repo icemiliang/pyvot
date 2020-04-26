@@ -1,3 +1,8 @@
+# PyVot Python Variational Optimal Transportation
+# Author: Liang Mi <icemiliang@gmail.com>
+# Date: April 25th 2020
+# Licence: MIT
+
 import numpy as np
 from cycler import cycler
 import matplotlib

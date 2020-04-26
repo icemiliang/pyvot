@@ -36,9 +36,9 @@ class Vot:
             verbose (bool): console output verbose flag
 
         Atts:
-            data_p (pytorch Tensor): coordinates of p
-            data_e (pytorch Tensor): coordinates of e
-            label_p (pytorch Tensor): labels of p
+            y (pytorch Tensor): coordinates of p
+            x (pytorch Tensor): coordinates of e
+            label_y (pytorch Tensor): labels of p
             label_e (pytorch Tensor): labels of e
             weight_p (pytorch Tensor): weight of p
             weight_e (pytorch Tensor): weight of e
@@ -48,12 +48,12 @@ class Vot:
         """
 
         if not isinstance(data_p, torch.Tensor):
-            raise Exception('data_p is not a pytorch Tensor')
+            raise Exception('y is not a pytorch Tensor')
         if not isinstance(data_e, torch.Tensor):
-            raise Exception('data_e is not a pytorch Tensor')
+            raise Exception('x is not a pytorch Tensor')
 
         if label_p is not None and not isinstance(label_p, torch.Tensor):
-            raise Exception('label_p is not a pytorch Tensor')
+            raise Exception('label_y is not a pytorch Tensor')
         if label_e is not None and not isinstance(label_e, torch.Tensor):
             raise Exception('label_e is not a pytorch Tensor')
 
@@ -385,14 +385,14 @@ class VotReg(Vot):
         if self.verbose:
             print("it {0:d}: max centroid change {1:.2f}".format(iter_p, max_change_pct))
 
-        # pt = utils.estimate_transform_target_pytorch(self.data_p.detach(), p0)
+        # pt = utils.estimate_transform_target_pytorch(self.y.detach(), p0)
         pt = utils.estimate_transform_target(self.data_p.detach().detach().numpy(), p0.numpy())
         pt = torch.tensor(pt, device=self.device)
         # regularize within each label
         # pt = torchzeros(p0.shape)
-        # for label in torchunique(self.label_p):
-        #     idx_p_label = self.label_p == label
-        #     p_sub = self.data_p[idx_p_label, :]
+        # for label in torchunique(self.label_y):
+        #     idx_p_label = self.label_y == label
+        #     p_sub = self.y[idx_p_label, :]
         #     p0_sub = p0[idx_p_label, :]
         #     T = tf.EuclideanTransform()
         #     # T = tf.AffineTransform()
@@ -400,7 +400,7 @@ class VotReg(Vot):
         #     T.estimate(p_sub, p0_sub)
         #     pt[idx_p_label, :] = T(p_sub)
         #
-        # pt = self.data_p.clone()
+        # pt = self.y.clone()
         # T = tf.EuclideanTransform()
         # T.estimate(pt, p0)
         # pt = T(pt)
@@ -487,8 +487,8 @@ class VotAP:
             thres    float: Threshold to break loops
             lr       float: Learning rate
             verbose   bool: console output verbose flag
-            data_p    pytorch floattensor: coordinates of p
-            label_p   pytorch inttensor: labels of p
+            y    pytorch floattensor: coordinates of p
+            label_y   pytorch inttensor: labels of p
             mass_p    pytorch floattensor: mass of clusters of p
             weight_p   pytorch floattensor: dirac measure of p
         """
@@ -1006,7 +1006,7 @@ class SVWB (VWB):
                 # if self.verbose:
                 print("solving marginal #" + str(i))
                 dist = torch.mm(self.data_p, self.data_e[i].T)
-                # dist = torch.cdist(self.data_p, self.data_e[i]) ** 2
+                # dist = torch.cdist(self.y, self.x[i]) ** 2
                 idx, pred_label, dhs, e_idxs = self.update_map(i, dist, max_iter_h, lr=lr, lr_decay=lr_decay, beta=beta, early_stop=early_stop)
                 dhss.append(dhs)
                 e_idxss.append(e_idxs)

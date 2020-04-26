@@ -1,6 +1,6 @@
 # PyVot Python Variational Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: Aug 11th 2019
+# Date: April 25th 2020
 # Licence: MIT
 
 import numpy as np
@@ -37,9 +37,9 @@ class Vot:
             verbose (bool): console output verbose flag
 
         Atts:
-            data_p (numpy ndarray): coordinates of p
-            data_e (numpy ndarray): coordinates of e
-            label_p (numpy ndarray): labels of p
+            y (numpy ndarray): coordinates of p
+            x (numpy ndarray): coordinates of e
+            label_y (numpy ndarray): labels of p
             label_e (numpy ndarray): labels of e
             weight_p (numpy ndarray): weight of p
             weight_e (numpy ndarray): weight of e
@@ -49,12 +49,12 @@ class Vot:
         """
 
         if not isinstance(data_p, np.ndarray):
-            raise Exception('data_p is not a numpy ndarray')
+            raise Exception('y is not a numpy ndarray')
         if not isinstance(data_e, np.ndarray):
-            raise Exception('data_e is not a numpy ndarray')
+            raise Exception('x is not a numpy ndarray')
 
         if label_p is not None and not isinstance(label_p, np.ndarray):
-            raise Exception('label_p is not a numpy ndarray')
+            raise Exception('label_y is not a numpy ndarray')
         if label_e is not None and not isinstance(label_e, np.ndarray):
             raise Exception('label_e is not a numpy ndarray')
 
@@ -385,9 +385,9 @@ class VotReg(Vot):
 
         # regularize within each label
         # pt = np.zeros(p0.shape)
-        # for label in np.unique(self.label_p):
-        #     idx_p_label = self.label_p == label
-        #     p_sub = self.data_p[idx_p_label, :]
+        # for label in np.unique(self.label_y):
+        #     idx_p_label = self.label_y == label
+        #     p_sub = self.y[idx_p_label, :]
         #     p0_sub = p0[idx_p_label, :]
         #     T = tf.EuclideanTransform()
         #     # T = tf.AffineTransform()
@@ -395,7 +395,7 @@ class VotReg(Vot):
         #     T.estimate(p_sub, p0_sub)
         #     pt[idx_p_label, :] = T(p_sub)
         #
-        # pt = self.data_p.copy()
+        # pt = self.y.copy()
         # T = tf.EuclideanTransform()
         # T.estimate(pt, p0)
         # pt = T(pt)
@@ -407,29 +407,12 @@ class VotReg(Vot):
 
 class VotAP:
     """ Area Preserving by variational optimal transportation """
-    # p are the centroids
-    # e are the area samples
-    # this is a separate class for area-preserving maps
+    # y are the centroids
+    # x are the area samples
+    # this is a minimum class for area-preserving maps
 
-    def __init__(self, data, sampling='square', label=None, weight_p=None, thres=1e-5, ratio=100, verbose=False):
+    def __init__(self, data, sampling='square', label=None, nu=None, thres=1e-5, ratio=100, verbose=False):
         """ set up parameters
-        Args:
-            data (numpy ndarray): initial coordinates of p
-            sampling (string): sampling area shape
-            label (numpy ndarray): labels of p
-            weight_p (numpy ndarray): weights of p
-            thres (float): threshold to break loops
-            ratio (float): the ratio of num of e to the num of p
-            verbose (bool): boolean flag for verbose console output
-
-        Atts:
-            thres (float): Threshold to break loops
-            lr    (float): Learning rate
-            verbose (bool): console output verbose flag
-            data_p  (numpy ndarray): coordinates of p
-            label_p (numpy ndarray): labels of p
-            mass_p  (numpy ndarray): mass of clusters of p
-            weight_p (numpy ndarray): weight of p
         """
 
         if not isinstance(data, np.ndarray):
@@ -438,60 +421,43 @@ class VotAP:
         if label is not None and not isinstance(label, np.ndarray):
             raise Exception('label is neither a numpy array not a numpy ndarray')
 
-        if weight_p is not None and not isinstance(weight_p, np.ndarray):
+        if nu is not None and not isinstance(nu, np.ndarray):
             raise Exception('label is neither a numpy array not a numpy ndarray')
 
-        self.data_p = data
-        self.data_p_original = self.data_p.copy()
-        num_p = self.data_p.shape[0]
+        self.y = data
+        self.data_p_original = self.y.copy()
+        self.K = self.y.shape[0]
 
-        self.label_p = label
-        self.weight_p = weight_p if weight_p is not None else np.ones(num_p) / num_p
+        self.label_y = label
+        self.weight_p = nu if nu is not None else np.ones(self.K) / self.K
 
         self.thres = thres
         self.verbose = verbose
 
-        utils.assert_boundary(self.data_p)
+        utils.assert_boundary(self.y)
 
-        num_e = int(ratio * num_p)
-        dim = self.data_p.shape[1]
-        self.data_e, _ = utils.random_sample(num_e, dim, sampling=sampling)
+        self.N0 = int(ratio * self.K)
+        ndim = self.y.shape[1]
+        self.x, _ = utils.random_sample(self.N0, ndim, sampling=sampling)
 
-        self.dist = cdist(self.data_p, self.data_e)**2
-        # l2 norm tends to have better convergence than inner products
-        # self.dist = np.sum(self.data_p[:, None] * self.data_e[None, :], axis=2)
+        self.dist = cdist(self.y, self.x, 'sqeuclidean')
 
     def map(self, plot_filename=None, beta=0.9, max_iter=1000, lr=0.5, lr_decay=200, early_stop=100):
-        """ map p into the area
-
-        Args:
-            plot_filename (string): filename of the gif image
-            beta (float): gradient descent momentum
-            max_iter (int): maximum number of iteration
-            lr (float): learning rate
-            lr_decay (int): learning rate decay interval
-            early_stop (int): early_stop checking frequency
-
-        :return:
-            e_idx (numpy ndarray): assignment of e to p
-            pred_label_e (numpy ndarray): labels of e that come from nearest p
+        """ map y into the area
         """
-
-        num_p = self.data_p.shape[0]
-        num_e = self.data_e.shape[0]
 
         imgs = []
         dh = 0
 
-        e_idx = None
+        idx = None
         running_median, previous_median = [], 0
 
         for i in range(max_iter):
             # find nearest p for each e
-            e_idx = np.argmin(self.dist, axis=0)
+            idx = np.argmin(self.dist, axis=0)
 
             # calculate total mass of each cell
-            mass_p = np.bincount(e_idx, minlength=num_p) / num_e
+            mass_p = np.bincount(idx, minlength=self.K) / self.N0
             # gradient descent with momentum and decay
             dh = beta * dh + (1-beta) * (mass_p - self.weight_p)
             if i != 0 and i % lr_decay == 0:
@@ -500,7 +466,7 @@ class VotAP:
 
             # plot to gif, TODO this is time consuming, got a better way?
             if plot_filename and i % 10 == 0:
-                fig = utils.plot_map(self.data_e, e_idx / (num_p - 1))
+                fig = utils.plot_map(self.x, idx / (self.K - 1))
                 img = utils.fig2data(fig)
                 imgs.append(img)
 
@@ -535,19 +501,19 @@ class VotAP:
                 break
         if plot_filename and imgs:
             imageio.mimsave(plot_filename, imgs, fps=4)
-        # labels come from p
-        pred_label_e = self.label_p[e_idx] if self.label_p is not None else None
+        # labels come from y
+        pred_label_x = self.label_y[idx] if self.label_y is not None else None
 
-        # update coordinates of p
-        bincount = np.bincount(e_idx, minlength=num_p)
+        # update coordinates of y
+        bincount = np.bincount(idx, minlength=self.K)
         if 0 in bincount:
             print('Empty cluster found, optimal transport probably did not converge\nTry larger lr or max_iter')
             # return
-        for i in range(self.data_p.shape[1]):
+        for i in range(self.y.shape[1]):
             # update p to the centroid of their correspondences
-            self.data_p[:, i] = np.bincount(e_idx, weights=self.data_e[:, i], minlength=num_p) / bincount
+            self.y[:, i] = np.bincount(idx, weights=self.x[:, i], minlength=self.K) / bincount
 
-        return e_idx, pred_label_e
+        return idx, pred_label_x
 
 
 class VOT:
@@ -556,117 +522,126 @@ class VOT:
         # marginals (x, mu)
         # centroids (y, nu)
 
-        if type(x) is list:
-            x = np.stack(x)
-
-        assert type(x) is np.ndarray, warnings.warn("Marginal(s) should be a numpy array or a list of numpy arrays")
-
-        if x.ndim == 2:
-            x = x[np.newaxis, ...]
-        assert x.ndim == 3, warnings.warn("Marginal(s) should be 2- or 3- dimensional")
+        if type(x) is np.ndarray:
+            if x.ndim == 2:
+                self.x = [x]
+            elif x.ndim == 3:
+                self.x = [x[i] for i in range(x.shape[0])]
+        else:
+            self.x = x
 
         self.y = y.copy()
-        self.x = x
-        self.x_original = y
+        self.y_original = y
 
         self.K = y.shape[0]  # number of centroids
         self.n = y.shape[1]  # number of dimensions
-        self.N = x.shape[0]  # number of marginals
+        self.N = len(self.x)  # number of marginals
 
         self.tol = tol
         self.verbose = verbose
 
         self.lam = lam if lam is not None else np.ones(self.N) / self.N
-        self.nu = nu if nu is not None else np.ones(self.K) / self.K
+        self.nu = nu if nu is not None else 1. / self.K
+
+        self.idx = []
+        self.mu = []
         if mu is not None:
-            self.mu = mu
+            # copy mu
+            if type(mu) is np.ndarray:
+                self.mu = [mu]
+            else:
+                self.mu = mu
+            for tmp in self.mu:
+                self.idx.append(np.ones_like(tmp, dtype=np.int64))
         else:
+            # create uniform mu
             self.mu = []
+            self.idx = []
             for i in range(self.N):
-                data = x[i]
-                N_i = data.shape[0]
-                self.mu.append(np.ones(N_i) / N_i)
+                N_i = self.x[i].shape[0]
+                self.mu.append(1. / N_i)
+                self.idx.append(np.zeros(N_i, dtype=np.int64))
 
-        self.idx = np.zeros_like(self.mu, dtype=np.int64)
-
+        # all data should be in (-1, 1) in each dimension
         utils.assert_boundary(self.y)
         for i in range(self.N):
             utils.assert_boundary(self.x[i])
 
-    def cluster(self, lr=0.5, max_iter_p=10, max_iter_h=3000, lr_decay=200, early_stop=-1, beta=0, reg=0.):
+    def cluster(self, lr=0.5, max_iter_y=10, max_iter_h=3000, lr_decay=200, stop=-1, beta=0, reg=0.):
         """ compute Wasserstein clustering
         """
 
-        N = len(self.x)
-        for iter_p in range(max_iter_p):
-            for i in range(N):
+        for iter_y in range(max_iter_y):
+            for i in range(self.N):
                 print("solving marginal #" + str(i))
-                dist = (cdist(self.y, self.x[i]) ** 2)
-                output = self.update_map(i, dist, max_iter_h, lr=lr, lr_decay=lr_decay, beta=beta, early_stop=early_stop, reg=reg)
+                dist = cdist(self.y, self.x[i], 'sqeuclidean')
+                output = self.update_map(i, dist, max_iter_h, lr=lr, lr_decay=lr_decay, beta=beta, stop=stop, reg=reg)
                 self.idx[i] = output['idx']
 
-            if self.update_y(iter_p):
+            if self.update_y(iter_y):
                 break
         output = dict()
         output['idx'] = self.idx
 
-        # compute WD
-        wd = 0
+        # compute W_2^2
+        twd = 0
+        wds = []
         for i in range(self.N):
-            tmp = self.y[self.idx[i], :]
-            tmp -= self.x[i]
-            tmp = tmp ** 2
-            wd += np.sum(np.sum(tmp, axis=1) * self.mu[i])
+            tmp = (self.y[self.idx[i], :] - self.x[i]) ** 2
+            wd = np.sum(np.sum(tmp, axis=1) * self.mu[i])
+            twd += wd
+            wds.append(wd)
 
-        output['wd'] = 2 * wd
+        output['wd'] = twd
         return output
 
-    def update_map(self, n, dist, max_iter=3000, lr=0.5, beta=0, lr_decay=200, early_stop=200, reg=0.):
-        """ update assignment of each e as the ot_map to p
+    def update_map(self, i, dist, max_iter=3000, lr=0.5, beta=0, lr_decay=200, stop=200, reg=0.):
+        """ update assignment of each e as the ot_map to y
         """
 
         dh = 0
         idx = None
         running_median, previous_median = [], 0
 
-        dhs = []
-        idxs = []
+        dist_original = 0 if reg == 0 else dist.copy()
 
-        dist_original = 0 if reg == 0 else dist.clone()
-
-        for i in range(max_iter):
-            # find nearest p for each e and add mass to p
+        for iter in range(max_iter):
+            # find nearest y for each x and add mass to y
             idx = np.argmin(dist, axis=0)
 
-            mass_p = np.bincount(idx, weights=self.mu[n], minlength=self.K)
+            if isinstance(self.mu[i], float):
+                mass = np.bincount(idx, minlength=self.K) * self.mu[i]
+            else:
+                mass = np.bincount(idx, weights=self.mu[i], minlength=self.K)
+
             # gradient descent with momentum and decay
-            dh = beta * dh + (1 - beta) * (mass_p - self.nu)
-            if i != 0 and i % lr_decay == 0:
+            dh = beta * dh + (1 - beta) * (mass - self.nu)
+            if iter != 0 and iter % lr_decay == 0:
                 lr *= 0.5
             # update dist matrix
             dh *= lr
             dist += dh[:, None]
 
             # check if converge
-            if self.verbose and i % 1000 == 0:
+            if self.verbose and iter % 1000 == 0:
                 print(dh)
-            max_change = np.max((mass_p - self.nu) / self.nu)
+            max_change = np.max((mass - self.nu) / self.nu)
             if max_change.size > 1:
                 max_change = max_change[0]
             max_change *= 100
 
             if self.verbose and ((i < 20 and i % 1 == 0) or i % 200 == 0):
-                print("{0:d}: mass diff {1:.2f}%".format(i, max_change))
+                print("{0:d}: mass diff {1:.2f}%".format(iter, max_change))
 
             if max_change < 1:
                 if self.verbose:
-                    print("{0:d}: mass diff {1:.2f}%".format(i, max_change))
+                    print("{0:d}: mass diff {1:.2f}%".format(iter, max_change))
                 break
 
             # early stop if loss does not decrease TODO better way to early stop?
-            if early_stop >= 1:
+            if stop >= 1:
                 running_median.append(max_change)
-                if len(running_median) >= early_stop:
+                if len(running_median) >= stop:
                     if previous_median != 0 and\
                             np.abs(np.median(np.array(running_median))-previous_median) / previous_median < 0.02:
                         if self.verbose:
@@ -681,47 +656,47 @@ class VOT:
 
         output = dict()
         output['idx'] = idx
-        output['dhs'] = dhs
-        output['idxs'] = idxs
         return output
 
-    def update_y_base(self, i):
-        """ base function to update each p to the centroids of its cluster
-
+    @staticmethod
+    def update_y_base(idx, y, x):
+        """ base function to update each y to the centroids of its cluster
         """
 
-        y0 = np.zeros_like(self.y)
+        new_y = np.zeros_like(y)
         max_change_pct = 0.0
-        # update p to the centroid of its clustered e samples
-        bincount = np.bincount(self.idx[i], minlength=self.K)
+        K, ndim = y.shape
+
+        bincount = np.bincount(idx, minlength=K)
         if 0 in bincount:
-            print('Empty cluster found, optimal transport probably did not converge\n'
-                  'Try a different lr or max_iter after checking the measures.')
+            print('Empty cluster found, OT probably did not converge\n'
+                  'Try a different lr or max_iter assuming the input is correct.')
             # return False
         eps = 1e-8
-        for d in range(self.n):
-            # update p to the centroid of their correspondences one dimension at a time
-            mass_center = np.bincount(self.idx[i], weights=self.x[i, :, d], minlength=self.K) / (bincount + eps)
-            change_pct = np.max(np.abs((self.y[:, d] - mass_center) / (self.y[:, d]) + eps))
+
+        # update y to the centroid of their correspondences one dimension at a time
+        for n in range(ndim):
+            mass_center = np.bincount(idx, weights=x[:, n], minlength=K) / (bincount + eps)
+            change_pct = np.max(np.abs((y[:, n] - mass_center) / (y[:, n]) + eps))
             max_change_pct = max(max_change_pct, change_pct)
-            y0[:, d] = mass_center
+            new_y[:, n] = mass_center
 
         # replace nan by original data TODO replace nan by nn barycenter?
-        mask = np.isnan(y0).any(axis=1)
-        y0[mask] = self.y[mask].copy()
+        mask = np.isnan(new_y).any(axis=1)
+        new_y[mask] = y[mask].copy()
 
-        return y0, max_change_pct
+        return new_y, max_change_pct
 
-    def update_y(self, iter=0):
-        """ update each p to the centroids of its cluster
-
+    def update_y(self, iter=0, idx=None):
+        """ update each y to the centroids of its cluster
         """
-
+        if idx is None:
+            idx = self.idx
         max_change_pct = 1e9
 
         y = np.zeros((self.N, self.K, self.n))
         for i in range(self.N):
-            y[i], change = self.update_y_base(i)
+            y[i], change = self.update_y_base(idx[i], self.y, self.x[i])
             max_change_pct = max(max_change_pct, change)
 
         self.y = np.sum(y * self.lam[:, None, None], axis=0)
