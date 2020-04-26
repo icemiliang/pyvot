@@ -7,7 +7,7 @@ from mpl_toolkits import mplot3d
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from vot_pytorch import RegVWB
+from vot_torch import RegVWB
 
 
 np.random.seed(19)

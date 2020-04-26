@@ -6,7 +6,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from vot_pytorch import UVWB
+from vot_torch import UVWB
 import utils
 
 np.random.seed(19)
@@ -40,26 +40,26 @@ x = torch.from_numpy(x)
 
 vwb = UVWB(x, [x1, x2], device=device, verbose=False)
 output = vwb.cluster(max_iter_h=5000, max_iter_p=1)
-e_idx = output['idx']
+idx = output['idx']
 
 xmin, xmax, ymin, ymax = -1.0, 1.0, 0., 1.
 
 
-for idx in [21]:
+for k in [21]:
     plt.figure(figsize=(8, 4))
     for i in range(2):
-        ce = np.array(plt.get_cmap('viridis')(e_idx[i].cpu().numpy() / (K - 1)))
+        ce = np.array(plt.get_cmap('viridis')(idx[i].cpu().numpy() / (K - 1)))
         utils.scatter_otsamples(vwb.data_p, vwb.data_e[i], size_p=30, marker_p='o', color_e=ce, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
 
-    p = vwb.data_p[idx]
+    p = vwb.data_p[k]
 
     for i in range(2):
-        es = vwb.data_e[i][e_idx[i] == idx]
+        es = vwb.data_e[i][idx[i] == k]
         for e in es:
             x = [p[0], e[0]]
             y = [p[1], e[1]]
             plt.plot(x, y, c='lightgray', alpha=0.4)
 
-    # plt.savefig("ship" + str(idx) + ".svg")
-    plt.savefig("ship" + str(idx) + ".png", dpi=300, bbox_inches='tight')
+    # plt.savefig("ship" + str(k) + ".svg")
+    plt.savefig("ship" + str(k) + ".png", dpi=300, bbox_inches='tight')
 

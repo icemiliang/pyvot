@@ -7,7 +7,7 @@ from mpl_toolkits import mplot3d
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from vot_pytorch import VWB
+from vot_torch import VWB
 import imageio
 
 np.random.seed(19)

@@ -26,7 +26,7 @@ if platform == "darwin":
 	matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from vot_pytorch import Vot, VotReg
+from vot_torch import Vot, VotReg
 import utils
 
 

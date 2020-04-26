@@ -13,7 +13,7 @@ import os
 import sys
 import torch
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from vot_pytorch import VWB
+from vot_torch import VWB
 
 
 n = 500

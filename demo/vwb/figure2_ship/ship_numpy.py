@@ -48,5 +48,5 @@ for k in [33]:
         x = [e1[0], p[0], e0[0]]
         y = [e1[1], p[1], e0[1]]
         plt.plot(x, y, c='lightgray', alpha=0.4)
-    # plt.savefig("ship" + str(idx) + ".svg")
+    # plt.savefig("ship" + str(k) + ".svg")
     plt.savefig("ship" + str(k) + ".png", dpi=300, bbox_inches='tight')

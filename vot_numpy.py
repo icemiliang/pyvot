@@ -579,7 +579,7 @@ class VOT:
         for i in range(self.N):
             utils.assert_boundary(self.x[i])
 
-    def cluster(self, lr=0.5, max_iter_y=10, max_iter_h=3000, lr_decay=200, stop=-1, beta=0, reg=0., keep_idx=False):
+    def cluster(self, lr=0.5, max_iter_y=10, max_iter_h=3000, lr_decay=200, stop=-1, beta=0, reg=0., keep_idx=False, space='euclidean'):
         """ compute Wasserstein clustering
         """
 
@@ -588,13 +588,16 @@ class VOT:
         for iter_y in range(max_iter_y):
             for i in range(self.N):
                 print("solving marginal #" + str(i))
-                dist = cdist(self.y, self.x[i], 'sqeuclidean')
-                output = self.update_map(i, dist, max_iter_h, lr=lrs[i], lr_decay=lr_decay, beta=beta, stop=stop, reg=reg, keep_idx=keep_idx)
+                if space == 'spherical':
+                    dist = np.matmul(self.y, self.x[i].T)
+                else:
+                    dist = cdist(self.y, self.x[i], 'sqeuclidean')
+                output = self.update_map(i, dist, max_iter_h, lr=lrs[i], lr_decay=lr_decay, beta=beta, stop=stop, reg=reg, keep_idx=keep_idx, space=space)
                 self.idx[i] = output['idx']
                 if keep_idx:
                     idxs.append(output['idxs'])
 
-            if self.update_y(iter_y):
+            if self.update_y(iter_y, space=space):
                 break
         output = dict()
         output['idx'] = self.idx
@@ -612,7 +615,7 @@ class VOT:
         output['wd'] = twd
         return output
 
-    def update_map(self, i, dist, max_iter=3000, lr=0.5, beta=0, lr_decay=200, stop=200, reg=0., keep_idx=False):
+    def update_map(self, i, dist, max_iter=3000, lr=0.5, beta=0, lr_decay=200, stop=200, reg=0., keep_idx=False, space='euclidean'):
         """ update assignment of each e as the ot_map to y
         """
 
@@ -621,11 +624,16 @@ class VOT:
         idxs = []
         running_median, previous_median = [], 0
 
+        h = np.ones(self.K) if space == 'spherical' else None
+
         dist_original = 0 if reg == 0 else dist.copy()
 
         for iter in range(max_iter):
             # find nearest y for each x and add mass to y
-            idx = np.argmin(dist, axis=0)
+            if space == 'spherical':
+                idx = np.argmin(dist / np.cos(h)[:, None], dim=0)
+            else:
+                idx = np.argmin(dist, axis=0)
             if keep_idx:
                 idxs.append(idx)
             if isinstance(self.mu[i], float):
@@ -639,7 +647,10 @@ class VOT:
                 lr *= 0.5
             # update dist matrix
             dh *= lr
-            dist += dh[:, None]
+            if space == 'spherical':
+                h += dh
+            else:
+                dist += dh[:, None]
 
             # check if converge
             if self.verbose and iter % 1000 == 0:
@@ -707,7 +718,7 @@ class VOT:
 
         return new_y, max_change_pct
 
-    def update_y(self, iter=0, idx=None):
+    def update_y(self, iter=0, idx=None, space='euclidean'):
         """ update each y to the centroids of its cluster
         """
         if idx is None:
