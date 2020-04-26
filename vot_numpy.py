@@ -585,7 +585,7 @@ class VOT:
 
         lrs = [lr / m for m in self.sum_mu]
         idxs = []
-        for iter_y in range(max_iter_y):
+        for it in range(max_iter_y):
             for i in range(self.N):
                 print("solving marginal #" + str(i))
                 if space == 'spherical':
@@ -597,7 +597,7 @@ class VOT:
                 if keep_idx:
                     idxs.append(output['idxs'])
 
-            if self.update_y(iter_y, space=space):
+            if self.update_y(it, space=space):
                 break
         output = dict()
         output['idx'] = self.idx
@@ -613,6 +613,7 @@ class VOT:
             wds.append(wd)
 
         output['wd'] = twd
+        output['wds'] = wds
         return output
 
     def update_map(self, i, dist, max_iter=3000, lr=0.5, beta=0, lr_decay=200, stop=200, reg=0., keep_idx=False, space='euclidean'):
@@ -628,7 +629,7 @@ class VOT:
 
         dist_original = 0 if reg == 0 else dist.copy()
 
-        for iter in range(max_iter):
+        for it in range(max_iter):
             # find nearest y for each x and add mass to y
             if space == 'spherical':
                 idx = np.argmin(dist / np.cos(h)[:, None], axis=0)
@@ -643,7 +644,7 @@ class VOT:
 
             # gradient descent with momentum and decay
             dh = beta * dh + (1 - beta) * (mass - self.nu)
-            if iter != 0 and iter % lr_decay == 0:
+            if it != 0 and it % lr_decay == 0:
                 lr *= 0.5
             # update dist matrix
             dh *= lr
@@ -653,7 +654,7 @@ class VOT:
                 dist += dh[:, None]
 
             # check if converge
-            if self.verbose and iter % 1000 == 0:
+            if self.verbose and it % 1000 == 0:
                 print(dh)
             max_change = np.max((mass - self.nu) / self.nu)
             if max_change.size > 1:
@@ -661,11 +662,11 @@ class VOT:
             max_change *= 100
 
             if self.verbose and ((i < 20 and i % 1 == 0) or i % 200 == 0):
-                print("{0:d}: mass diff {1:.2f}%".format(iter, max_change))
+                print("{0:d}: mass diff {1:.2f}%".format(it, max_change))
 
             if max_change < 1:
                 if self.verbose:
-                    print("{0:d}: mass diff {1:.2f}%".format(iter, max_change))
+                    print("{0:d}: mass diff {1:.2f}%".format(it, max_change))
                 break
 
             # early stop if loss does not decrease TODO better way to early stop?
@@ -719,7 +720,7 @@ class VOT:
 
         return new_y, max_change_pct
 
-    def update_y(self, iter=0, idx=None, space='euclidean'):
+    def update_y(self, it=0, idx=None, space='euclidean'):
         """ update each y to the centroids of its cluster
         """
         if idx is None:
@@ -733,10 +734,10 @@ class VOT:
 
         self.y = np.sum(y * self.lam[:, None, None], axis=0)
 
-        # if space == 'spherical':
-        #     self.y /= np.linalg.norm(self.y, axis=1, keepdims=True)
+        if space == 'spherical':
+            self.y /= np.linalg.norm(self.y, axis=1, keepdims=True)
 
         if self.verbose:
-            print("iter {0:d}: max centroid change {1:.2f}%".format(iter, 100 * max_change_pct))
+            print("iter {0:d}: max centroid change {1:.2f}%".format(it, 100 * max_change_pct))
 
         return True if max_change_pct < self.tol else False
