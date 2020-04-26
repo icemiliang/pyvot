@@ -406,7 +406,6 @@ class VotReg(Vot):
 
 
 class VotAP:
-    """ Area Preserving by variational optimal transportation """
     # y are the centroids
     # x are the area samples
     # this is a minimum class for area-preserving maps
@@ -580,23 +579,26 @@ class VOT:
         for i in range(self.N):
             utils.assert_boundary(self.x[i])
 
-    def cluster(self, lr=0.5, max_iter_y=10, max_iter_h=3000, lr_decay=200, stop=-1, beta=0, reg=0.):
+    def cluster(self, lr=0.5, max_iter_y=10, max_iter_h=3000, lr_decay=200, stop=-1, beta=0, reg=0., keep_idx=False):
         """ compute Wasserstein clustering
         """
 
         lrs = [lr / m for m in self.sum_mu]
-
+        idxs = []
         for iter_y in range(max_iter_y):
             for i in range(self.N):
                 print("solving marginal #" + str(i))
                 dist = cdist(self.y, self.x[i], 'sqeuclidean')
-                output = self.update_map(i, dist, max_iter_h, lr=lrs[i], lr_decay=lr_decay, beta=beta, stop=stop, reg=reg)
+                output = self.update_map(i, dist, max_iter_h, lr=lrs[i], lr_decay=lr_decay, beta=beta, stop=stop, reg=reg, keep_idx=keep_idx)
                 self.idx[i] = output['idx']
+                if keep_idx:
+                    idxs.append(output['idxs'])
 
             if self.update_y(iter_y):
                 break
         output = dict()
         output['idx'] = self.idx
+        output['idxs'] = idxs
 
         # compute W_2^2
         twd = 0
@@ -610,12 +612,13 @@ class VOT:
         output['wd'] = twd
         return output
 
-    def update_map(self, i, dist, max_iter=3000, lr=0.5, beta=0, lr_decay=200, stop=200, reg=0.):
+    def update_map(self, i, dist, max_iter=3000, lr=0.5, beta=0, lr_decay=200, stop=200, reg=0., keep_idx=False):
         """ update assignment of each e as the ot_map to y
         """
 
         dh = 0
         idx = None
+        idxs = []
         running_median, previous_median = [], 0
 
         dist_original = 0 if reg == 0 else dist.copy()
@@ -623,7 +626,8 @@ class VOT:
         for iter in range(max_iter):
             # find nearest y for each x and add mass to y
             idx = np.argmin(dist, axis=0)
-
+            if keep_idx:
+                idxs.append(idx)
             if isinstance(self.mu[i], float):
                 mass = np.bincount(idx, minlength=self.K) * self.mu[i]
             else:
@@ -671,6 +675,7 @@ class VOT:
 
         output = dict()
         output['idx'] = idx
+        output['idxs'] = idxs
         return output
 
     @staticmethod

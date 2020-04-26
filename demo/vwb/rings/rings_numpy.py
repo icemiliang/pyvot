@@ -181,9 +181,9 @@ if SAVE_OR_PLOT_FIGURE:
 
 
 if SAVE_SVG:
-    plt.savefig("vwb.svg", bbox_inches='tight')
+    plt.savefig("vot.svg", bbox_inches='tight')
 if SAVE_PNG:
-    plt.savefig("vwb.png", dpi=300, bbox_inches='tight')
+    plt.savefig("vot.png", dpi=300, bbox_inches='tight')
 
 if PLOT_FIGURE:
     plt.show()

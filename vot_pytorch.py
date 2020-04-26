@@ -691,7 +691,7 @@ class VWB:
         output['idx'] = e_idx_return
         output['pred_label_e'] = pred_label_e_return
         output['dhss'] = dhss
-        output['e_idxss'] = e_idxss
+        output['idxs'] = e_idxss
 
         # compute WD
         wd = 0
@@ -894,7 +894,7 @@ class RegVWB(VWB):
         output['idx'] = e_idx_return
         output['pred_label_e'] = pred_label_e_return
         output['dhss'] = dhss
-        output['e_idxss'] = e_idxss
+        output['idxs'] = e_idxss
 
         # compute WD
         wd = 0
@@ -1021,7 +1021,7 @@ class SVWB (VWB):
         output['idx'] = e_idx_return
         output['pred_label_e'] = pred_label_e_return
         output['dhss'] = dhss
-        output['e_idxss'] = e_idxss
+        output['idxs'] = e_idxss
         return output
 
     def update_map(self, n, dist, max_iter=3000, lr=0.5, beta=0, lr_decay=200, early_stop=200):
@@ -1181,7 +1181,7 @@ class UVWB(VWB):
         output['idx'] = e_idx_return
         output['pred_label_e'] = pred_label_e_return
         output['dhss'] = dhss
-        output['e_idxss'] = e_idxss
+        output['idxs'] = e_idxss
         return output
 
     def update_map(self, n, dist, max_iter=3000, lr=0.5, beta=0, lr_decay=200, early_stop=200):
