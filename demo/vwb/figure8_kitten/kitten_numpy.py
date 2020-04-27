@@ -1,18 +1,16 @@
 import os
 import sys
-import torch
 import numpy as np
-import matplotlib
 from mpl_toolkits import mplot3d
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from vot_torch import RegVWB
+from vot_numpy import VOT
 
 
 np.random.seed(19)
 
 x1 = np.loadtxt("kitten1.csv", delimiter=',')
+# x1 = np.loadtxt("bunny_8k.txt", delimiter=' ')
 
 x1 = x1[:, [0, 2, 1]]
 
@@ -30,23 +28,36 @@ def rotation_matrix(axis, theta):
 dim = 3            # number of dimensions of the points
 noise_sigma = .0   # standard deviation error to be added
 translation = 2    # max translation of the test set
-rotation = .7      # max rotation (radians) of the test set
+rotation = .8      # max rotation (radians) of the test set
 
 # Translate
 t = np.random.rand(3) * translation
 x2 = x1.copy() + t
 R = rotation_matrix(np.random.rand(3), rotation)
 x2 = np.dot(R, x2.T).T
-x2 += np.random.randn(7805, 3) * noise_sigma
+num = x1.shape[0]
+x2 += np.random.randn(num, 3) * noise_sigma
+
+# print(R)
 
 translation = -2   # max translation of the test set
-rotation = -.7     # max rotation (radians) of the test set
+rotation = -.6     # max rotation (radians) of the test set
 
 t = np.random.rand(3) * translation
 x3 = x1.copy() + t
 R = rotation_matrix(np.random.rand(3), rotation)
 x3 = np.dot(R, x3.T).T
-x3 += np.random.randn(7805, 3) * noise_sigma
+x3 += np.random.randn(num, 3) * noise_sigma
+
+
+translation = 0
+rotation = .2
+
+t = np.random.rand(3) * translation
+x1 = x1.copy() + t
+x1 += np.random.randn(num, 3) * noise_sigma
+
+# print(R)
 
 # scale
 x1min = np.amin(x1, axis=0)
@@ -83,51 +94,72 @@ dot_size = 0.5
 dot_size_scale = 10
 alpha = 0.3
 
-color_map = np.array([[237, 125, 49, 255], [112, 173, 71, 255], [91, 155, 213, 255]]) / 255
+color_map = np.array([[237, 125, 49, 255], [112, 173, 71, 255], [91, 155, 213, 255], [237, 41, 57, 255]]) / 255
 
-downsample = 10
+downsample = 100
 x1_down = x1[0:-1:downsample, :]
 
 
 # ------- run WM -------- #
-use_gpu = False
-if use_gpu and torch.cuda.is_available():
-    device = 'cuda:0'
-else:
-    device = 'cpu'
 
-# downsample = 10
-x1_copy = torch.from_numpy(x1_down).to(device)
-x2_copy = torch.from_numpy(x2).to(device)
-x3_copy = torch.from_numpy(x3).to(device)
+iterP = 8
 
-#
-vwb = RegVWB(x1_copy, [x2_copy, x3_copy], device=device, verbose=False)
-output = vwb.cluster(reg=10, lr=1, max_iter_h=3000, max_iter_p=1, lr_decay=500, beta=0.5)
+downsample = 10
+x = x1_down.copy()
+x1_copy = x1.copy()
+x2_copy = x2.copy()
+x3_copy = x3.copy()
+
+
+vwb = VOT(x, [x1_copy, x2_copy, x3_copy], verbose=False)
+output = vwb.cluster(lr=1, max_iter_h=3000, max_iter_y=iterP, lr_decay=500, beta=0.5, icp=True)
 
 fig2 = plt.figure(figsize=(8, 8))
-
+#
 ax2 = fig2.add_subplot(111, projection='3d')
+#
+outE1 = vwb.x[0]
+outE2 = vwb.x[1]
+outE3 = vwb.x[2]
+outP = vwb.y
 
-outP = vwb.data_p.detach().cpu().numpy()
-
+ax2.scatter(x1[:, 0], x1[:, 1], x1[:, 2], s=dot_size, color=color_map[2], alpha=alpha)
 ax2.scatter(x2[:, 0], x2[:, 1], x2[:, 2], s=dot_size, color=color_map[1], alpha=alpha)
 ax2.scatter(x3[:, 0], x3[:, 1], x3[:, 2], s=dot_size, color=color_map[2], alpha=alpha)
 
+ax2.scatter(outE1[:, 0], outE1[:, 1], outE1[:, 2], s=dot_size, color=color_map[0], alpha=alpha)
+ax2.scatter(outE2[:, 0], outE2[:, 1], outE2[:, 2], s=dot_size, color=color_map[1], alpha=alpha)
+ax2.scatter(outE3[:, 0], outE3[:, 1], outE3[:, 2], s=dot_size, color=color_map[2], alpha=alpha)
 ax2.scatter(outP[:, 0], outP[:, 1], outP[:, 2], s=5, marker='o',
-               facecolors='none', linewidth=2, color=color_map[0], zorder=5)
+               facecolors='none', linewidth=2, color=color_map[3], zorder=5)
 
-ax2.set_xlim(-1., 1.)
-ax2.set_ylim(-1., 1.)
-ax2.set_zlim(-1., 1.)
+# np.savetxt('outx1_8k_iter{}.txt'.format(iterP), outE1, delimiter=',')
+# np.savetxt('outx2_8k_iter{}.txt'.format(iterP), outE2, delimiter=',')
+# np.savetxt('outx3_8k_iter{}.txt'.format(iterP), outE3, delimiter=',')
+# np.savetxt('outP_8k_iter{}.txt'.format(iterP), outP, delimiter=',')
+# np.savetxt('/home/icemiliang/OneDrive/Projects/pami/figs/icp/x1.txt', x1, delimiter=',')
+# np.savetxt('/home/icemiliang/OneDrive/Projects/pami/figs/icp/x2.txt', x2, delimiter=',')
+# np.savetxt('/home/icemiliang/OneDrive/Projects/pami/figs/icp/x3.txt', x3, delimiter=',')
+# np.savetxt('p_8k_iter{}.txt'.format(iterP), outP, delimiter=',')
 
-ax2.xaxis.pane.fill = False
-ax2.yaxis.pane.fill = False
-ax2.zaxis.pane.fill = False
+bound = 1.
+minx, maxx = -bound, bound
+miny, maxy = -bound, bound
+minz, maxz = -bound, bound
+
+ax2.set_xlim(minx, maxx)
+ax2.set_ylim(miny, maxy)
+ax2.set_zlim(minz, maxz)
+
+# ax2.xaxis.pane.fill = False
+# ax2.yaxis.pane.fill = False
+# ax2.zaxis.pane.fill = False
 
 ax2.set_xlabel('X')
 ax2.set_ylabel('Y')
 ax2.set_zlabel('Z')
-
+plt.axis('off')
 # plt.savefig("icp.svg", bbox_inches='tight')
-plt.savefig("icp.png", dpi=300, bbox_inches='tight')
+# plt.savefig("/home/icemiliang/OneDrive/Projects/pami/figs/icp/bunny_8k_initial.png".format(iterP), dpi=600, bbox_inches='tight')
+# plt.savefig("/home/icemiliang/OneDrive/Projects/pami/figs/icp/bunny_8k_initial.svg".format(iterP), bbox_inches='tight')
+plt.show()

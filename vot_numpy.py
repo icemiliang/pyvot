@@ -541,7 +541,6 @@ class VOT:
 
         self.lam = lam if lam is not None else np.ones(self.N) / self.N
 
-
         self.idx = []
         self.mu = []
         self.sum_mu = []
@@ -579,7 +578,7 @@ class VOT:
         for i in range(self.N):
             utils.assert_boundary(self.x[i])
 
-    def cluster(self, lr=0.5, max_iter_y=10, max_iter_h=3000, lr_decay=200, stop=-1, beta=0, reg=0., keep_idx=False, space='euclidean'):
+    def cluster(self, lr=0.5, max_iter_y=10, max_iter_h=3000, lr_decay=200, stop=-1, beta=0, reg=0., keep_idx=False, space='euclidean', icp=False):
         """ compute Wasserstein clustering
         """
 
@@ -597,7 +596,10 @@ class VOT:
                 if keep_idx:
                     idxs.append(output['idxs'])
 
-            if self.update_y(it, space=space):
+            if icp:
+                if self.update_x(it):
+                    break
+            elif self.update_y(it, space=space):
                 break
         output = dict()
         output['idx'] = self.idx
@@ -720,8 +722,37 @@ class VOT:
 
         return new_y, max_change_pct
 
-    def update_y(self, it=0, idx=None, space='euclidean'):
+    def update_y(self, it=0, idx=None, space='euclidean', icp=False):
         """ update each y to the centroids of its cluster
+        """
+        if idx is None:
+            idx = self.idx
+        max_change_pct = 1e9
+
+        y = np.zeros((self.N, self.K, self.n))
+        if icp:
+            yR = np.zeros((self.N, self.K, self.n))
+        for i in range(self.N):
+            y[i], change = self.update_y_base(idx[i], self.y, self.x[i])
+            max_change_pct = max(max_change_pct, change)
+            if icp:
+                yR[i] = utils.estimate_transform_target(self.y, y[i])
+
+        if icp:
+            y = yR
+
+        self.y = np.sum(y * self.lam[:, None, None], axis=0)
+
+        if space == 'spherical':
+            self.y /= np.linalg.norm(self.y, axis=1, keepdims=True)
+
+        if self.verbose:
+            print("iter {0:d}: max centroid change {1:.2f}%".format(it, 100 * max_change_pct))
+
+        return True if max_change_pct < self.tol else False
+
+    def update_x(self, it=0, idx=None):
+        """ update each x
         """
         if idx is None:
             idx = self.idx
@@ -734,8 +765,9 @@ class VOT:
 
         self.y = np.sum(y * self.lam[:, None, None], axis=0)
 
-        if space == 'spherical':
-            self.y /= np.linalg.norm(self.y, axis=1, keepdims=True)
+        for i in range(self.N):
+            r, t = utils.estimate_inverse_transform(self.y, y[i])
+            self.x[i] = (np.matmul(r, self.x[i].T) + t).T
 
         if self.verbose:
             print("iter {0:d}: max centroid change {1:.2f}%".format(it, 100 * max_change_pct))

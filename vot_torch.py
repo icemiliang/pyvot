@@ -1254,3 +1254,99 @@ class UVWB(VWB):
         pred_label_e = self.label_p[n][e_idx] if self.label_p is not None else None
 
         return e_idx, pred_label_e, dhs, e_idxs
+
+
+class ICPVWB(VWB):
+    def cluster(self, reg_type=0, reg=0.01, lr=0.5, max_iter_p=10, max_iter_h=3000, lr_decay=200, early_stop=-1, beta=0):
+        """ compute Wasserstein clustering
+
+        Args:
+            reg_type   (int): specify regulazation term, 0 means no regularization
+            reg        (int): regularization weight
+            max_iter_p (int): max num of iteration of clustering
+            max_iter_h (int): max num of updating h
+            lr       (float): GD learning rate
+            lr_decay (float): learning rate decay
+
+        Returns:
+            e_idx (pytorch Tensor): assignment of e to p
+            pred_label_e (pytorch Tensor): labels of e that come from nearest p
+
+        See Also
+        --------
+        update_y : update p
+        update_map: compute optimal transportation
+        """
+
+        e_idx_return, pred_label_e_return = [], []
+        n = len(self.data_e)
+        # dhss = []
+        # e_idxss = []
+        for iter_p in range(max_iter_p):
+            e_idx, pred_label_e = [], []
+            for i in range(n):
+                # if self.verbose:
+                print("solving marginal #" + str(i))
+                dist = (torch.cdist(self.data_p, self.data_e[i]) ** 2).to(self.device)
+                output = self.update_map(i, dist, max_iter_h, lr=lr, lr_decay=lr_decay, beta=beta, early_stop=early_stop)
+                # dhss.append(dhs)
+                # e_idxss.append(e_idxs)
+                # e_idx.append(idx)
+                # pred_label_e.append(pred_label)
+                e_idx.append(output['e_idx'])
+            if self.update_e(e_idx, iter_p):
+                # e_idx_return, pred_label_e_return = e_idx, pred_label_e
+                break
+            # if iter_p == max_iter_p - 1:
+                # e_idx_return, pred_label_e_return = e_idx, pred_label_e
+        output = dict()
+        # output['e_idx'] = e_idx_return
+        # output['pred_label_e'] = pred_label_e_return
+        # output['dhss'] = dhss
+        # output['e_idxss'] = e_idxss
+
+        # compute WD
+        wd = 0
+        for e_idx, data_e, weight_e in zip(e_idx_return, self.data_e, self.weight_e):
+            tmp = self.data_p[e_idx, :]
+            tmp -= data_e
+            tmp = tmp ** 2
+            wd += torch.sum(torch.sum(tmp, dim=1) * weight_e)
+
+        output['wd'] = 2 * wd
+        return output
+
+    def update_e(self, e_idx, iter_p=0):
+        """ update each p to the centroids of its cluster
+
+        Args:
+            e_idx (pytorch Tensor): assignment of e to p
+            iter_p (int): iteration index
+
+        Returns:
+            (bool): convergence or not, determined by max p change
+        """
+
+        n = len(self.data_e)
+        num_p, d = self.data_p.shape[0], self.data_p.shape[1]
+        max_change_pct = 1e9
+
+        p = torch.zeros((n, num_p, d), device=self.device)
+        for i in range(n):
+            p[i], change = self.update_p_base(e_idx[i], self.data_p, self.data_e[i])
+            max_change_pct = max(max_change_pct, change)
+
+        self.data_p = torch.sum(p * self.weight_k[:, None, None], dim=0)
+
+        for i in range(n):
+            r, t = utils.estimate_inverse_transform(self.data_p.detach().cpu().numpy(), p[i].detach().cpu().numpy())
+            r = torch.tensor(r, device=self.device)
+            t = torch.tensor(t, device=self.device)
+            self.data_e[i] = (torch.mm(r, self.data_e[i].t()) + t).t()
+            print(r.inverse())
+
+        if self.verbose:
+            print("iter {0:d}: max centroid change {1:.2f}%".format(iter_p, 100 * max_change_pct))
+        # return max p coor change
+        return True if max_change_pct < self.thres else False
+
