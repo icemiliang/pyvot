@@ -38,8 +38,6 @@ x2 = np.dot(R, x2.T).T
 num = x1.shape[0]
 x2 += np.random.randn(num, 3) * noise_sigma
 
-# print(R)
-
 translation = -2   # max translation of the test set
 rotation = -.6     # max rotation (radians) of the test set
 
@@ -56,8 +54,6 @@ rotation = .2
 t = np.random.rand(3) * translation
 x1 = x1.copy() + t
 x1 += np.random.randn(num, 3) * noise_sigma
-
-# print(R)
 
 # scale
 x1min = np.amin(x1, axis=0)
