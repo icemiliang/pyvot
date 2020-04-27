@@ -166,7 +166,7 @@ def rigid_transform_3D(A, B):
     return R, t
 
 
-def estimate_transform_target(p1, p2):
+def estimate_transform_target(p1, p2, e=None):
     assert len(p1) == len(p2)
     expand_dim = False
     if p1.shape[1] == 2:
@@ -181,6 +181,23 @@ def estimate_transform_target(p1, p2):
     if expand_dim:
         At = At[:-1, :]
     return At.T
+
+
+def estimate_transform(p1, p2):
+    assert len(p1) == len(p2)
+    if p1.shape[1] == 2:
+        p1 = np.append(p1, np.zeros((p1.shape[0], 1)), 1)
+        p2 = np.append(p2, np.zeros((p2.shape[0], 1)), 1)
+    elif p1.shape[1] != 3:
+        raise Exception("expected 2d or 3d points")
+
+    r, t = rigid_transform_3d_numpy(p1, p2)
+
+    return r, t
+
+
+def estimate_inverse_transform(p1, p2):
+    return estimate_transform(p2, p1)
 
 
 def estimate_transform_target_pytorch(p1, p2):

@@ -1,3 +1,8 @@
+# PyVot Python Variational Optimal Transportation
+# Author: Liang Mi <icemiliang@gmail.com>
+# Date: April 25th 2020
+# Licence: MIT
+
 import numpy as np
 from cycler import cycler
 import matplotlib
@@ -8,7 +13,7 @@ import os
 import sys
 import torch
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from vot_pytorch import VWB
+from vot_torch import VWB
 
 
 n = 500
@@ -143,7 +148,7 @@ ell_all = [torch.from_numpy(ell).t() for ell in ell_all]
 
 vwb = VWB(ell_all[0][0:-1:5, :], ell_all, device=device, verbose=False)
 output = vwb.cluster(lr=0.5, max_iter_h=3000, max_iter_p=1)
-e_idx = output['e_idx']
+e_idx = output['idx']
 
 fig = plt.figure(4, figsize=(2, 2))
 ax = fig.add_subplot(111)

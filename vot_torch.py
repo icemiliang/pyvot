@@ -36,9 +36,9 @@ class Vot:
             verbose (bool): console output verbose flag
 
         Atts:
-            data_p (pytorch Tensor): coordinates of p
-            data_e (pytorch Tensor): coordinates of e
-            label_p (pytorch Tensor): labels of p
+            y (pytorch Tensor): coordinates of p
+            x (pytorch Tensor): coordinates of e
+            label_y (pytorch Tensor): labels of p
             label_e (pytorch Tensor): labels of e
             weight_p (pytorch Tensor): weight of p
             weight_e (pytorch Tensor): weight of e
@@ -48,12 +48,12 @@ class Vot:
         """
 
         if not isinstance(data_p, torch.Tensor):
-            raise Exception('data_p is not a pytorch Tensor')
+            raise Exception('y is not a pytorch Tensor')
         if not isinstance(data_e, torch.Tensor):
-            raise Exception('data_e is not a pytorch Tensor')
+            raise Exception('x is not a pytorch Tensor')
 
         if label_p is not None and not isinstance(label_p, torch.Tensor):
-            raise Exception('label_p is not a pytorch Tensor')
+            raise Exception('label_y is not a pytorch Tensor')
         if label_e is not None and not isinstance(label_e, torch.Tensor):
             raise Exception('label_e is not a pytorch Tensor')
 
@@ -95,7 +95,7 @@ class Vot:
             lr_decay (float): learning rate decay
 
         Returns:
-            e_idx (pytorch Tensor): assignment of e to p
+            idx (pytorch Tensor): assignment of e to p
             pred_label_e (pytorch Tensor): labels of e that come from nearest p
 
         See Also
@@ -123,7 +123,7 @@ class Vot:
             early_stop (int): early_stop check frequency
 
         Returns:
-            e_idx (pytorch Tensor): assignment of e to p
+            idx (pytorch Tensor): assignment of e to p
             pred_label_e (pytorch Tensor): labels of e that come from nearest p
         """
 
@@ -385,14 +385,14 @@ class VotReg(Vot):
         if self.verbose:
             print("it {0:d}: max centroid change {1:.2f}".format(iter_p, max_change_pct))
 
-        # pt = utils.estimate_transform_target_pytorch(self.data_p.detach(), p0)
+        # pt = utils.estimate_transform_target_pytorch(self.y.detach(), p0)
         pt = utils.estimate_transform_target(self.data_p.detach().detach().numpy(), p0.numpy())
         pt = torch.tensor(pt, device=self.device)
         # regularize within each label
         # pt = torchzeros(p0.shape)
-        # for label in torchunique(self.label_p):
-        #     idx_p_label = self.label_p == label
-        #     p_sub = self.data_p[idx_p_label, :]
+        # for label in torchunique(self.label_y):
+        #     idx_p_label = self.label_y == label
+        #     p_sub = self.y[idx_p_label, :]
         #     p0_sub = p0[idx_p_label, :]
         #     T = tf.EuclideanTransform()
         #     # T = tf.AffineTransform()
@@ -400,7 +400,7 @@ class VotReg(Vot):
         #     T.estimate(p_sub, p0_sub)
         #     pt[idx_p_label, :] = T(p_sub)
         #
-        # pt = self.data_p.clone()
+        # pt = self.y.clone()
         # T = tf.EuclideanTransform()
         # T.estimate(pt, p0)
         # pt = T(pt)
@@ -487,8 +487,8 @@ class VotAP:
             thres    float: Threshold to break loops
             lr       float: Learning rate
             verbose   bool: console output verbose flag
-            data_p    pytorch floattensor: coordinates of p
-            label_p   pytorch inttensor: labels of p
+            y    pytorch floattensor: coordinates of p
+            label_y   pytorch inttensor: labels of p
             mass_p    pytorch floattensor: mass of clusters of p
             weight_p   pytorch floattensor: dirac measure of p
         """
@@ -534,7 +534,7 @@ class VotAP:
             early_stop (int): early_stop checking frequency
 
         :return:
-            e_idx (pytorch Tensor): assignment of e to p
+            idx (pytorch Tensor): assignment of e to p
             pred_label_e (pytorch Tensor): labels of e that come from nearest p
         """
 
@@ -658,7 +658,7 @@ class VWB:
             reg      (float): for regularized k-means
 
         Returns:
-            e_idx (pytorch Tensor): assignment of e to p
+            idx (pytorch Tensor): assignment of e to p
             pred_label_e (pytorch Tensor): labels of e that come from nearest p
 
         See Also
@@ -688,10 +688,10 @@ class VWB:
             if iter_p == max_iter_p - 1:
                 e_idx_return, pred_label_e_return = e_idx, pred_label_e
         output = dict()
-        output['e_idx'] = e_idx_return
+        output['idx'] = e_idx_return
         output['pred_label_e'] = pred_label_e_return
         output['dhss'] = dhss
-        output['e_idxss'] = e_idxss
+        output['idxs'] = e_idxss
 
         # compute WD
         wd = 0
@@ -717,7 +717,7 @@ class VWB:
             reg (float): for regularized k-means
 
         Returns:
-            e_idx (pytorch Tensor): assignment of e to p
+            idx (pytorch Tensor): assignment of e to p
             pred_label_e (pytorch Tensor): labels of e that come from nearest p
         """
 
@@ -861,7 +861,7 @@ class RegVWB(VWB):
             lr_decay (float): learning rate decay
 
         Returns:
-            e_idx (pytorch Tensor): assignment of e to p
+            idx (pytorch Tensor): assignment of e to p
             pred_label_e (pytorch Tensor): labels of e that come from nearest p
 
         See Also
@@ -891,10 +891,10 @@ class RegVWB(VWB):
             if iter_p == max_iter_p - 1:
                 e_idx_return, pred_label_e_return = e_idx, pred_label_e
         output = dict()
-        output['e_idx'] = e_idx_return
+        output['idx'] = e_idx_return
         output['pred_label_e'] = pred_label_e_return
         output['dhss'] = dhss
-        output['e_idxss'] = e_idxss
+        output['idxs'] = e_idxss
 
         # compute WD
         wd = 0
@@ -986,7 +986,7 @@ class SVWB (VWB):
             lr_decay (float): learning rate decay
 
         Returns:
-            e_idx (pytorch Tensor): assignment of e to p
+            idx (pytorch Tensor): assignment of e to p
             pred_label_e (pytorch Tensor): labels of e that come from nearest p
 
         See Also
@@ -1006,7 +1006,7 @@ class SVWB (VWB):
                 # if self.verbose:
                 print("solving marginal #" + str(i))
                 dist = torch.mm(self.data_p, self.data_e[i].T)
-                # dist = torch.cdist(self.data_p, self.data_e[i]) ** 2
+                # dist = torch.cdist(self.y, self.x[i]) ** 2
                 idx, pred_label, dhs, e_idxs = self.update_map(i, dist, max_iter_h, lr=lr, lr_decay=lr_decay, beta=beta, early_stop=early_stop)
                 dhss.append(dhs)
                 e_idxss.append(e_idxs)
@@ -1018,10 +1018,10 @@ class SVWB (VWB):
             if iter_p == max_iter_p - 1:
                 e_idx_return, pred_label_e_return = e_idx, pred_label_e
         output = dict()
-        output['e_idx'] = e_idx_return
+        output['idx'] = e_idx_return
         output['pred_label_e'] = pred_label_e_return
         output['dhss'] = dhss
-        output['e_idxss'] = e_idxss
+        output['idxs'] = e_idxss
         return output
 
     def update_map(self, n, dist, max_iter=3000, lr=0.5, beta=0, lr_decay=200, early_stop=200):
@@ -1036,7 +1036,7 @@ class SVWB (VWB):
             early_stop (int): early_stop check frequency
 
         Returns:
-            e_idx (pytorch Tensor): assignment of e to p
+            idx (pytorch Tensor): assignment of e to p
             pred_label_e (pytorch Tensor): labels of e that come from nearest p
         """
 
@@ -1143,7 +1143,7 @@ class UVWB(VWB):
             lr_decay (float): learning rate decay
 
         Returns:
-            e_idx (pytorch Tensor): assignment of e to p
+            idx (pytorch Tensor): assignment of e to p
             pred_label_e (pytorch Tensor): labels of e that come from nearest p
 
         See Also
@@ -1178,10 +1178,10 @@ class UVWB(VWB):
             if iter_p == max_iter_p - 1:
                 e_idx_return, pred_label_e_return = e_idx, pred_label_e
         output = dict()
-        output['e_idx'] = e_idx_return
+        output['idx'] = e_idx_return
         output['pred_label_e'] = pred_label_e_return
         output['dhss'] = dhss
-        output['e_idxss'] = e_idxss
+        output['idxs'] = e_idxss
         return output
 
     def update_map(self, n, dist, max_iter=3000, lr=0.5, beta=0, lr_decay=200, early_stop=200):
@@ -1196,7 +1196,7 @@ class UVWB(VWB):
             early_stop (int): early_stop check frequency
 
         Returns:
-            e_idx (pytorch Tensor): assignment of e to p
+            idx (pytorch Tensor): assignment of e to p
             pred_label_e (pytorch Tensor): labels of e that come from nearest p
         """
 
@@ -1254,3 +1254,99 @@ class UVWB(VWB):
         pred_label_e = self.label_p[n][e_idx] if self.label_p is not None else None
 
         return e_idx, pred_label_e, dhs, e_idxs
+
+
+class ICPVWB(VWB):
+    def cluster(self, reg_type=0, reg=0.01, lr=0.5, max_iter_p=10, max_iter_h=3000, lr_decay=200, early_stop=-1, beta=0):
+        """ compute Wasserstein clustering
+
+        Args:
+            reg_type   (int): specify regulazation term, 0 means no regularization
+            reg        (int): regularization weight
+            max_iter_p (int): max num of iteration of clustering
+            max_iter_h (int): max num of updating h
+            lr       (float): GD learning rate
+            lr_decay (float): learning rate decay
+
+        Returns:
+            e_idx (pytorch Tensor): assignment of e to p
+            pred_label_e (pytorch Tensor): labels of e that come from nearest p
+
+        See Also
+        --------
+        update_y : update p
+        update_map: compute optimal transportation
+        """
+
+        e_idx_return, pred_label_e_return = [], []
+        n = len(self.data_e)
+        # dhss = []
+        # e_idxss = []
+        for iter_p in range(max_iter_p):
+            e_idx, pred_label_e = [], []
+            for i in range(n):
+                # if self.verbose:
+                print("solving marginal #" + str(i))
+                dist = (torch.cdist(self.data_p, self.data_e[i]) ** 2).to(self.device)
+                output = self.update_map(i, dist, max_iter_h, lr=lr, lr_decay=lr_decay, beta=beta, early_stop=early_stop)
+                # dhss.append(dhs)
+                # e_idxss.append(e_idxs)
+                # e_idx.append(idx)
+                # pred_label_e.append(pred_label)
+                e_idx.append(output['e_idx'])
+            if self.update_e(e_idx, iter_p):
+                # e_idx_return, pred_label_e_return = e_idx, pred_label_e
+                break
+            # if iter_p == max_iter_p - 1:
+                # e_idx_return, pred_label_e_return = e_idx, pred_label_e
+        output = dict()
+        # output['e_idx'] = e_idx_return
+        # output['pred_label_e'] = pred_label_e_return
+        # output['dhss'] = dhss
+        # output['e_idxss'] = e_idxss
+
+        # compute WD
+        wd = 0
+        for e_idx, data_e, weight_e in zip(e_idx_return, self.data_e, self.weight_e):
+            tmp = self.data_p[e_idx, :]
+            tmp -= data_e
+            tmp = tmp ** 2
+            wd += torch.sum(torch.sum(tmp, dim=1) * weight_e)
+
+        output['wd'] = 2 * wd
+        return output
+
+    def update_e(self, e_idx, iter_p=0):
+        """ update each p to the centroids of its cluster
+
+        Args:
+            e_idx (pytorch Tensor): assignment of e to p
+            iter_p (int): iteration index
+
+        Returns:
+            (bool): convergence or not, determined by max p change
+        """
+
+        n = len(self.data_e)
+        num_p, d = self.data_p.shape[0], self.data_p.shape[1]
+        max_change_pct = 1e9
+
+        p = torch.zeros((n, num_p, d), device=self.device)
+        for i in range(n):
+            p[i], change = self.update_p_base(e_idx[i], self.data_p, self.data_e[i])
+            max_change_pct = max(max_change_pct, change)
+
+        self.data_p = torch.sum(p * self.weight_k[:, None, None], dim=0)
+
+        for i in range(n):
+            r, t = utils.estimate_inverse_transform(self.data_p.detach().cpu().numpy(), p[i].detach().cpu().numpy())
+            r = torch.tensor(r, device=self.device)
+            t = torch.tensor(t, device=self.device)
+            self.data_e[i] = (torch.mm(r, self.data_e[i].t()) + t).t()
+            print(r.inverse())
+
+        if self.verbose:
+            print("iter {0:d}: max centroid change {1:.2f}%".format(iter_p, 100 * max_change_pct))
+        # return max p coor change
+        return True if max_change_pct < self.thres else False
+

@@ -6,7 +6,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from vot_pytorch import VWB, UVWB
+from vot_torch import VWB, UVWB
 import utils
 
 np.random.seed(19)
@@ -70,14 +70,14 @@ x0_copy = torch.from_numpy(x0)
 vwb = VWB(x_copy, [x0_copy], device=device, verbose=False)
 output = vwb.cluster(lr=0.5, max_iter_h=1000, max_iter_p=1, beta=0.5)
 
-e_idx, dhss, e_idxss = output['e_idx'], output['dhss'], output['e_idxss']
+idx, e_idxss = output['idx'], output['idxs']
 
-e_idxss_cat = torch.stack(e_idxss[0])
-e_idxss_cat = e_idxss_cat.numpy()
+idxss_cat = torch.stack(e_idxss[0])
+idxss_cat = idxss_cat.numpy()
 
-for i in range(0, min(21, len(e_idxss_cat))):
+for i in range(0, min(21, len(idxss_cat))):
     fig = plt.figure(figsize=(4, 4))
-    ce = color_map[e_idxss_cat[i]]
+    ce = color_map[idxss_cat[i]]
     utils.scatter_otsamples(vwb.data_p, vwb.data_e[0], nop=True, size_p=30, marker_p='o', color_e=ce, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
     plt.axis('off')
     # plt.savefig("vwb_" + str(i) + ".svg", bbox_inches='tight')
@@ -91,11 +91,11 @@ plt.axis('off')
 plt.savefig("initial.png", dpi=300, bbox_inches='tight')
 
 fig = plt.figure(figsize=(4, 4))
-ce = color_map[e_idx[0]]
+ce = color_map[idx[0]]
 utils.scatter_otsamples(vwb.data_p, vwb.data_e[0], size_p=30, marker_p='o', color_e=ce, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
 plt.axis('off')
-# plt.savefig("4_4/vwb.svg", bbox_inches='tight')
-plt.savefig("vwb.png", dpi=300, bbox_inches='tight')
+# plt.savefig("4_4/vot.svg", bbox_inches='tight')
+plt.savefig("vot.png", dpi=300, bbox_inches='tight')
 
 # ---------------UVWB---------------
 x_copy = torch.from_numpy(x)
@@ -104,7 +104,7 @@ x0_copy = torch.from_numpy(x0)
 vwb = UVWB(x_copy, [x0_copy], device=device, verbose=False)
 out = vwb.cluster(lr=0.5, max_iter_h=1000, max_iter_p=1, beta=0.5)
 
-e_idx, dhss, e_idxss = output['e_idx'], output['dhss'], output['e_idxss']
+e_idx, e_idxss = output['idx'], output['idxs']
 
 e_idxss_cat = torch.stack(e_idxss[0])
 e_idxss_cat = e_idxss_cat.numpy()

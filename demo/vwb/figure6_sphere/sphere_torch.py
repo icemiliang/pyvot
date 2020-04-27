@@ -7,7 +7,7 @@ from mpl_toolkits import mplot3d
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from vot_pytorch import SVWB
+from vot_torch import SVWB
 
 
 np.random.seed(19)
@@ -86,7 +86,7 @@ else:
 
 vwb = SVWB(x0, [x1, x2], device=device, verbose=False)
 output = vwb.cluster(max_iter_h=5000, max_iter_p=1)
-e_idx, pred_label_e = output['e_idx'], output['pred_label_e']
+idx, = output['idx']
 
 # scale p
 vwb.data_p /= torch.norm(vwb.data_p, dim=1)[:, None]
@@ -99,22 +99,22 @@ xmin, xmax, ymin, ymax = -1.0, 1.0, -0.5, 0.5
 # ax.scatter(x, y, z, color='gray', s=0.1)
 # ax.plot_wireframe(x*0.95, y*0.95, z*0.95, color="lightgray")
 
-for idx in [12]:
+for k in [12]:
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(111, projection='3d')
     # ax.plot_wireframe(x * 0.95, y * 0.95, z * 0.95, color="lightgray")
     colors = plt.cm.magma((x - x.min()) / float((x - x.min()).max()))
     ax.plot_surface(x * 0.95, y * 0.95, z * 0.95, antialiased=False, facecolors=colors, linewidth=0, shade=False)
     for i in range(2):
-        ce = np.array(plt.get_cmap('viridis')(e_idx[i].cpu().numpy() / (K - 1)))
+        ce = np.array(plt.get_cmap('viridis')(idx[i].cpu().numpy() / (K - 1)))
 
         ax.scatter(vwb.data_e[i][:, 0], vwb.data_e[i][:, 1], vwb.data_e[i][:, 2], s=1, color=ce, zorder=4)
     ax.scatter(vwb.data_p[:, 0], vwb.data_p[:, 1], vwb.data_p[:, 2], s=5, marker='o',
                facecolors='none', linewidth=2, color='r', zorder=5)
 
-    e0s = vwb.data_e[0][e_idx[0] == idx]
-    e1s = vwb.data_e[1][e_idx[1] == idx]
-    p = vwb.data_p[idx]
+    e0s = vwb.data_e[0][idx[0] == k]
+    e1s = vwb.data_e[1][idx[1] == k]
+    p = vwb.data_p[k]
 
     for e0, e1 in zip(e0s, e1s):
         x = [e1[0], p[0], e0[0]]
@@ -124,6 +124,6 @@ for idx in [12]:
     # ls = LightSource(azdeg=180, altdeg=45)
     ax.view_init(elev=10., azim=100.)
     plt.axis('off')
-    # plt.savefig("4_5/sphere" + str(idx) + "test.svg", bbox_inches='tight')
-    plt.savefig("sphere" + str(idx) + "test.png", dpi=300,  bbox_inches='tight')
+    # plt.savefig("4_5/sphere" + str(k) + "test.svg", bbox_inches='tight')
+    plt.savefig("sphere" + str(k) + "test.png", dpi=300,  bbox_inches='tight')
 

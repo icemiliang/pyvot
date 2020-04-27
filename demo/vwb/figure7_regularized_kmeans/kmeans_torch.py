@@ -6,7 +6,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from vot_pytorch import VWB
+from vot_torch import VWB
 import utils
 
 np.random.seed(19)
@@ -65,7 +65,7 @@ for reg in [0.5, 2, 1e9]:
     vwb = VWB(x_copy, [x0_copy], device=device, verbose=False)
     output = vwb.cluster(lr=0.5, max_iter_h=1000, max_iter_p=1, beta=0.5, reg=reg)
 
-    e_idx = output['e_idx']
+    e_idx = output['idx']
 
     fig = plt.figure(figsize=(4, 4))
     ce = color_map[e_idx[0]]

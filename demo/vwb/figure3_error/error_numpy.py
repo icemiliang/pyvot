@@ -1,12 +1,8 @@
 import os
 import sys
-import torch
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from vot_pytorch import VWB
+from vot_numpy import VOT
 
 np.random.seed(19)
 
@@ -21,15 +17,6 @@ cov2 = [[0.02, 0], [0, 0.02]]
 x2, y2 = np.random.multivariate_normal(mean2, cov2, 5000).T
 x2 = np.stack((x2, y2), axis=1).clip(-0.99, 0.99)
 
-use_gpu = True
-if use_gpu and torch.cuda.is_available():
-    device = 'cuda:0'
-else:
-    device = 'cpu'
-
-x1 = torch.from_numpy(x1).double().to(device)
-x2 = torch.from_numpy(x2).double().to(device)
-
 wd = np.zeros((50, 50))
 
 k = 0
@@ -40,10 +27,8 @@ for K in [50, 125, 250, 500, 750, 1000, 1500, 2500]:
         x, y = np.random.multivariate_normal(mean, cov, K).T
         x = np.stack((x, y), axis=1).clip(-0.99, 0.99)
 
-        x = torch.from_numpy(x).double().to(device)
-
-        vwb = VWB(x, [x1, x2], device=device, verbose=False)
-        output = vwb.cluster(lr=1, max_iter_h=10000, max_iter_p=1, beta=0.9, lr_decay=500)
+        vwb = VOT(x, [x1, x2], verbose=False)
+        output = vwb.cluster(lr=1, max_iter_h=10000, max_iter_y=1, beta=0.9, lr_decay=500)
         wd[k, i] = output['wd']
         print(output['wd'])
         # np.savetxt(f, output['wd'], delimiter=',')
