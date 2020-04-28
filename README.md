@@ -10,7 +10,7 @@ In practice, we consider a collection of dense Dirac samples as an approximation
 * This program implements gradient descent instead of Newton's method to avoid computing
  convex hulls so that it can handle high-dimensional data. 
 * The picture below shows 10 random nested ellipses averaged according to the Euclidean distance (left) and the Wasserstein distance (right) as computed by our method. Middle is the Euclidean sum after re-centered. Our method also preserves the topology (rainbow colors) of the ellipses. 
-* More examples can be found in [demo/](demo/README.md).
+* More examples can be found in [demo/](demo/).
 
 <img src="demo/pics/barycenter.png" width="50%">
 
