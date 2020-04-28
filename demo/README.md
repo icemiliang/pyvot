@@ -8,23 +8,27 @@ python vot_vs_sinkhorn.py
 
 To run Sinkhorn OT, please install the [Python Optimal Transport](https://github.com/rflamary/POT) library, by e.g. pip install POT, 
 
-![alt text](pics/vot_vs_sinkhorn.png?raw=true)
- 
+[vot_vs_sinkhorn.py](vsSinkhorn/vot_vs_sinkhorn.py)
+
+![alt text](vsSinkhorn/vot_vs_sinkhorn.png?raw=true)
 
 #### Area preserving mapping. 
 
-[area_numpy.py](area)
+[area_numpy.py](area/area_numpy.py)
 
 ![alt text](area/area_preserve.png?raw=true)
 
-#### Domain adaptation through Wasserstein clustering regularized by potential energy.
+#### Regularizing VOT by pair-wise similarities.
 
-![alt text](pics/rwm_potential.png?raw=true)
+[area_numpy.py](regVOT/potential_numpy.py)
 
-#### Domain adaptation through Wasserstein clustering regularized by geometric transformation.
+![alt text](regVOT/potential.png?raw=true)
 
-![alt text](pics/rwm_transform.png?raw=true)
+#### Regularizing VOT by global invariances.
 
+[area_numpy.py](regVOT/transform_numpy.py)
+
+![alt text](regVOT/transform.png?raw=true)
 
 #### Double Rings
 [rings_numpy.py](rings/rings_numpy.py)
