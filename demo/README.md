@@ -33,17 +33,17 @@ To run Sinkhorn OT, please install the [Python Optimal Transport](https://github
 
 #### Double Rings
 
-![alt text](rings/<img src="rings/rings.png" width="50%">.png?raw=true)
+<img src="rings/rings.png" width="50%">
 
 #### Vector quantization
 
-![alt text](color/<img src="color/color.png" width="50%">.png?raw=true)
+<img src="color/color.png" width="50%">
 
 #### Point set registration
 
-![alt text](icp/<img src="icp/icp.png" width="50%">.png?raw=true)
+<img src="icp/icp.png" width="50%">
 
 #### spherical transshipment
 
-![alt text](sphere/<img src="sphere/sphere_12.png" width="50%">.png?raw=true)
+<img src="sphere/sphere_12.png" width="50%">
 
