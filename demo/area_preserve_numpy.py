@@ -22,7 +22,7 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from vot_numpy import VotAP
+from vot_numpy import VOTAP
 import utils
 
 
@@ -39,7 +39,7 @@ data_backup = np.random.multivariate_normal(mean, cov, N).clip(-0.99, 0.99)
 
 # ----- set up vot ------ #
 data = data_backup.copy()
-vot = VotAP(data, sampling='square', ratio=200, verbose=True)
+vot = VOTAP(data, sampling='square', ratio=200, verbose=True)
 
 # ----- map ------ #
 tick = time.time()
@@ -66,7 +66,7 @@ utils.plot_otmap(vot.data_p_original, vot.y, fig232, title='vot map', facecolor_
 # ------ plot after ----- #
 ce = np.array(plt.get_cmap('viridis')(e_idx / (N - 1)))
 plt.subplot(233)
-utils.plot_otsamples(vot.y, vot.x, color_e=ce, title='after')
+utils.plot_otsamples(vot.y, vot.x, color_x=ce, title='after')
 
 
 # ----------------------------------- #
@@ -75,7 +75,7 @@ utils.plot_otsamples(vot.y, vot.x, color_e=ce, title='after')
 
 # ----- set up vot ------ #
 data = data_backup.copy()
-vot2 = VotAP(data, sampling='circle', ratio=200, verbose=True)
+vot2 = VOTAP(data, sampling='circle', ratio=200, verbose=True)
 
 # ----- map ------ #
 tick = time.time()
@@ -95,7 +95,7 @@ utils.plot_otmap(vot2.data_p_original, vot2.y, fig235, title='vot map', facecolo
 # ------ plot after ----- #
 ce = np.array(plt.get_cmap('viridis')(e_idx / (N - 1)))
 plt.subplot(236)
-utils.plot_otsamples(vot2.y, vot2.x, color_e=ce, title='after')
+utils.plot_otsamples(vot2.y, vot2.x, color_x=ce, title='after')
 
 # ---- plot and save ---- #
 plt.tight_layout(pad=1.0, w_pad=1.5, h_pad=0.5)

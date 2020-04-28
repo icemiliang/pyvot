@@ -79,7 +79,7 @@ utils.plot_otmap(vot.data_p_original, vot.data_p, fig232, title='vot map', facec
 # ------ plot after ----- #
 ce = np.array(plt.get_cmap('viridis')(e_idx.cpu().numpy() / (N - 1)))
 plt.subplot(233)
-utils.plot_otsamples(vot.data_p, vot.data_e, color_e=ce, size_e=5, title='after', facecolor_p='none')
+utils.plot_otsamples(vot.data_p, vot.data_e, color_x=ce, size_e=5, title='after', facecolor_p='none')
 
 
 # ----------------------------------- #
@@ -109,7 +109,7 @@ utils.plot_otmap(vot2.data_p_original, vot2.data_p, fig235, title='vot map', fac
 # ------ plot after ----- #
 ce = np.array(plt.get_cmap('viridis')(e_idx.cpu().numpy() / (N - 1)))
 plt.subplot(236)
-utils.plot_otsamples(vot2.data_p, vot2.data_e, color_e=ce, size_e=5, title='after', facecolor_p='none')
+utils.plot_otsamples(vot2.data_p, vot2.data_e, color_x=ce, size_e=5, title='after', facecolor_p='none')
 
 # ---- plot and save ---- #
 plt.tight_layout(pad=1.0, w_pad=1.5, h_pad=0.5)

@@ -81,7 +81,7 @@ xmin, xmax, ymin, ymax = -1.0, 1.0, -.75, .75
 plt.subplot(231)
 cp_base = np.array([utils.COLOR_BLUE, utils.COLOR_RED])
 cp = cp_base[vot.label_p.int(), :]
-utils.plot_otsamples(vot.data_p_original, vot.data_e, color_p=cp, title='w/o reg before',
+utils.plot_otsamples(vot.data_p_original, vot.data_e, color_y=cp, title='w/o reg before',
                      xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax)
 
 # ------ plot map ------- #
@@ -95,7 +95,7 @@ utils.plot_otmap(vot.data_p_original, vot.data_p, fig232, color=cp, xmin=xmin, x
 plt.subplot(233)
 ce = np.array([utils.COLOR_LIGHT_BLUE, utils.COLOR_LIGHT_RED])[pred_label_e.int(), :]
 cp = np.array([utils.COLOR_DARK_BLUE, utils.COLOR_RED])[vot.label_p.int(), :]
-utils.plot_otsamples(vot.data_p, vot.data_e, size_p=30, marker_p='o', color_p=cp, color_e=ce,
+utils.plot_otsamples(vot.data_p, vot.data_e, size_p=30, marker_p='o', color_y=cp, color_x=ce,
                      xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, title='w/o reg after', facecolor_p='none')
 
 
@@ -131,7 +131,7 @@ utils.plot_otmap(vot_reg.data_p_original, vot_reg.data_p.detach(), fig235, color
 plt.subplot(236)
 ce = np.array([utils.COLOR_LIGHT_BLUE, utils.COLOR_LIGHT_RED])[pred_label_e.int(), :]
 cp = np.array([utils.COLOR_DARK_BLUE, utils.COLOR_RED])[vot_reg.label_p.int(), :]
-utils.plot_otsamples(vot_reg.data_p.detach(), vot_reg.data_e, size_p=30, marker_p='o', color_p=cp, color_e=ce,
+utils.plot_otsamples(vot_reg.data_p.detach(), vot_reg.data_e, size_p=30, marker_p='o', color_y=cp, color_x=ce,
                      xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, title='w/ reg after', facecolor_p='none')
 
 # ---- plot and save ---- #

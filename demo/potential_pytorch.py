@@ -26,7 +26,7 @@ if platform == "darwin":
 	matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from vot_pytorch import Vot, VotReg
+from vot_torch import Vot, VotReg
 import utils
 
 
@@ -66,7 +66,7 @@ print('total time: {0:.4f}'.format(tock-tick))
 plt.figure(figsize=(12, 8))
 plt.subplot(231)
 cp = np.array([utils.COLOR_BLUE, utils.COLOR_RED])[vot.label_p.int().cpu().numpy(), :]
-utils.plot_otsamples(vot.data_p_original, vot.data_e, color_p=cp, title='w/o reg before')
+utils.plot_otsamples(vot.data_p_original, vot.data_e, color_y=cp, title='w/o reg before')
 
 # ------ plot map ------- #
 fig232 = plt.subplot(232)
@@ -78,7 +78,7 @@ utils.plot_otmap(vot.data_p_original, vot.data_p, fig232, color=cp,
 plt.subplot(233)
 ce = np.array([utils.COLOR_LIGHT_BLUE, utils.COLOR_LIGHT_RED])[pred_label_e.int().cpu().numpy(), :]
 cp = np.array([utils.COLOR_DARK_BLUE, utils.COLOR_RED])[vot.label_p.int().cpu().numpy(), :]
-utils.plot_otsamples(vot.data_p, vot.data_e, size_p=30, marker_p='o', color_p=cp, color_e=ce,
+utils.scatter_otsamples(vot.data_p, vot.data_e, size_p=30, marker_p='o', color_p=cp, color_e=ce,
                      title='w/o reg after', facecolor_p='none')
 
 
@@ -113,7 +113,7 @@ utils.plot_otmap(vot_reg.data_p_original, vot_reg.data_p.detach(), fig235, color
 plt.subplot(236)
 ce = np.array([utils.COLOR_LIGHT_BLUE, utils.COLOR_LIGHT_RED])[pred_label_e.int(), :]
 cp = np.array([utils.COLOR_DARK_BLUE, utils.COLOR_RED])[vot_reg.label_p.int(), :]
-utils.plot_otsamples(vot_reg.data_p.detach(), vot_reg.data_e, size_p=30, marker_p='o', color_p=cp, color_e=ce,
+utils.scatter_otsamples(vot_reg.data_p.detach(), vot_reg.data_e, size_p=30, marker_p='o', color_p=cp, color_e=ce,
                      title='w/ reg after', facecolor_p='none')
 
 # ---- plot and save ---- #
