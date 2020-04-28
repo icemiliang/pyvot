@@ -891,6 +891,7 @@ class VOTREG(VOT):
         # T.estimate(pt, p0)
         # pt = T(pt)
 
-        self.y = 1 / (1 + reg) * p0 + reg / (1 + reg) * pt
+        self.y = pt
+        # self.y = 1 / (1 + reg) * p0 + reg / (1 + reg) * pt
         # return convergence
         return True if max_change_pct < self.tol else False
