@@ -35,15 +35,23 @@ To run Sinkhorn OT, please install the [Python Optimal Transport](https://github
 
 <img src="rings/rings.png" width="50%">
 
-#### Vector quantization
+#### Vector Quantization
 
 <img src="color/color.png" width="50%">
 
-#### Point set registration
+#### Point Set Registration
 
 <img src="icp/icp.png" width="50%">
 
-#### spherical transshipment
+#### Spherical Transshipment
 
 <img src="sphere/sphere_12.png" width="50%">
+
+#### Regularized K-means
+
+<img src="kmeans/kmeans.png" width="50%">
+
+#### Unbalanced Transshipment
+
+<img src="unbalanced2/ship21.png" width="50%">
 
