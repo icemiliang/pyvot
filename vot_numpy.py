@@ -405,10 +405,12 @@ class VotReg(Vot):
         return True if max_change_pct < self.thres else False
 
 
-class VotAP:
-    # y are the centroids
-    # x are the area samples
-    # this is a minimum class for area-preserving maps
+class VOTAP:
+    """
+        y are the centroids
+        x are the area samples
+        This is a minimum class for area-preserving maps
+    """
 
     def __init__(self, data, sampling='square', label=None, nu=None, thres=1e-5, ratio=100, verbose=False):
         """ set up parameters
@@ -516,7 +518,7 @@ class VotAP:
 
 
 class VOT:
-    def __init__(self, y, x, nu=None, mu=None, lam=None, tol=1e-4, verbose=True):
+    def __init__(self, y, x, nu=None, mu=None, lam=None, label_y=None, label_x=None, tol=1e-4, verbose=True):
 
         # marginals (x, mu)
         # centroids (y, nu)
@@ -565,6 +567,7 @@ class VOT:
 
         if nu is not None:
             self.nu = nu
+            self.sum_nu = np.sum(self.nu)
             if abs(self.sum_nu - 1) > 1e-3:
                 self.nu /= self.sum_nu
                 self.sum_nu = 1
@@ -572,6 +575,9 @@ class VOT:
         else:
             self.nu = 1. / self.K
             self.sum_nu = 1.
+
+        self.label_y = label_y
+        self.label_x = []
 
         # all data should be in (-1, 1) in each dimension
         utils.assert_boundary(self.y)
@@ -602,8 +608,12 @@ class VOT:
             elif self.update_y(it, space=space):
                 break
         output = dict()
-        output['idx'] = self.idx
         output['idxs'] = idxs
+
+        # pass label from y to x
+        if self.label_y is not None:
+            for i in range(self.N):
+                self.label_x.append(self.label_y[self.idx[i]])
 
         # compute W_2^2
         twd = 0
@@ -772,4 +782,116 @@ class VOT:
         if self.verbose:
             print("iter {0:d}: max centroid change {1:.2f}%".format(it, 100 * max_change_pct))
 
+        return True if max_change_pct < self.tol else False
+
+
+class VOTREG(VOT):
+    """ variational optimal transportation with regularization on sample supports"""
+
+    def map(self, reg_type, reg, lr=0.5, max_iter_y=10, max_iter_h=3000, lr_decay=200, stop=-1, keep_idx=False):
+        """ compute Wasserstein clustering
+        """
+        lrs = [lr / m for m in self.sum_mu]
+        idxs = []
+        for iter_y in range(max_iter_y):
+            dist = cdist(self.y, self.x[0], 'sqeuclidean')
+            output = self.update_map(0, dist, max_iter_h, lr=lrs[0], lr_decay=lr_decay, stop=stop)
+            self.idx[0] = output['idx']
+            if keep_idx:
+                idxs.append(output['idxs'])
+            if reg_type == 1 or reg_type == 'potential':
+                if self.update_y_potential(iter_y, reg):
+                    break
+            elif reg_type == 2 or reg_type == 'transform':
+                if self.update_p_transform(iter_y, reg):
+                    break
+            else:
+                raise Exception('regularization type not defined')
+
+        # pass label from y to x
+        if self.label_y is not None:
+            for i in range(self.N):
+                self.label_x.append(self.label_y[self.idx[i]])
+
+        output = dict()
+        output['idxs'] = idxs
+        return output
+
+    def update_y_potential(self, iter_y=0, reg=0.01):
+        """ update each p to the centroids of its cluster,
+        """
+
+        def f(p, p0, label=None, reg=0.01):
+            """ objective function incorporating labels
+
+            Args:
+                p  (numpy ndarray): p
+                p0 (numpy ndarray): centroids of e
+                label (numpy ndarray): labels of p
+                reg (float): regularizer weight
+
+            Returns:
+                float: f = sum(|p-p0|^2) + reg * sum(1(li == lj)*|pi-pj|^2)
+            """
+
+            p = p.reshape(p0.shape)
+            reg_term = 0.0
+            for l in np.unique(label):
+                p_sub = p[label == l, :]
+                # pairwise distance with smaller memory burden
+                # |pi - pj|^2 = pi^2 + pj^2 - 2*pi*pj
+                reg_term += np.sum((p_sub ** 2).sum(axis=1, keepdims=True) +
+                                   (p_sub ** 2).sum(axis=1) -
+                                   2 * p_sub.dot(p_sub.T))
+
+            return np.sum((p - p0) ** 2.0) + reg * reg_term
+
+        if np.unique(self.label_y).size == 1:
+            warnings.warn("All known samples belong to the same class")
+
+        y0, max_change_pct = self.update_y_base(self.idx[0], self.y, self.x[0])
+
+        if self.verbose:
+            print("it {0:d}: max centroid change {1:.2f}".format(iter_y, max_change_pct))
+
+        # regularize
+        res = minimize(f, self.y, method='BFGS', args=(y0, self.label_y, reg))
+        self.y = res.x.reshape(y0.shape)
+
+        return True if max_change_pct < self.tol else False
+
+    def update_p_transform(self, iter_p=0, reg=0.01):
+        """ update each p to the centroids of its cluster,
+        """
+
+        assert self.y.shape[1] == 2, "dim has to be 2 for geometric transformation"
+
+        p0, max_change_pct = self.update_y_base(self.idx[0], self.y, self.x[0])
+
+        if self.verbose:
+            print("it {0:d}: max centroid change {1:.2f}".format(iter_p, max_change_pct))
+
+        pt = np.zeros_like(self.y)
+        pt = utils.estimate_transform_target(pt, p0)
+
+        # regularize within each label
+        # pt = np.zeros(p0.shape)
+        # for label in np.unique(self.label_y):
+        #     idx_p_label = self.label_y == label
+        #     p_sub = self.y[idx_p_label, :]
+        #     p0_sub = p0[idx_p_label, :]
+        #     T = tf.EuclideanTransform()
+        #     # T = tf.AffineTransform()
+        #     # T = tf.ProjectiveTransform()
+        #     T.estimate(p_sub, p0_sub)
+        #     pt[idx_p_label, :] = T(p_sub)
+        #
+        # pt = self.y.copy()
+        # T = tf.EuclideanTransform()
+        # T.estimate(pt, p0)
+        # pt = T(pt)
+
+        self.y = pt
+        # self.y = 1 / (1 + reg) * p0 + reg / (1 + reg) * pt
+        # return convergence
         return True if max_change_pct < self.tol else False

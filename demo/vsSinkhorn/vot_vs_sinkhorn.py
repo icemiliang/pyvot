@@ -151,5 +151,5 @@ if plot_map:
     # ------- PLOT ------- #
     # -------------------- #
     plt.tight_layout(pad=1.0, w_pad=1.5, h_pad=0.5)
-    # plt.savefig('vot_vs_sinkhorn.png', format="png")
+    plt.savefig('vot_vs_sinkhorn.png', format="png")
     plt.show()

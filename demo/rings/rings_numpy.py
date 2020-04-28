@@ -90,10 +90,10 @@ for u, v, a, b, r1, r2, i in zip(uu, vv, aa, bb, rr1, rr2, range(N)):
         fig = plt.figure(figure_id, figsize=(2, 2))
         figure_id += 1
         ax = fig.add_subplot(111)
-        ax.set_prop_cycle(cycler(color=[cm(1. * i / (s - 1)) for i in range(s - 1)]))
-        for i in range(s - 1):
-            ax.plot(inner_ring[0, i: i + 2], inner_ring[1, i: i + 2])
-            ax.plot(outer_ring[0, i: i + 2], outer_ring[1, i: i + 2])
+        ax.set_prop_cycle(cycler(color=[cm(1. * j / (s - 1)) for j in range(s - 1)]))
+        for j in range(s - 1):
+            ax.plot(inner_ring[0, j: j + 2], inner_ring[1, j: j + 2])
+            ax.plot(outer_ring[0, j: j + 2], outer_ring[1, j: j + 2])
 
         plt.xlim(xmin, xmax)
         plt.ylim(ymin, ymax)

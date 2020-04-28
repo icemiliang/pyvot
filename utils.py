@@ -280,30 +280,30 @@ def scatter_otsamples3D(data_p, data_e=None, color_p=None, color_e=None, title="
             plt.scatter(data_p[:, 0], data_p[:, 1], data_p[:, 1], s=size_p, marker=marker_p, linewidth=2, color=color_p, zorder=3)
 
 
-def plot_otsamples(data_p, data_e=None, color_p=None, color_e=None, linewidth=2, title="", grid=True,
+def plot_otsamples(y, x=None, color_y=None, color_x=None, linewidth=2, title="", grid=True,
                    xmin=-1.0, xmax=1.0, ymin=-1.0, ymax=1.0):
     plt.xlim(xmin, xmax)
     plt.ylim(ymin, ymax)
     plt.grid(grid)
     plt.title(title)
 
-    if data_e is not None:
-        if color_e is not None:
-            assert len(color_e) == 3 \
-                   or (color_e.ndim == 2 and color_e.shape[0] == data_e.shape[0] and (color_e.shape[1] == 3 or color_e.shape[1] == 4))
+    if x is not None:
+        if color_x is not None:
+            assert len(color_x) == 3 \
+                   or (color_x.ndim == 2 and color_x.shape[0] == x.shape[0] and (color_x.shape[1] == 3 or color_x.shape[1] == 4))
         else:
-            color_e = COLOR_LIGHT_GREY
-        plt.plot(data_e[:, 0], data_e[:, 1], c=color_e, zorder=2)
+            color_x = COLOR_LIGHT_GREY
+        plt.plot(x[:, 0], x[:, 1], c=color_x, zorder=2)
 
-    if color_p is not None:
-        assert len(color_p) == 3 \
-               or (color_p.ndim == 2 and color_p.shape[0] == data_p.shape[0] and (color_p.shape[1] == 3 or color_p.shape[1] == 4))
+    if color_y is not None:
+        assert len(color_y) == 3 \
+               or (color_y.ndim == 2 and color_y.shape[0] == y.shape[0] and (color_y.shape[1] == 3 or color_y.shape[1] == 4))
     else:
-        color_p = COLOR_RED
-    if color_p == 'none':
-        plt.plot(data_p[:, 0], data_p[:, 1], linewidth=linewidth, c='r', zorder=3)
+        color_y = COLOR_RED
+    if color_y is None:
+        plt.plot(y[:, 0], y[:, 1], linewidth=linewidth, c='r', zorder=3)
     else:
-        plt.plot(data_p[:, 0], data_p[:, 1], linewidth=linewidth, c=color_p, zorder=3)
+        plt.plot(y[:, 0], y[:, 1], linewidth=linewidth, c=color_y, zorder=3)
 
 
 def plot_otmap(data_before, data_after, plt_fig, color=None, title="", grid=True, marker='o', facecolor_after=None,

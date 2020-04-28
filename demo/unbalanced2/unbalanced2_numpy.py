@@ -27,8 +27,8 @@ x = np.stack((x, y), axis=1).clip(-0.99, 0.99)
 
 
 vot = VOT(x, [x1, x2], verbose=False)
-output = vot.cluster(max_iter_h=3000, max_iter_y=1)
-idx = output['idx']
+vot.cluster(max_iter_h=3000, max_iter_y=1)
+idx = vot.idx
 
 xmin, xmax, ymin, ymax = -1., 1., 0., 1.
 
