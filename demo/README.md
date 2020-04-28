@@ -46,6 +46,10 @@ To run Sinkhorn OT, please install the [Python Optimal Transport](https://github
 [kmeans_numpy.py](kmeans/kmeans_numpy.py)
 <img src="kmeans/kmeans.png" width="50%">
 
+#### Transshipment
+[unbalanced_numpy.py](ship/ship_numpy.py)
+<img src="ship/ship33.png" width="50%">
+
 #### Unbalanced Transshipment
 [unbalanced_numpy.py](unbalanced2/unbalanced2_numpy.py)
 <img src="unbalanced2/ship21.png" width="50%">
