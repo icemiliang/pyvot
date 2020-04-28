@@ -22,11 +22,6 @@ To run Sinkhorn OT, please install the [Python Optimal Transport](https://github
 ![alt text](pics/area_preserve.png?raw=true)
 
 
-#### Vector quantization by Wasserstein clustering.
-
-![alt text](pics/color.png?raw=true)
-
-
 #### Domain adaptation through Wasserstein clustering regularized by potential energy.
 
 ![alt text](pics/rwm_potential.png?raw=true)
@@ -34,3 +29,21 @@ To run Sinkhorn OT, please install the [Python Optimal Transport](https://github
 #### Domain adaptation through Wasserstein clustering regularized by geometric transformation.
 
 ![alt text](pics/rwm_transform.png?raw=true)
+
+
+#### Double Rings
+
+![alt text](rings/<img src="rings/rings.png" width="50%">.png?raw=true)
+
+#### Vector quantization
+
+![alt text](color/<img src="color/color.png" width="50%">.png?raw=true)
+
+#### Point set registration
+
+![alt text](icp/<img src="icp/icp.png" width="50%">.png?raw=true)
+
+#### spherical transshipment
+
+![alt text](sphere/<img src="sphere/sphere_12.png" width="50%">.png?raw=true)
+
