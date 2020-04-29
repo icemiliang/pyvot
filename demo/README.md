@@ -46,25 +46,25 @@ To run Sinkhorn OT, please install the [Python Optimal Transport](https://github
 
 [vot_vs_sinkhorn.py](vsSinkhorn/vot_vs_sinkhorn.py)
 
-![alt text](vsSinkhorn/vot_vs_sinkhorn.png?raw=true)
+<img src="vsSinkhorn/vot_vs_sinkhorn.png" width="50%">
 
 #### Area preserving mapping. 
 
 [area_numpy.py](area/area_numpy.py)
 
-![alt text](area/area.png?raw=true)
+<img src="area/area.png" width="50%">
 
 #### Regularizing VOT by pair-wise similarities.
 
 [area_numpy.py](regVOT/potential_numpy.py)
 
-![alt text](regVOT/potential.png?raw=true)
+<img src="regVOT/potential.png" width="50%">
 
 #### Regularizing VOT by global invariances.
 
 [area_numpy.py](regVOT/transform_numpy.py)
 
-![alt text](regVOT/transform.png?raw=true)
+<img src="regVOT/transform.png" width="50%">
 
 #### Vector Quantization
 

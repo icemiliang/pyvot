@@ -1,20 +1,31 @@
 # PyVot : Python Variational Optimal Transportation
-This package includes the prototype code for computing Monge's optimal transportation (OT)
- and Wasserstein clustering.
+This is a collection of codes for computing semi-discrete Monge optimal transportation (OT) through the variational method.
 
-* Variational Wasserstein clustering in each iteration leverages variational principles [1]
- to solve optimal transportation. Thus, we name the package PyVot instead of PyVWc for the
-  sake of pronunciation. For computing optimal transportation, simply set the max iteration to one.
-* Monge's OT maps exist in general when one of the distributions is absolutely continuous. 
-In practice, we consider a collection of dense Dirac samples as an approximation.  
-* This program implements gradient descent instead of Newton's method to avoid computing
- convex hulls so that it can handle high-dimensional data. 
-* The picture below shows 10 random nested ellipses averaged according to the Euclidean distance (left) and the Wasserstein distance (right) as computed by our method. Middle is the Euclidean sum after re-centered. Our method also preserves the topology (rainbow colors) of the ellipses. 
-* More examples can be found in [demo/](demo/).
+We name our method *variational optimal transportation* (VOT) and *variational Wasserstein clustering* (VWC).
+
+* Given the empirical distributions (marginals) and the initial centroids, 
+the vinilla VWC compute OT and then update the centroids to the centers of mass.
+The whole process will converge in one iteration. When there are two or more marginals, 
+we compute a discrete Wasserstein barycenter, usually with free support and fixed 
+measure to simplify the problem. When there are two marginals, the results can
+be used to solve the optimal transshipment problem.
+  
+* Monge OT maps exist in general when one of the marginals are absolutely continuous. 
+In practice, we consider a collection of dense Dirac samples as an approximation.
+  
+* Our OT formultation is convex. Yet, this program only uses the 1st order gradient
+ because the 2nd order gradient involves computing convex hulls which is intractable 
+ for high-dimensional data.
+ 
+* The picture below shows 10 random nested ellipses averaged according to the 
+Euclidean distance (left) and the Wasserstein distance (right). More examples 
+can be found in [demo/](demo/).
 
 <img src="demo/rings/rings.png" width="50%">
 
 ## Dependencies
+
+We implemented our method with both NumPy and PyTorch.
 
 * Python
 * NumPy
@@ -23,7 +34,7 @@ In practice, we consider a collection of dense Dirac samples as an approximation
 * scikit-image
 * scikit-learn
 * Matplotlib
-* PyTorch
+* PyTorch (optional)
 
 To use pip to install prerequisites:
 ```
@@ -32,6 +43,7 @@ pip install -r requirements.txt
 ```
 
 ## References
+
 #### Citing the package
 
 If you find the code helpful, please cite one of the following articles:
@@ -78,4 +90,5 @@ Mi, Liang, Tianshu Yu, José Bento, Wen Zhang, Baoxin Li, and Yalin Wang, “Var
 [4] Mi, Liang, Tianshu Yu, José Bento, Wen Zhang, Baoxin Li, and Yalin Wang, “[Variational Wasserstein Barycenters for Geometric Clustering](http://arxiv.org/abs/2002.10543)”. arXiv preprint arXiv:2002.10543 (2020).
 
 ## Contact
+
 Please contact Liang Mi icemiliang@gmail.com for any issues. Pull requests and issues are welcome.
