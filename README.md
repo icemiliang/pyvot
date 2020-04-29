@@ -1,19 +1,21 @@
 # PyVot : Python Variational Optimal Transportation
 This is a collection of codes for computing semi-discrete Monge optimal transportation (OT) through the variational method.
 
-We name our method *variational optimal transportation* (VOT) and *variational Wasserstein clustering* (VWC).
+We name our method *variational optimal transportation* (VOT) or *variational Wasserstein clustering* (VWC).
 
 * Given the empirical distributions (marginals) and the initial centroids, 
-the vinilla VWC compute OT and then update the centroids to the centers of mass.
-The whole process will converge in one iteration. When there are two or more marginals, 
-we compute a discrete Wasserstein barycenter, usually with free support and fixed 
+the vinilla VWC compute VOT and then update the centroids to the centers of mass.
+The whole process will converge in one iteration. Our method is immune to unbalance measures.
+
+* When there are two or more marginals, 
+we are computing a discrete Wasserstein barycenter, usually with free support and fixed 
 measure to simplify the problem. When there are two marginals, the results can
 be used to solve the optimal transshipment problem.
   
-* Monge OT maps exist in general when one of the marginals are absolutely continuous. 
+* Monge OT maps exist in general when the marginals are continuous. 
 In practice, we consider a collection of dense Dirac samples as an approximation.
   
-* Our OT formultation is convex. Yet, this program only uses the 1st order gradient
+* Our OT formulation is convex. Yet, this program only uses the 1st order gradient
  because the 2nd order gradient involves computing convex hulls which is intractable 
  for high-dimensional data.
  
