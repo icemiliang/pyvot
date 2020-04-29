@@ -1,13 +1,17 @@
+# PyVot Python Variational Optimal Transportation
+# Author: Liang Mi <icemiliang@gmail.com>
+# Date: April 28th 2020
+# Licence: MIT
+
+
 import os
 import sys
 import torch
 import numpy as np
-import matplotlib
 from mpl_toolkits import mplot3d
-# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from vot_torch import RegVWB, ICPVWB
+from vot_torch import ICPVWB
 
 
 np.random.seed(19)

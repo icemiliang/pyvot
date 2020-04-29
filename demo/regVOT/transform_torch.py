@@ -1,19 +1,8 @@
 # PyVot Python Variational Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
-# Date: Aug 11th 2019
+# Date: April 28th 2020
 # Licence: MIT
 
-"""
-===========================================
-       Regularized Wasserstein Means
-===========================================
-
-This demo shows that regularizing the centroids by using prior
-geometric transformation can benefit domain adaptation applications.
-
-Predicted labels of the empirical samples come from the centroids.
-It is equivalent to 1NN w.r.t. the power Euclidean distance.
-"""
 
 import os
 import sys
@@ -21,13 +10,9 @@ import time
 import torch
 import numpy as np
 import sklearn.datasets
-from sys import platform
-if platform == "darwin":
-	import matplotlib
-	matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from vot_pytorch import Vot, VotReg
+from vot_torch import Vot, VotReg
 import utils
 
 

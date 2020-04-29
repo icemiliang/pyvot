@@ -1,3 +1,8 @@
+# PyVot Python Variational Optimal Transportation
+# Author: Liang Mi <icemiliang@gmail.com>
+# Date: April 28th 2020
+# Licence: MIT
+
 import os
 import sys
 import torch

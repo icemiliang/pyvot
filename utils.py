@@ -1,4 +1,6 @@
-# For ICML 2020 submission #22
+# PyVot Python Variational Optimal Transportation
+# Author: Liang Mi <icemiliang@gmail.com>
+# Date: April 28th 2020
 # Licence: MIT
 
 import numpy as np
