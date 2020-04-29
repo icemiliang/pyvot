@@ -18,7 +18,7 @@ Below shows some examples of using PyVot.
 
 [sphere_numpy.py](sphere/sphere_numpy.py)
 
-<img src="sphere/sphere_12.png" width="50%">
+<img src="sphere/sphere.png" width="50%">
 
 #### Regularized K-means
 
