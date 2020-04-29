@@ -43,7 +43,7 @@ vot = VOTAP(data, sampling='square', ratio=200, verbose=True)
 
 # ----- map ------ #
 tick = time.time()
-# vot.map(plot_filename='area_preserve.gif', max_iter=300)
+# vot.map(plot_filename='area.gif', max_iter=300)
 e_idx, _ = vot.map(max_iter=3000)
 tock = time.time()
 print('total time: {0:.4f}'.format(tock-tick))
@@ -79,7 +79,7 @@ vot2 = VOTAP(data, sampling='circle', ratio=200, verbose=True)
 
 # ----- map ------ #
 tick = time.time()
-# vot.map(plot_filename='area_preserve.gif', max_iter=300)
+# vot.map(plot_filename='area.gif', max_iter=300)
 e_idx, _ = vot2.map(max_iter=3000)
 tock = time.time()
 print('total time: {0:.4f}'.format(tock-tick))
