@@ -55,8 +55,8 @@ x1 /= np.linalg.norm(x1, axis=1, keepdims=True)
 x2 /= np.linalg.norm(x2, axis=1, keepdims=True)
 
 vwb = VOT(y, [x1, x2], verbose=False)
-output = vwb.cluster(max_iter_h=5000, max_iter_y=1, space='spherical')
-idx = output['idx']
+vwb.cluster(max_iter_h=5000, max_iter_y=1, space='spherical')
+idx = vwb.idx
 
 xmin, xmax, ymin, ymax = -1.0, 1.0, -0.5, 0.5
 u, v = np.mgrid[np.pi/4:np.pi*5/4:1000j, np.pi/2:np.pi*3/2:1000j]

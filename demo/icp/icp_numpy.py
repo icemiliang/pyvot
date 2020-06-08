@@ -125,7 +125,7 @@ outE2 = vwb.x[1]
 outE3 = vwb.x[2]
 outP = vwb.y
 
-ax2.scatter(x1[:, 0], x1[:, 1], x1[:, 2], s=dot_size, color=color_map[2], alpha=alpha)
+ax2.scatter(x1[:, 0], x1[:, 1], x1[:, 2], s=dot_size, color=color_map[0], alpha=alpha)
 ax2.scatter(x2[:, 0], x2[:, 1], x2[:, 2], s=dot_size, color=color_map[1], alpha=alpha)
 ax2.scatter(x3[:, 0], x3[:, 1], x3[:, 2], s=dot_size, color=color_map[2], alpha=alpha)
 

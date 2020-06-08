@@ -53,7 +53,7 @@ for k in [21]:
     plt.figure(figsize=(8, 4))
     for i in range(2):
         ce = np.array(plt.get_cmap('viridis')(idx[i].cpu().numpy() / (K - 1)))
-        utils.scatter_otsamples(vwb.data_p, vwb.data_e[i], size_p=30, marker_p='o', color_e=ce, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
+        utils.scatter_otsamples(vwb.data_p, vwb.data_e[i], size_p=30, marker_p='o', color_x=ce, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
 
     p = vwb.data_p[k]
 

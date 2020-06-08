@@ -59,13 +59,13 @@ for reg in [0.5, 2, 1e9]:
     x_copy = x.copy()
 
     vot = VOT(y_copy, [x_copy], verbose=False)
-    output = vot.cluster(lr=0.5, max_iter_h=1000, max_iter_y=1, beta=0.5, reg=reg)
+    vot.cluster(lr=0.5, max_iter_h=1000, max_iter_y=1, beta=0.5, reg=reg)
 
-    idx = output['idx']
+    idx = vot.idx
 
     fig = plt.figure(figsize=(4, 4))
     ce = color_map[idx[0]]
-    utils.scatter_otsamples(vot.y, vot.x[0], size_p=30, marker_p='o', color_e=ce,
+    utils.scatter_otsamples(vot.y, vot.x[0], size_p=30, marker_p='o', color_x=ce,
                             xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
     plt.axis('off')
     # plt.savefig(str(int(reg)) + ".svg", bbox_inches='tight')
@@ -75,7 +75,7 @@ for reg in [0.5, 2, 1e9]:
 plt.figure(figsize=(4, 4))
 
 ce = color_map[label]
-utils.scatter_otsamples(y, x, size_p=30, marker_p='o', color_e=ce,
+utils.scatter_otsamples(y, x, size_p=30, marker_p='o', color_x=ce,
                         xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
 plt.axis('off')
 # plt.savefig("0.svg", bbox_inches='tight')

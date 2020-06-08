@@ -15,7 +15,7 @@ from vot_numpy import VOT
 
 
 SAVE_SVG = False
-SAVE_PNG = False
+SAVE_PNG = True
 PLOT_FIGURE = False
 SAVE_OR_PLOT_FIGURE = SAVE_PNG or SAVE_SVG or PLOT_FIGURE
 
