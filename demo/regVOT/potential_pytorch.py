@@ -78,8 +78,8 @@ utils.plot_otmap(vot.data_p_original, vot.data_p, fig232, color=cp,
 plt.subplot(233)
 ce = np.array([utils.COLOR_LIGHT_BLUE, utils.COLOR_LIGHT_RED])[pred_label_e.int().cpu().numpy(), :]
 cp = np.array([utils.COLOR_DARK_BLUE, utils.COLOR_RED])[vot.label_p.int().cpu().numpy(), :]
-utils.scatter_otsamples(vot.data_p, vot.data_e, size_p=30, marker_p='o', color_p=cp, color_e=ce,
-                     title='w/o reg after', facecolor_p='none')
+utils.scatter_otsamples(vot.data_p, vot.data_e, size_p=30, marker_p='o', color_y=cp, color_x=ce,
+                        title='w/o reg after', facecolor_p='none')
 
 
 # -------------------------------------- #
@@ -113,8 +113,8 @@ utils.plot_otmap(vot_reg.data_p_original, vot_reg.data_p.detach(), fig235, color
 plt.subplot(236)
 ce = np.array([utils.COLOR_LIGHT_BLUE, utils.COLOR_LIGHT_RED])[pred_label_e.int(), :]
 cp = np.array([utils.COLOR_DARK_BLUE, utils.COLOR_RED])[vot_reg.label_p.int(), :]
-utils.scatter_otsamples(vot_reg.data_p.detach(), vot_reg.data_e, size_p=30, marker_p='o', color_p=cp, color_e=ce,
-                     title='w/ reg after', facecolor_p='none')
+utils.scatter_otsamples(vot_reg.data_p.detach(), vot_reg.data_e, size_p=30, marker_p='o', color_y=cp, color_x=ce,
+                        title='w/ reg after', facecolor_p='none')
 
 # ---- plot and save ---- #
 plt.tight_layout(pad=1.0, w_pad=1.5, h_pad=0.5)

@@ -51,13 +51,14 @@ y = kmeans.cluster_centers_
 
 color_map = np.array([[237, 125, 49, 255], [112, 173, 71, 255], [91, 155, 213, 255]]) / 255
 
-plt.figure(figsize=(4, 4))
+fig = plt.figure(figsize=(4, 4))
 for i in range(1):
     ce = color_map[label]
-    utils.scatter_otsamples(y, x, size_p=30, marker_p='o', color_e=ce, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
+    utils.scatter_otsamples(y, x, size_p=30, marker_p='o', color_x=ce, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
 plt.axis('off')
 # plt.savefig("kmeans.svg", bbox_inches='tight')
 plt.savefig("kmeans.png", dpi=300, bbox_inches='tight')
+plt.close(fig)
 
 
 # --------------- OT ---------------
@@ -66,13 +67,13 @@ x_copy = x.copy()
 
 vwb = VOT(y_copy, [x_copy], verbose=False)
 output = vwb.cluster(lr=0.5, max_iter_h=20, max_iter_y=1, beta=0.5, keep_idx=True)
-idx, idxs = output['idx'], output['idxs'][0]
-
+idxs = output['idxs'][0]
+idx = vwb.idx
 
 for i in range(0, min(21, len(idxs))):
     fig = plt.figure(figsize=(4, 4))
     ce = color_map[idxs[i]]
-    utils.scatter_otsamples(vwb.y, vwb.x[0], nop=True, size_p=30, marker_p='o', color_e=ce, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
+    utils.scatter_otsamples(vwb.y, vwb.x[0], nop=True, size_p=30, marker_p='o', color_x=ce, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
     plt.axis('off')
     # plt.savefig("vwb_" + str(i) + ".svg", bbox_inches='tight')
     plt.savefig("vwb_" + str(i) + ".png", dpi=300, bbox_inches='tight')
@@ -83,33 +84,37 @@ for i in range(1):
 plt.axis('off')
 # plt.savefig("4_4/initial.svg", bbox_inches='tight')
 plt.savefig("initial.png", dpi=300, bbox_inches='tight')
+plt.close(fig)
 
 fig = plt.figure(figsize=(4, 4))
 ce = color_map[idx[0]]
-utils.scatter_otsamples(vwb.y, vwb.x[0], size_p=30, marker_p='o', color_e=ce, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
+utils.scatter_otsamples(vwb.y, vwb.x[0], size_p=30, marker_p='o', color_x=ce, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
 plt.axis('off')
 # plt.savefig("4_4/vot.svg", bbox_inches='tight')
 plt.savefig("vot.png", dpi=300, bbox_inches='tight')
+plt.close(fig)
 
 # --------------- Unbalanced OT ---------------
 y_copy = y.copy()
 x_copy = x.copy()
 
 vwb = VOT(y_copy, [x_copy], verbose=False)
-out = vwb.cluster(lr=0.5, max_iter_h=20, max_iter_y=1, beta=0.5, keep_idx=True)
-idx, idxs = output['idx'], output['idxs'][0]
+output = vwb.cluster(lr=0.5, max_iter_h=20, max_iter_y=1, beta=0.5, keep_idx=True)
+idxs = output['idxs'][0]
+idx = vwb.idx
 
 for i in range(0, min(21, len(idxs))):
     fig = plt.figure(figsize=(4, 4))
     ce = color_map[idxs[i]]
-    utils.scatter_otsamples(vwb.y, vwb.x[0], nop=True, size_p=30, marker_p='o', color_e=ce, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
+    utils.scatter_otsamples(vwb.y, vwb.x[0], nop=True, size_p=30, marker_p='o', color_x=ce, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
     plt.axis('off')
     # plt.savefig("uvwb_" + str(i) + ".svg", bbox_inches='tight')
     plt.savefig("uvwb_" + str(i) + ".png", dpi=300, bbox_inches='tight')
+    plt.close(fig)
 
 fig = plt.figure(figsize=(4, 4))
 ce = color_map[idx[0]]
-utils.scatter_otsamples(vwb.y, vwb.x[0], size_p=30, marker_p='o', color_e=ce, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
+utils.scatter_otsamples(vwb.y, vwb.x[0], size_p=30, marker_p='o', color_x=ce, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
 plt.axis('off')
 # plt.savefig("uvwb.svg", bbox_inches='tight')
 plt.savefig("uvwb.png", dpi=300, bbox_inches='tight')

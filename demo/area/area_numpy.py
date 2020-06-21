@@ -44,7 +44,7 @@ vot = VOTAP(data, sampling='square', ratio=200, verbose=True)
 # ----- map ------ #
 tick = time.time()
 # vot.map(plot_filename='area.gif', max_iter=300)
-e_idx, _ = vot.map(max_iter=3000)
+idx, _ = vot.map(max_iter=3000)
 tock = time.time()
 print('total time: {0:.4f}'.format(tock-tick))
 
@@ -57,16 +57,16 @@ print('total time: {0:.4f}'.format(tock-tick))
 # ----- plot before ----- #
 plt.figure(figsize=(12, 8))
 plt.subplot(231)
-utils.plot_otsamples(vot.data_p_original, vot.x, title='before', )
+utils.scatter_otsamples(vot.data_p_original, vot.x, title='before', )
 
 # ------ plot map ------- #
 fig232 = plt.subplot(232)
 utils.plot_otmap(vot.data_p_original, vot.y, fig232, title='vot map', facecolor_after='none')
 
 # ------ plot after ----- #
-ce = np.array(plt.get_cmap('viridis')(e_idx / (N - 1)))
+ce = np.array(plt.get_cmap('viridis')(idx / (N - 1)))
 plt.subplot(233)
-utils.plot_otsamples(vot.y, vot.x, color_x=ce, title='after')
+utils.scatter_otsamples(vot.y, vot.x, color_x=ce, title='after')
 
 
 # ----------------------------------- #
@@ -80,24 +80,24 @@ vot2 = VOTAP(data, sampling='circle', ratio=200, verbose=True)
 # ----- map ------ #
 tick = time.time()
 # vot.map(plot_filename='area.gif', max_iter=300)
-e_idx, _ = vot2.map(max_iter=3000)
+idx, _ = vot2.map(max_iter=3000)
 tock = time.time()
 print('total time: {0:.4f}'.format(tock-tick))
 
 # ----- plot before ----- #
 plt.subplot(234)
-utils.plot_otsamples(vot2.data_p_original, vot2.x, title='before')
+utils.scatter_otsamples(vot2.data_p_original, vot2.x, title='before')
 
 # ------ plot map ------- #
 fig235 = plt.subplot(235)
 utils.plot_otmap(vot2.data_p_original, vot2.y, fig235, title='vot map', facecolor_after='none')
 
 # ------ plot after ----- #
-ce = np.array(plt.get_cmap('viridis')(e_idx / (N - 1)))
+cx = np.array(plt.get_cmap('viridis')(idx / (N - 1)))
 plt.subplot(236)
-utils.plot_otsamples(vot2.y, vot2.x, color_x=ce, title='after')
+utils.scatter_otsamples(vot2.y, vot2.x, color_x=cx, title='after')
 
 # ---- plot and save ---- #
 plt.tight_layout(pad=1.0, w_pad=1.5, h_pad=0.5)
-# plt.savefig("vot_area_preserve_numpy.png")
-plt.show()
+plt.savefig("area_numpy.png")
+# plt.show()

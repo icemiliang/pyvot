@@ -155,8 +155,8 @@ x3 = x3.clip(-0.99, 0.99)
 
 x = C1_16.clip(-0.99, 0.99)
 vwb = VOT(x, [x1], verbose=False)
-output = vwb.cluster(lr=1, max_iter_h=5000, max_iter_y=1)
-idx = output['idx'][0]
+vwb.cluster(lr=1, max_iter_h=5000, max_iter_y=1)
+idx = vwb.idx[0]
 x1_vwb_16 = vwb.y[idx, :]
 x1_vwb_16 = np.transpose(np.reshape(x1_vwb_16 * 255, (128, 128, 3)), (1, 0, 2))
 imageio.imwrite("x1_vwb_16.png", x1_vwb_16)
@@ -177,8 +177,8 @@ fig1.savefig("x1_histogram_vwb_16.png", dpi=300, bbox_inches='tight')
 
 x = C2_16.clip(-0.99, 0.99)
 vwb = VOT(x, [x2], verbose=False)
-output = vwb.cluster(lr=1, max_iter_h=5000, max_iter_y=1)
-idx = output['idx'][0]
+vwb.cluster(lr=1, max_iter_h=5000, max_iter_y=1)
+idx = vwb.idx[0]
 x2_vwb_16 = vwb.y[idx, :]
 x2_vwb_16 = np.transpose(np.reshape(x2_vwb_16 * 255, (128, 128, 3)), (1, 0, 2))
 imageio.imwrite("x2_vwb_16.png", x2_vwb_16)
@@ -199,8 +199,8 @@ fig2.savefig("x2_histogram_vwb_16.png", dpi=300, bbox_inches='tight')
 
 x = C3_16.clip(-0.99, 0.99)
 vwb = VOT(x, [x3], verbose=False)
-output = vwb.cluster(lr=1, max_iter_h=5000, max_iter_y=1)
-idx = output['idx'][0]
+vwb.cluster(lr=1, max_iter_h=5000, max_iter_y=1)
+idx = vwb.idx[0]
 x3_vwb_16 = vwb.y[idx, :]
 x3_vwb_16 = np.transpose(np.reshape(x3_vwb_16 * 255, (128, 128, 3)), (1, 0, 2))
 imageio.imwrite("x3_vwb_16.png", x3_vwb_16)
@@ -224,8 +224,8 @@ fig3.savefig("x3_histogram_vwb_16.png", dpi=300, bbox_inches='tight')
 
 x = C_all_16.clip(-0.99, 0.99)
 vwb = VOT(x, [x1, x2, x3], verbose=False)
-output = vwb.cluster(lr=1, max_iter_h=5000, max_iter_y=1)
-idx = output['idx']
+vwb.cluster(lr=1, max_iter_h=5000, max_iter_y=1)
+idx = vwb.idx
 
 
 x1_vwb_all = vwb.y[idx[0], :]
