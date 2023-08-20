@@ -10,7 +10,7 @@ import torch
 import numpy as np
 from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from vot_torch import SVWB
 
 
@@ -90,7 +90,7 @@ else:
 
 vwb = SVWB(x0, [x1, x2], device=device, verbose=False)
 output = vwb.cluster(max_iter_h=5000, max_iter_p=1)
-idx, = output['idx']
+idx = output['idx']
 
 # scale p
 vwb.data_p /= torch.norm(vwb.data_p, dim=1)[:, None]

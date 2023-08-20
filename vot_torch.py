@@ -7,7 +7,7 @@ import torch
 import torch.optim as optim
 import imageio
 import warnings
-import utils
+import utils_torch as utils
 
 
 class Vot:
@@ -1293,7 +1293,7 @@ class ICPVWB(VWB):
                 # e_idxss.append(e_idxs)
                 # e_idx.append(idx)
                 # pred_label_e.append(pred_label)
-                e_idx.append(output['e_idx'])
+                e_idx.append(output[0])
             if self.update_e(e_idx, iter_p):
                 # e_idx_return, pred_label_e_return = e_idx, pred_label_e
                 break

@@ -10,7 +10,7 @@ from math import pi, cos, sin
 import os
 import sys
 import time
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from vot_numpy import VOT
 
 
@@ -153,9 +153,9 @@ if SAVE_OR_PLOT_FIGURE:
 all_rings = [ring.T for ring in all_rings]
 
 vwb = VOT(all_rings[0][0:-1:5, :], all_rings, verbose=False)
-tick = time.clock()
+tick = time.process_time()
 vwb.cluster(lr=0.5, max_iter_h=3000, max_iter_y=1)
-tock = time.clock()
+tock = time.process_time()
 print(tock - tick)
 
 if SAVE_OR_PLOT_FIGURE:

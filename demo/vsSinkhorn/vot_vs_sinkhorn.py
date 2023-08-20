@@ -12,9 +12,9 @@ import matplotlib.pyplot as plt
 import matplotlib.collections as mc
 import ot
 import ot.plot
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from vot_numpy import VOT
-import utils
+import utils_numpy as utils
 
 
 # -------------------- #
@@ -42,10 +42,10 @@ dist = cdist(y, x, 'sqeuclidean')
 mass_e = np.ones(N0) / N0
 mass_p = np.ones(K) / K
 
-tick = time.clock()
+tick = time.process_time()
 vot = VOT(y=y, x=x, verbose=False)
 output = vot.cluster(max_iter_y=1, max_iter_h=3000, lr=1, lr_decay=200, beta=0.9)
-tock = time.clock()
+tock = time.process_time()
 print('total time: {0:.4f}'.format(tock-tick))
 
 
@@ -90,9 +90,9 @@ y = p_coor_before.copy()
 M = ot.dist(y, x)
 M /= M.max()
 
-tick = time.clock()
+tick = time.process_time()
 Gs = ot.emd(mass_p, mass_e, M)
-tock = time.clock()
+tock = time.process_time()
 print('total time: {0:.4f}'.format(tock-tick))
 for i in range(2):
     tmp = x[:, i]
@@ -124,9 +124,9 @@ M = ot.dist(y, x)
 M /= M.max()
 
 lambd = 1e-3
-tick = time.clock()
+tick = time.process_time()
 Gs = ot.sinkhorn(mass_p, mass_e, M, lambd)
-tock = time.clock()
+tock = time.process_time()
 print('total time: {0:.4f}'.format(tock-tick))
 for i in range(2):
     tmp = x[:, i]

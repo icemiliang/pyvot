@@ -8,7 +8,7 @@ from scipy.spatial.distance import cdist
 from scipy.optimize import minimize
 import imageio
 import warnings
-import utils
+import utils_numpy as utils
 
 
 class Vot:

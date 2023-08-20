@@ -9,7 +9,7 @@ import sys
 import numpy as np
 from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from vot_numpy import VOT
 
 

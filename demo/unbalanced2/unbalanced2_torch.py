@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from vot_torch import UVWB
-import utils
+import utils_torch as utils
 
 np.random.seed(19)
 

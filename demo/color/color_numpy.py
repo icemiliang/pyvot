@@ -9,7 +9,7 @@ import numpy as np
 import imageio
 from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from vot_numpy import VOT
 
 
@@ -99,9 +99,9 @@ x2_kmeans_16 = np.transpose(np.reshape(x2_kmeans_16 * 255, (128, 128, 3)), (1, 0
 x3_kmeans_16 = np.transpose(np.reshape(x3_kmeans_16 * 255, (128, 128, 3)), (1, 0, 2))
 
 
-imageio.imwrite("x1_kmeans_16.png", x1_kmeans_16)
-imageio.imwrite("x2_kmeans_16.png", x2_kmeans_16)
-imageio.imwrite("x3_kmeans_16.png", x3_kmeans_16)
+imageio.imwrite("x1_kmeans_16.png", x1_kmeans_16.astype('uint8'))
+imageio.imwrite("x2_kmeans_16.png", x2_kmeans_16.astype('uint8'))
+imageio.imwrite("x3_kmeans_16.png", x3_kmeans_16.astype('uint8'))
 
 
 fig4 = plt.figure(figsize=(8, 8))
@@ -159,7 +159,7 @@ vwb.cluster(lr=1, max_iter_h=5000, max_iter_y=1)
 idx = vwb.idx[0]
 x1_vwb_16 = vwb.y[idx, :]
 x1_vwb_16 = np.transpose(np.reshape(x1_vwb_16 * 255, (128, 128, 3)), (1, 0, 2))
-imageio.imwrite("x1_vwb_16.png", x1_vwb_16)
+imageio.imwrite("x1_vwb_16.png", x1_vwb_16.astype('uint8'))
 fig1 = plt.figure(figsize=(8, 8))
 ax1 = fig1.add_subplot(111, projection='3d')
 ce2 = vwb.y[idx]
@@ -181,7 +181,7 @@ vwb.cluster(lr=1, max_iter_h=5000, max_iter_y=1)
 idx = vwb.idx[0]
 x2_vwb_16 = vwb.y[idx, :]
 x2_vwb_16 = np.transpose(np.reshape(x2_vwb_16 * 255, (128, 128, 3)), (1, 0, 2))
-imageio.imwrite("x2_vwb_16.png", x2_vwb_16)
+imageio.imwrite("x2_vwb_16.png", x2_vwb_16.astype('uint8'))
 fig2 = plt.figure(figsize=(8, 8))
 ax2 = fig2.add_subplot(111, projection='3d')
 ce2 = vwb.y[idx]
@@ -203,7 +203,7 @@ vwb.cluster(lr=1, max_iter_h=5000, max_iter_y=1)
 idx = vwb.idx[0]
 x3_vwb_16 = vwb.y[idx, :]
 x3_vwb_16 = np.transpose(np.reshape(x3_vwb_16 * 255, (128, 128, 3)), (1, 0, 2))
-imageio.imwrite("x3_vwb_16.png", x3_vwb_16)
+imageio.imwrite("x3_vwb_16.png", x3_vwb_16.astype('uint8'))
 fig3 = plt.figure(figsize=(8, 8))
 ax3 = fig3.add_subplot(111, projection='3d')
 ce3 = vwb.y[idx]
@@ -234,9 +234,9 @@ x3_vwb_all = vwb.y[idx[2], :]
 x1_vwb_all = np.transpose(np.reshape(x1_vwb_all*255, (128, 128, 3)), (1, 0, 2))
 x2_vwb_all = np.transpose(np.reshape(x2_vwb_all*255, (128, 128, 3)), (1, 0, 2))
 x3_vwb_all = np.transpose(np.reshape(x3_vwb_all*255, (128, 128, 3)), (1, 0, 2))
-imageio.imwrite("x1_vwb_all.png", x1_vwb_all)
-imageio.imwrite("x2_vwb_all.png", x2_vwb_all)
-imageio.imwrite("x3_vwb_all.png", x3_vwb_all)
+imageio.imwrite("x1_vwb_all.png", x1_vwb_all.astype('uint8'))
+imageio.imwrite("x2_vwb_all.png", x2_vwb_all.astype('uint8'))
+imageio.imwrite("x3_vwb_all.png", x3_vwb_all.astype('uint8'))
 
 fig1 = plt.figure(figsize=(8, 8))
 ax1 = fig1.add_subplot(111, projection='3d')

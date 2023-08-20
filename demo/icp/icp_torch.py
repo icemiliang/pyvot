@@ -10,7 +10,7 @@ import torch
 import numpy as np
 from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from vot_torch import ICPVWB
 
 
@@ -125,7 +125,7 @@ x3_copy = torch.from_numpy(x3).to(device)
 
 
 vwb = ICPVWB(x, [x1_copy, x2_copy, x3_copy], device=device, verbose=False)
-output = vwb.cluster(reg=10, lr=1, max_iter_h=3000, max_iter_p=iterP, lr_decay=500, beta=0.5)
+output = vwb.cluster(reg=10, lr=0.5, max_iter_h=3000, max_iter_p=iterP, lr_decay=500, beta=0.5)
 
 fig2 = plt.figure(figsize=(8, 8))
 #

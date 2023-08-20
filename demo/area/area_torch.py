@@ -27,9 +27,9 @@ if platform == "darwin":
 	import matplotlib
 	matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from vot_torch import VotAP
-import utils
+import utils_torch as utils
 
 
 np.random.seed(0)
@@ -55,10 +55,10 @@ data = torch.from_numpy(data_backup.copy()).to(device)
 vot = VotAP(data, sampling='square', ratio=500, device=device)
 
 # ----- map ------ #
-tick = time.clock()
+tick = time.process_time()
 # vot.map(plot_filename='area_pytorch.gif', max_iter=300)
 e_idx, _ = vot.map(max_iter=300, lr=0.5)
-tock = time.clock()
+tock = time.process_time()
 
 print('total time: {0:.4f}'.format(tock-tick))
 # Note: Area preserving usually requires a pre-defined boundary.
@@ -70,7 +70,7 @@ print('total time: {0:.4f}'.format(tock-tick))
 # ----- plot before ----- #
 plt.figure(figsize=(12, 8))
 plt.subplot(231)
-utils.plot_otsamples(vot.data_p_original, vot.data_e, title='before')
+utils.scatter_otsamples(vot.data_p_original, vot.data_e, title='before')
 
 # ------ plot map ------- #
 fig232 = plt.subplot(232)
@@ -79,7 +79,7 @@ utils.plot_otmap(vot.data_p_original, vot.data_p, fig232, title='vot map', facec
 # ------ plot after ----- #
 ce = np.array(plt.get_cmap('viridis')(e_idx.cpu().numpy() / (N - 1)))
 plt.subplot(233)
-utils.plot_otsamples(vot.data_p, vot.data_e, color_x=ce, size_e=5, title='after', facecolor_p='none')
+utils.scatter_otsamples(vot.data_p, vot.data_e, color_x=ce, size_e=5, title='after', facecolor_p='none')
 
 
 # ----------------------------------- #
@@ -100,7 +100,7 @@ print('total time: {0:.4f}'.format(tock-tick))
 
 # ----- plot before ----- #
 plt.subplot(234)
-utils.plot_otsamples(vot2.data_p_original, vot2.data_e, title='before')
+utils.scatter_otsamples(vot2.data_p_original, vot2.data_e, title='before')
 
 # ------ plot map ------- #
 fig235 = plt.subplot(235)
@@ -109,9 +109,9 @@ utils.plot_otmap(vot2.data_p_original, vot2.data_p, fig235, title='vot map', fac
 # ------ plot after ----- #
 ce = np.array(plt.get_cmap('viridis')(e_idx.cpu().numpy() / (N - 1)))
 plt.subplot(236)
-utils.plot_otsamples(vot2.data_p, vot2.data_e, color_x=ce, size_e=5, title='after', facecolor_p='none')
+utils.scatter_otsamples(vot2.data_p, vot2.data_e, color_x=ce, title='after', facecolor_p='none')
 
 # ---- plot and save ---- #
 plt.tight_layout(pad=1.0, w_pad=1.5, h_pad=0.5)
-# plt.savefig("ot_area_preserve.png")
-plt.show()
+plt.savefig("ot_area_preserve.png")
+# plt.show()

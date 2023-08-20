@@ -8,9 +8,9 @@ import sys
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from vot_numpy import VOT, VOTREG
-import utils
+import utils_numpy as utils
 
 # -------------------------------------- #
 # --------- w/o regularization --------- #

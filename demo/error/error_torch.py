@@ -8,7 +8,7 @@ import os
 import sys
 import torch
 import numpy as np
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 from vot_torch import VWB
 
 np.random.seed(19)
