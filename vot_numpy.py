@@ -32,7 +32,7 @@ class VOTAP:
             raise Exception('label is neither a numpy array not a numpy ndarray')
 
         self.y = data
-        self.data_p_original = self.y.copy()
+        self.y_original = self.y.copy()
         self.K = self.y.shape[0]
 
         self.label_y = label
@@ -44,8 +44,7 @@ class VOTAP:
         utils.assert_boundary(self.y)
 
         self.N0 = int(ratio * self.K)
-        ndim = self.y.shape[1]
-        self.x, _ = utils.random_sample(self.N0, ndim, sampling=sampling)
+        self.x, _ = utils.random_sample(self.N0, self.y.shape[1], sampling=sampling)
 
         self.dist = cdist(self.y, self.x, 'sqeuclidean')
 
@@ -106,7 +105,7 @@ class VOTAP:
 
             if max_change <= 1:
                 break
-        if plot_filename and imgs:
+        if plot_filename and len(imgs) > 0:
             imageio.mimsave(plot_filename, imgs, fps=4)
         # labels come from y
         pred_label_x = self.label_y[idx] if self.label_y is not None else None

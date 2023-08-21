@@ -386,7 +386,7 @@ class VotReg(Vot):
             print("it {0:d}: max centroid change {1:.2f}".format(iter_p, max_change_pct))
 
         # pt = utils.estimate_transform_target_pytorch(self.y.detach(), p0)
-        pt = utils.estimate_transform_target(self.data_p.detach().detach().numpy(), p0.numpy())
+        pt = utils.estimate_transform_target(self.data_p.detach(), p0)
         pt = torch.tensor(pt, device=self.device)
         # regularize within each label
         # pt = torchzeros(p0.shape)
@@ -469,90 +469,60 @@ class VotReg(Vot):
         return True if max_change_pct < self.thres else False
 
 
-class VotAP:
-    """ Area Preserving with variational optimal transportation """
-    # p are the centroids
-    # e are the area samples
+class VOTAP:
+    """
+        y are the centroids
+        x are the area samples
+        This is a minimum class for area-preserving maps
+    """
 
-    def __init__(self, data, sampling='unisquare', label=None, weight_p=None, thres=1e-5, ratio=100, verbose=True, device='cpu'):
+    def __init__(self, data, sampling='square', label=None, nu=None, thres=1e-5, ratio=100, device='cpu', verbose=False):
         """ set up parameters
-        Args:
-            thres float: threshold to break loops
-            ratio float: the ratio of num of e to the num of p
-            data pytorch Tensor: initial coordinates of p
-            label pytorch Tensor: labels of p
-            mass_p pytorch Tensor: weights of p
-
-        Atts:
-            thres    float: Threshold to break loops
-            lr       float: Learning rate
-            verbose   bool: console output verbose flag
-            y    pytorch floattensor: coordinates of p
-            label_y   pytorch inttensor: labels of p
-            mass_p    pytorch floattensor: mass of clusters of p
-            weight_p   pytorch floattensor: dirac measure of p
         """
 
         if not isinstance(data, torch.Tensor):
-            raise Exception('input is not a pytorch tensor')
-        if label and not isinstance(label, torch.Tensor):
-            raise Exception('label is neither a numpy array not a pytorch tensor')
-        if weight_p and not isinstance(weight_p, torch.Tensor):
-            raise Exception('label is neither a numpy array not a pytorch tensor')
+            raise Exception('input is not a torch tensor')
 
-        self.data_p = data
-        self.data_p_original = self.data_p.clone()
-        num_p = data.shape[0]
+        if label is not None and not isinstance(label, torch.Tensor):
+            raise Exception('label is neither a numpy array not a torch tensor')
 
-        self.label_p = label
+        if nu is not None and not isinstance(nu, torch.Tensor):
+            raise Exception('label is neither a numpy array not a torch tensor')
 
-        self.weight_p = weight_p if weight_p is not None else torch.ones(num_p).double().to(device) / num_p
+        self.y = data
+        self.y_original = self.y.clone()
+        self.K = self.y.shape[0]
+
+        self.label_y = label
+        self.weight_p = nu if nu is not None else torch.ones(self.K).double().to(device) / self.K
 
         self.thres = thres
-        self.verbose = verbose
-        self.ratio = ratio
         self.device = device
+        self.verbose = verbose
 
-        utils.assert_boundary(self.data_p)
+        utils.assert_boundary(self.y)
 
-        num_e = int(self.ratio * num_p)
-        dim = self.data_p.shape[1]
-        self.data_e, _ = utils.random_sample(num_e, dim, sampling=sampling)
-        self.data_e = torch.from_numpy(self.data_e).double().to(self.device)
+        self.N0 = int(ratio * self.K)
+        self.x, _ = utils.random_sample(self.N0, self.y.shape[1], sampling=sampling)
 
-        self.dist = torch.cdist(self.data_p, self.data_e, p=2).double().to(self.device)**2
+        self.dist = torch.cdist(self.y, self.x.double()).to(device)
 
-    def map(self, plot_filename=None, beta=0.9, max_iter=1000, lr=0.5, lr_decay=200, early_stop=200):
-        """ ot_map p into the area
-
-        Args:
-            plot_filename (string): filename of the gif image
-            beta (float): gradient descent momentum
-            max_iter (int): maximum number of iteration
-            lr (float): learning rate
-            lr_decay (int): learning rate decay interval
-            early_stop (int): early_stop checking frequency
-
-        :return:
-            idx (pytorch Tensor): assignment of e to p
-            pred_label_e (pytorch Tensor): labels of e that come from nearest p
+    def map(self, plot_filename=None, beta=0.9, max_iter=1000, lr=0.5, lr_decay=200, early_stop=100):
+        """ map y into the area
         """
-
-        num_p = self.data_p.shape[0]
-        num_e = self.ratio * num_p
 
         imgs = []
         dh = 0
 
-        e_idx = None
+        idx = None
         running_median, previous_median = [], 0
 
         for i in range(max_iter):
-            # find nearest p for each e
-            e_idx = torch.argmin(self.dist, dim=0)
+            # find nearest y for each x
+            idx = torch.argmin(self.dist, axis=0)
 
             # calculate total mass of each cell
-            mass_p = torch.bincount(e_idx, minlength=num_p).double() / num_e
+            mass_p = torch.bincount(idx, minlength=self.K) / self.N0
             # gradient descent with momentum and decay
             dh = beta * dh + (1-beta) * (mass_p - self.weight_p)
             if i != 0 and i % lr_decay == 0:
@@ -560,14 +530,14 @@ class VotAP:
             self.dist += lr * dh[:, None]
 
             # plot to gif, TODO this is time consuming, got a better way?
-            if plot_filename:
-                fig = utils.plot_map(self.data_e.cpu().numpy(), e_idx.cpu().numpy() / (num_p - 1))
+            if plot_filename and i % 10 == 0:
+                fig = utils.plot_map(self.x, idx / (self.K - 1))
                 img = utils.fig2data(fig)
                 imgs.append(img)
 
             # check if converge
             max_change = torch.max((mass_p - self.weight_p) / self.weight_p)
-            if max_change.numel() > 1:
+            if torch.numel(max_change) > 1:
                 max_change = max_change[0]
             max_change *= 100
 
@@ -584,31 +554,31 @@ class VotAP:
                 running_median.append(max_change)
                 if len(running_median) >= early_stop:
                     if previous_median != 0 and \
-                            torch.abs(torch.median(torch.Tensor(running_median)) - previous_median) / previous_median < 0.02:
+                            torch.abs(torch.median(torch.tensor(running_median)) - previous_median) / previous_median < 0.02:
                         if self.verbose:
                             print("loss saturated, early stopped")
                         break
                     else:
-                        previous_median = torch.median(torch.Tensor(running_median))
+                        previous_median = torch.median(torch.tensor(running_median))
                         running_median = []
 
             if max_change <= 1:
                 break
-        if plot_filename and imgs:
+        if plot_filename and len(imgs) > 0:
             imageio.mimsave(plot_filename, imgs, fps=4)
-        # labels come from centroids
-        pred_label_e = self.label_p[e_idx] if self.label_p is not None else None
+        # labels come from y
+        pred_label_x = self.label_y[idx] if self.label_y is not None else None
 
-        # update coordinates of p
-        bincount = torch.bincount(e_idx, minlength=num_p).double()
+        # update coordinates of y
+        bincount = torch.bincount(idx, minlength=self.K)
         if 0 in bincount:
-            print('Empty cluster found, optimal transport did not converge\nTry larger lr or max_iter')
+            print('Empty cluster found, optimal transport probably did not converge\nTry larger lr or max_iter')
             # return
-        for i in range(self.data_p.shape[1]):
-            # update p to the centroid of their correspondences
-            self.data_p[:, i] = torch.bincount(e_idx, weights=self.data_e[:, i], minlength=num_p).double() / bincount
+        for i in range(self.y.shape[1]):
+            # update y to the centroid of their correspondences
+            self.y[:, i] = torch.bincount(idx, weights=self.x[:, i], minlength=self.K) / bincount
 
-        return e_idx, pred_label_e
+        return idx, pred_label_x
 
 
 class VWB:
@@ -927,7 +897,7 @@ class RegVWB(VWB):
         for i in range(n):
             p0[i], change = self.update_p_base(e_idx[i], self.data_p, self.data_e[i])
             max_change_pct = max(max_change_pct, change)
-            tmp = utils.estimate_transform_target(self.data_p.detach().cpu().numpy(), p0[i].detach().cpu().numpy())
+            tmp = utils.estimate_transform_target(self.data_p.detach(), p0[i].detach())
             pt[i] = torch.tensor(tmp, device=self.device)
 
         self.data_p = 1 / (1 + reg) * p0 + reg / (1 + reg) * pt
@@ -1339,7 +1309,7 @@ class ICPVWB(VWB):
         self.data_p = torch.sum(p * self.weight_k[:, None, None], dim=0)
 
         for i in range(n):
-            r, t = utils.estimate_inverse_transform(self.data_p.detach().cpu().numpy(), p[i].detach().cpu().numpy())
+            r, t = utils.estimate_inverse_transform(self.data_p.detach(), p[i].detach())
             r = torch.tensor(r, device=self.device)
             t = torch.tensor(t, device=self.device)
             self.data_e[i] = (torch.mm(r, self.data_e[i].t()) + t).t()
