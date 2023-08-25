@@ -189,6 +189,7 @@ class VOT:
         for i in range(self.N):
             utils.assert_boundary(self.x[i])
 
+
     def cluster(self, lr=0.5, max_iter_y=10, max_iter_h=3000, lr_decay=200, stop=-1, beta=0, reg=0., keep_idx=False, space='euclidean', icp=False):
         """ compute Wasserstein clustering
         """
@@ -234,7 +235,7 @@ class VOT:
         return output
 
     def update_map(self, i, dist, max_iter=3000, lr=0.5, beta=0, lr_decay=200, stop=200, reg=0., keep_idx=False, space='euclidean'):
-        """ update assignment of each e as the ot_map to y
+        """ update assignment of each x as the ot_map to y
         """
 
         dh = 0

@@ -10,7 +10,7 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from vot_torch import VWB
+from vot_torch import VOT
 import utils_torch as utils
 
 np.random.seed(19)
@@ -66,14 +66,14 @@ for reg in [0.5, 2, 1e9]:
     x_copy = torch.from_numpy(x)
     x0_copy = torch.from_numpy(x0)
 
-    vwb = VWB(x_copy, [x0_copy], device=device, verbose=False)
-    output = vwb.cluster(lr=0.5, max_iter_h=1000, max_iter_p=1, beta=0.5, reg=reg)
+    vot = VOT(x_copy, [x0_copy], device=device, verbose=False)
+    vot.cluster(lr=0.5, max_iter_h=1000, max_iter_y=1, beta=0.5, reg=reg)
 
-    e_idx = output['idx']
+    idx = vot.idx
 
     fig = plt.figure(figsize=(4, 4))
-    ce = color_map[e_idx[0]]
-    utils.scatter_otsamples(vwb.data_p, vwb.data_e[0], size_p=30, marker_p='o', color_x=ce,
+    ce = color_map[idx[0]]
+    utils.scatter_otsamples(vot.y, vot.x[0], size_p=30, marker_p='o', color_x=ce,
                             xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
     plt.axis('off')
     # plt.savefig("0.svg", bbox_inches='tight')

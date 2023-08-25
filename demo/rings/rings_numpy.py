@@ -72,8 +72,7 @@ all_inner_rings_centered = []
 all_outer_rings_centered = []
 
 cm = plt.get_cmap('hsv')
-s = np.size(t)
-T = np.linspace(0, 1, s) ** 2
+T = np.linspace(0, 1, n) ** 2
 
 figure_id = 0
 
@@ -90,8 +89,8 @@ for u, v, a, b, r1, r2, i in zip(uu, vv, aa, bb, rr1, rr2, range(N)):
         fig = plt.figure(figure_id, figsize=(2, 2))
         figure_id += 1
         ax = fig.add_subplot(111)
-        ax.set_prop_cycle(cycler(color=[cm(1. * j / (s - 1)) for j in range(s - 1)]))
-        for j in range(s - 1):
+        ax.set_prop_cycle(cycler(color=[cm(1. * j / (n - 1)) for j in range(n - 1)]))
+        for j in range(n - 1):
             ax.plot(inner_ring[0, j: j + 2], inner_ring[1, j: j + 2])
             ax.plot(outer_ring[0, j: j + 2], outer_ring[1, j: j + 2])
 
@@ -113,9 +112,9 @@ if SAVE_OR_PLOT_FIGURE:
     fig = plt.figure(figure_id, figsize=(2, 2))
     figure_id += 1
     ax = fig.add_subplot(111)
-    ax.set_prop_cycle(cycler(color=[cm(1. * i / (s - 1)) for i in range(s - 1)]))
+    ax.set_prop_cycle(cycler(color=[cm(1. * i / (n - 1)) for i in range(n - 1)]))
     for inner_ring, outer_ring in zip(all_inner_rings, all_outer_rings):
-        for i in range(s - 1):
+        for i in range(n - 1):
             ax.plot(inner_ring[0, i: i + 2], inner_ring[1, i: i + 2])
             ax.plot(outer_ring[0, i: i + 2], outer_ring[1, i: i + 2])
 
@@ -134,9 +133,9 @@ if SAVE_OR_PLOT_FIGURE:
     fig = plt.figure(figure_id, figsize=(2, 2))
     figure_id += 1
     ax = fig.add_subplot(111)
-    ax.set_prop_cycle(cycler(color=[cm(1. * i / (s - 1)) for i in range(s - 1)]))
+    ax.set_prop_cycle(cycler(color=[cm(1. * i / (n - 1)) for i in range(n - 1)]))
     for inner_ring, outer_ring in zip(all_inner_rings_centered, all_outer_rings_centered):
-        for i in range(s - 1):
+        for i in range(n - 1):
             ax.plot(inner_ring[0, i:i + 2], inner_ring[1, i:i + 2])
             ax.plot(outer_ring[0, i:i + 2], outer_ring[1, i:i + 2])
 
@@ -169,7 +168,7 @@ if SAVE_OR_PLOT_FIGURE:
     ax.set_prop_cycle(cycler(color=[cm(1. * i / (size - 1)) for i in range(size - 1)]))
     inner_ring = vwb.y[:size, :]
     outer_ring = vwb.y[size:, :]
-    for i in range(s - 1):
+    for i in range(n - 1):
         ax.plot(inner_ring[i:i + 2, 0], inner_ring[i:i + 2, 1])
         ax.plot(outer_ring[i:i + 2, 0], outer_ring[i:i + 2, 1])
 
