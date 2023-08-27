@@ -9,9 +9,9 @@ import time
 import numpy as np
 import sklearn.datasets
 import matplotlib.pyplot as plt
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from vot_numpy import VOT, VOTREG
-import utils
+import utils_numpy as utils
 
 
 # Generate data
@@ -100,7 +100,7 @@ for py, cy in zip(vot.y, cys):
 vot_reg = VOTREG(y.copy(), [x.copy()], label_y=labels, verbose=False)
 print("running regularized Wasserstein clustering...")
 tick = time.time()
-vot_reg.map(reg_type='transform', reg=10, max_iter_y=5)
+vot_reg.map(reg_type='transform', reg=5, max_iter_y=5, lr=0.005)
 tock = time.time()
 print("total running time : {0:.4f} seconds".format(tock-tick))
 cxs = cxs_base[vot_reg.label_x[0]]
@@ -133,5 +133,5 @@ for py, cy in zip(vot_reg.y, cys):
 
 # ---- plot and save ---- #
 plt.tight_layout(pad=1.0, w_pad=1.5, h_pad=0.5)
-# plt.savefig("transform.png")
-plt.show()
+plt.savefig("transform_numpy.png")
+# plt.show()

@@ -112,5 +112,5 @@ utils.scatter_otsamples(vot2.y, vot2.x, color_x=ce, title='after', facecolor_p='
 
 # ---- plot and save ---- #
 plt.tight_layout(pad=1.0, w_pad=1.5, h_pad=0.5)
-plt.savefig("area_numpy.png")
+plt.savefig("area_torch.png")
 # plt.show()

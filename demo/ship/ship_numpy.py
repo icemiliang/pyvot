@@ -55,4 +55,4 @@ for k in [33]:
         y = [e1[1], p[1], e0[1]]
         plt.plot(x, y, c='lightgray', alpha=0.4)
     # plt.savefig("ship" + str(k) + ".svg")
-    plt.savefig("ship" + str(k) + ".png", dpi=300, bbox_inches='tight')
+    plt.savefig("ship" + str(k) + "_numpy.png", dpi=300, bbox_inches='tight')

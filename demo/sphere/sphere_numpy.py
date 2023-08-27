@@ -43,9 +43,6 @@ y1 = np.cos(u0) * np.sin(v0)
 y2 = np.sin(u0) * np.sin(v0)
 y3 = np.cos(v0)
 
-
-plt.show()
-
 x1 = np.stack((x11, x12, x13), axis=1).clip(-0.99, 0.99)
 x2 = np.stack((x21, x22, x23), axis=1).clip(-0.99, 0.99)
 y = np.stack((y1, y2, y3), axis=1).clip(-0.99, 0.99)
@@ -87,4 +84,4 @@ for k in [12]:
     ax.view_init(elev=10., azim=100.)
     plt.axis('off')
     # plt.savefig("sphere_" + str(k) + ".svg", bbox_inches='tight')
-    plt.savefig("sphere_" + str(k) + ".png", dpi=300, bbox_inches='tight')
+    plt.savefig("sphere_" + str(k) + "_numpy.png", dpi=300, bbox_inches='tight')

@@ -15,8 +15,7 @@ from vot_numpy import VOT
 
 np.random.seed(19)
 
-x1 = np.loadtxt("kitten1.csv", delimiter=',')
-# x1 = np.loadtxt("bunny_8k.txt", delimiter=' ')
+x1 = np.loadtxt("kitten.csv", delimiter=',')
 
 x1 = x1[:, [0, 2, 1]]
 
@@ -102,7 +101,7 @@ downsample = 100
 x1_down = x1[0:-1:downsample, :]
 
 
-# ------- run WM -------- #
+# ------- run VOT -------- #
 
 iterP = 8
 
@@ -135,15 +134,6 @@ ax2.scatter(outE3[:, 0], outE3[:, 1], outE3[:, 2], s=dot_size, color=color_map[2
 ax2.scatter(outP[:, 0], outP[:, 1], outP[:, 2], s=5, marker='o',
                facecolors='none', linewidth=2, color=color_map[3], zorder=5)
 
-# np.savetxt('outx1_8k_iter{}.txt'.format(iterP), outE1, delimiter=',')
-# np.savetxt('outx2_8k_iter{}.txt'.format(iterP), outE2, delimiter=',')
-# np.savetxt('outx3_8k_iter{}.txt'.format(iterP), outE3, delimiter=',')
-# np.savetxt('outP_8k_iter{}.txt'.format(iterP), outP, delimiter=',')
-# np.savetxt('/home/icemiliang/OneDrive/Projects/pami/figs/icp/x1.txt', x1, delimiter=',')
-# np.savetxt('/home/icemiliang/OneDrive/Projects/pami/figs/icp/x2.txt', x2, delimiter=',')
-# np.savetxt('/home/icemiliang/OneDrive/Projects/pami/figs/icp/x3.txt', x3, delimiter=',')
-# np.savetxt('p_8k_iter{}.txt'.format(iterP), outP, delimiter=',')
-
 bound = 1.
 minx, maxx = -bound, bound
 miny, maxy = -bound, bound
@@ -161,7 +151,6 @@ ax2.set_xlabel('X')
 ax2.set_ylabel('Y')
 ax2.set_zlabel('Z')
 plt.axis('off')
-plt.savefig("icp.svg", bbox_inches='tight')
-# plt.savefig("bunny_8k_initial.png".format(iterP), dpi=600, bbox_inches='tight')
-plt.savefig("kitten1.svg".format(iterP), bbox_inches='tight')
+
+plt.savefig("kitten_{}.png".format(iterP), bbox_inches='tight')
 # plt.show()

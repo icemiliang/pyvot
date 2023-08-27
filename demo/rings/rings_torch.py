@@ -109,9 +109,9 @@ for u, v, a, b, r1, r2, i, in zip(uu, vv, aa, bb, rr1, rr2, range(N)):
         plt.grid(color='lightgray', linestyle='--')
 
         if SAVE_SVG:
-            plt.savefig("rings_" + str(i) + ".svg", bbox_inches='tight')
+            plt.savefig("rings_" + str(i) + "_torch.svg", bbox_inches='tight')
         if SAVE_PNG:
-            plt.savefig("rings_" + str(i) + ".png", dpi=300, bbox_inches='tight')
+            plt.savefig("rings_" + str(i) + "_torch.png", dpi=300, bbox_inches='tight')
 
 if SAVE_OR_PLOT_FIGURE:
     fig = plt.figure(figure_id, figsize=(2, 2))
@@ -188,9 +188,9 @@ if SAVE_OR_PLOT_FIGURE:
 
 
 if SAVE_SVG:
-    plt.savefig("vot.svg", bbox_inches='tight')
+    plt.savefig("vot_torch.svg", bbox_inches='tight')
 if SAVE_PNG:
-    plt.savefig("vot.png", dpi=300, bbox_inches='tight')
+    plt.savefig("vot_torch.png", dpi=300, bbox_inches='tight')
 
 if PLOT_FIGURE:
     plt.show()

@@ -46,7 +46,7 @@ class VOTAP:
         self.N0 = int(ratio * self.K)
         self.x, _ = utils.random_sample(self.N0, self.y.shape[1], sampling=sampling)
 
-        self.dist = torch.cdist(self.y, self.x.double()).to(device)
+        self.dist = torch.cdist(self.y, self.x.double()).to(device) ** 2
 
     def map(self, plot_filename=None, beta=0.9, max_iter=1000, lr=0.5, lr_decay=200, early_stop=100):
         """ map y into the area
@@ -202,7 +202,7 @@ class VOT:
                 if space == 'spherical':
                     dist = torch.matmul(self.y, self.x[i].T)
                 else:
-                    dist = torch.cdist(self.y, self.x[i], p=2)
+                    dist = torch.cdist(self.y, self.x[i], p=2) ** 2
                 output = self.update_map(i, dist, max_iter_h, lr=lrs[i], lr_decay=lr_decay, beta=beta, stop=stop, reg=reg, keep_idx=keep_idx, space=space)
                 self.idx[i] = output['idx']
                 if keep_idx:
@@ -345,9 +345,9 @@ class VOT:
             idx = self.idx
         max_change_pct = 1e9
 
-        y = torch.zeros((self.N, self.K, self.n))
+        y = torch.zeros((self.N, self.K, self.n), dtype=torch.float64).to(self.device)
         if icp:
-            yR = torch.zeros((self.N, self.K, self.n))
+            yR = torch.zeros((self.N, self.K, self.n), dtype=torch.float64).to(self.device)
         for i in range(self.N):
             y[i], change = self.update_y_base(idx[i], self.y, self.x[i])
             max_change_pct = max(max_change_pct, change)
@@ -374,7 +374,7 @@ class VOT:
             idx = self.idx
         max_change_pct = 1e9
 
-        y = torch.zeros((self.N, self.K, self.n))
+        y = torch.zeros((self.N, self.K, self.n), dtype=torch.float64).to(self.device)
         for i in range(self.N):
             y[i], change = self.update_y_base(idx[i], self.y, self.x[i])
             max_change_pct = max(max_change_pct, change)
@@ -400,7 +400,7 @@ class VOTREG(VOT):
         lrs = [lr / m for m in self.sum_mu]
         idxs = []
         for iter_y in range(max_iter_y):
-            dist = torch.cdist(self.y, self.x[0], p=2)
+            dist = torch.cdist(self.y, self.x[0], p=2) ** 2
             output = self.update_map(0, dist, max_iter_h, lr=lrs[0], lr_decay=lr_decay, stop=stop)
             self.idx[0] = output['idx']
             if keep_idx:
