@@ -10,7 +10,7 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from vot_torch import VWB, UVWB
+from vot_torch import VOT
 import utils_torch as utils
 
 np.random.seed(19)
@@ -71,10 +71,10 @@ x = newx
 x_copy = torch.from_numpy(x)
 x0_copy = torch.from_numpy(x0)
 
-vwb = VWB(x_copy, [x0_copy], device=device, verbose=False)
-output = vwb.cluster(lr=0.5, max_iter_h=1000, max_iter_p=1, beta=0.5)
+vot = VOT(x_copy, [x0_copy], device=device, verbose=False)
+output = vot.cluster(lr=0.5, max_iter_h=1000, max_iter_y=1, beta=0.5, keep_idx=True)
 
-idx, e_idxss = output['idx'], output['idxs']
+idx, e_idxss = vot.idx, output['idxs']
 
 idxss_cat = torch.stack(e_idxss[0])
 idxss_cat = idxss_cat.numpy()
@@ -82,33 +82,33 @@ idxss_cat = idxss_cat.numpy()
 for i in range(0, min(21, len(idxss_cat))):
     fig = plt.figure(figsize=(4, 4))
     ce = color_map[idxss_cat[i]]
-    utils.scatter_otsamples(vwb.data_p, vwb.data_e[0], nop=True, size_p=30, marker_p='o', color_x=ce, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
+    utils.scatter_otsamples(vot.y, vot.x[0], nop=True, size_p=30, marker_p='o', color_x=ce, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
     plt.axis('off')
     # plt.savefig("vwb_" + str(i) + ".svg", bbox_inches='tight')
-    plt.savefig("vwb_" + str(i) + ".png", dpi=300, bbox_inches='tight')
+    plt.savefig("vot_" + str(i) + "_torch.png", dpi=300, bbox_inches='tight')
 
 plt.figure(figsize=(4, 4))
 for i in range(1):
-    utils.scatter_otsamples(vwb.data_p_original, vwb.data_e[i])
+    utils.scatter_otsamples(vot.y_original, vot.x[i])
 plt.axis('off')
 # plt.savefig("4_4/initial.svg", bbox_inches='tight')
 plt.savefig("initial.png", dpi=300, bbox_inches='tight')
 
 fig = plt.figure(figsize=(4, 4))
 ce = color_map[idx[0]]
-utils.scatter_otsamples(vwb.data_p, vwb.data_e[0], size_p=30, marker_p='o', color_x=ce, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
+utils.scatter_otsamples(vot.y, vot.x[0], size_p=30, marker_p='o', color_x=ce, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
 plt.axis('off')
 # plt.savefig("4_4/vot.svg", bbox_inches='tight')
-plt.savefig("vot.png", dpi=300, bbox_inches='tight')
+plt.savefig("vot_torch.png", dpi=300, bbox_inches='tight')
 
 # ---------------UVWB---------------
 x_copy = torch.from_numpy(x)
 x0_copy = torch.from_numpy(x0)
 
-vwb = UVWB(x_copy, [x0_copy], device=device, verbose=False)
-out = vwb.cluster(lr=0.5, max_iter_h=1000, max_iter_p=1, beta=0.5)
+vot = VOT(x_copy, [x0_copy], device=device, verbose=False)
+out = vot.cluster(lr=0.5, max_iter_h=1000, max_iter_y=1, beta=0.5, keep_idx=True)
 
-e_idx, e_idxss = output['idx'], output['idxs']
+e_idx, e_idxss = vot.idx, output['idxs']
 
 e_idxss_cat = torch.stack(e_idxss[0])
 e_idxss_cat = e_idxss_cat.numpy()
@@ -116,14 +116,14 @@ e_idxss_cat = e_idxss_cat.numpy()
 for i in range(0, min(21, len(e_idxss_cat))):
     fig = plt.figure(figsize=(4, 4))
     ce = color_map[e_idxss_cat[i]]
-    utils.scatter_otsamples(vwb.data_p, vwb.data_e[0], nop=True, size_p=30, marker_p='o', color_x=ce, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
+    utils.scatter_otsamples(vot.y, vot.x[0], nop=True, size_p=30, marker_p='o', color_x=ce, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
     plt.axis('off')
-    # plt.savefig("uvwb_" + str(i) + ".svg", bbox_inches='tight')
-    plt.savefig("uvwb_" + str(i) + ".png", dpi=300, bbox_inches='tight')
+    # plt.savefig("uvot_" + str(i) + "_torch.svg", bbox_inches='tight')
+    plt.savefig("uvot_" + str(i) + "_torch.png", dpi=300, bbox_inches='tight')
 
 fig = plt.figure(figsize=(4, 4))
 ce = color_map[e_idx[0]]
-utils.scatter_otsamples(vwb.data_p, vwb.data_e[0], size_p=30, marker_p='o', color_x=ce, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
+utils.scatter_otsamples(vot.y, vot.x[0], size_p=30, marker_p='o', color_x=ce, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
 plt.axis('off')
-# plt.savefig("uvwb.svg", bbox_inches='tight')
-plt.savefig("uvwb.png", dpi=300, bbox_inches='tight')
+# plt.savefig("uvot_torch.svg", bbox_inches='tight')
+plt.savefig("uvot_torch.png", dpi=300, bbox_inches='tight')
