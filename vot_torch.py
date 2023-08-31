@@ -450,19 +450,20 @@ class VOTREG(VOT):
         if torch.unique(self.label_y).size == 1:
             warnings.warn("All known samples belong to the same class")
 
-        y0, max_change_pct = self.update_y_base(self.idx[0], self.y.detach(), self.x)
+        y0, max_change_pct = self.update_y_base(self.idx[0], self.y.detach(), self.x[0])
 
         if self.verbose:
             print("it {0:d}: max centroid change {1:.2f}".format(iter_y, max_change_pct))
 
         # regularize
+        self.y.requires_grad = True
         optimizer = optim.SGD([self.y], lr=0.05)
         for _ in range(10):
             optimizer.zero_grad()
             loss = f(self.y, y0, self.label_y, reg=reg)
             loss.backward()
             optimizer.step()
-
+        self.y.requires_grad = False
 
         return True if max_change_pct < self.tol else False
 
