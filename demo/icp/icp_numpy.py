@@ -52,7 +52,6 @@ R = rotation_matrix(np.random.rand(3), rotation)
 x3 = np.dot(R, x3.T).T
 x3 += np.random.randn(num, 3) * noise_sigma
 
-
 translation = 0
 rotation = .2
 
@@ -98,14 +97,13 @@ alpha = 0.3
 color_map = np.array([[237, 125, 49, 255], [112, 173, 71, 255], [91, 155, 213, 255], [237, 41, 57, 255]]) / 255
 
 downsample = 100
-x1_down = x1[0:-1:downsample, :]
+x1_down = x1[0::downsample, :]
 
 
 # ------- run VOT -------- #
 
 iterP = 8
 
-downsample = 10
 x = x1_down.copy()
 x1_copy = x1.copy()
 x2_copy = x2.copy()
@@ -113,7 +111,7 @@ x3_copy = x3.copy()
 
 
 vwb = VOT(x, [x1_copy, x2_copy, x3_copy], verbose=False)
-output = vwb.cluster(lr=1, max_iter_h=3000, max_iter_y=iterP, lr_decay=500, beta=0.5, icp=True)
+vwb.cluster(lr=1, max_iter_h=3000, max_iter_y=iterP, lr_decay=500, beta=0.5, icp=True)
 
 fig2 = plt.figure(figsize=(8, 8))
 #
@@ -143,14 +141,14 @@ ax2.set_xlim(minx, maxx)
 ax2.set_ylim(miny, maxy)
 ax2.set_zlim(minz, maxz)
 
-# ax2.xaxis.pane.fill = False
-# ax2.yaxis.pane.fill = False
-# ax2.zaxis.pane.fill = False
+ax2.xaxis.pane.fill = False
+ax2.yaxis.pane.fill = False
+ax2.zaxis.pane.fill = False
 
 ax2.set_xlabel('X')
 ax2.set_ylabel('Y')
 ax2.set_zlabel('Z')
 plt.axis('off')
 
-plt.savefig("kitten_{}.png".format(iterP), bbox_inches='tight')
+plt.savefig("kitten_{}_numpy.png".format(iterP), bbox_inches='tight')
 # plt.show()
