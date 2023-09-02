@@ -53,25 +53,23 @@ def random_sample(num, dim, sampling='square'):
     if num * dim > 1e8:
         warnings.warn("Sampling the area will take too much memory.")
     if sampling == 'square':
-        data = np.random.random((num, dim)) * 1.98 - 1
-    elif sampling == 'disk':
-        r = np.random.uniform(low=0, high=0.99, size=num)  # radius
-        theta = np.random.uniform(low=0, high=2 * np.pi, size=num)  # angle
-        x = np.sqrt(r) * np.cos(theta)
-        y = np.sqrt(r) * np.sin(theta)
-        data = np.concatenate((x[:, None], y[:, None]), axis=1)
-    elif sampling == 'circle':
-        r = np.random.uniform(low=0.7, high=0.99, size=num)  # radius
-        theta = np.random.uniform(low=0, high=2 * np.pi, size=num)  # angle
-        x = np.sqrt(r) * np.cos(theta)
-        y = np.sqrt(r) * np.sin(theta)
-        data = np.concatenate((x[:, None], y[:, None]), axis=1)
+        data = torch.rand((num, dim)) * 1.98 - 1
+    elif sampling == 'disk' or sampling == 'circle':
+        if sampling == 'disk':
+            r = torch.rand(num)  # radius
+        else:
+            r = torch.rand(num) * 0.29 + 0.7  # radius
+        theta = torch.rand(num) * 2 * np.pi  # angle
+        x = torch.sqrt(r) * torch.cos(theta)
+        y = torch.sqrt(r) * torch.sin(theta)
+        data = torch.cat((x[:, None], y[:, None]), dim=1)
     elif sampling == 'gaussian' or sampling == 'gauss':
-        mean = [0, 0]
-        cov = [[.1, 0], [0, .1]]
-        data = np.random.multivariate_normal(mean, cov, num).clip(-0.99, 0.99)
+        mean = torch.tensor([0, 0])
+        cov = torch.tensor([[.1, 0], [0, .1]])
+        m = torch.distributions.multivariate_normal.MultivariateNormal(mean, cov)
+        data = m.sample(torch.Size([num])).clip(-0.99, 0.99)
 
-    label = -np.ones(num).astype(int)
+    label = -torch.ones(num, dtype=torch.int)
     return data, label
 
 
@@ -88,7 +86,7 @@ def plot_map(data, idx, color_map='viridis'):
     return fig
 
 
-def rigid_transform_3d_pytorch(p1, p2):
+def rigid_transform_3d(p1, p2):
     center_p1 = torch.mean(p1, dim=0, keepdim=True)
     center_p2 = torch.mean(p2, dim=0, keepdim=True)
 
@@ -97,10 +95,10 @@ def rigid_transform_3d_pytorch(p1, p2):
 
     h = torch.mm(pp1.t(), pp2)
     u, _, v = torch.svd(h)
-    r = torch.mm(v.t(), u.t())
+    r = torch.mm(v, u.T)
 
     # reflection
-    if np.linalg.det(r.cpu().numpy()) < 0:
+    if torch.linalg.det(r) < 0:
         v[2, :] *= -1
         r = torch.mm(v.t(), u.t())
 
@@ -109,91 +107,15 @@ def rigid_transform_3d_pytorch(p1, p2):
     return r, t
 
 
-def rigid_transform_3d_numpy(p1, p2):
-    center_p1 = np.mean(p1, axis=0, keepdims=True)
-    center_p2 = np.mean(p2, axis=0, keepdims=True)
-
-    pp1 = p1 - center_p1
-    pp2 = p2 - center_p2
-
-    h = np.matmul(pp1.T, pp2)
-    u, _, v = np.linalg.svd(h)
-    r = np.matmul(v.T, u.T)
-
-    # reflection
-    if np.linalg.det(r) < 0:
-        v[2, :] *= -1
-        r = np.matmul(v.T, u.T)
-
-    t = np.matmul(-r, center_p1.T) + center_p2.T
-
-    return r, t
-
-
-def rigid_transform_3D(A, B):
-    assert len(A) == len(B)
-
-    num_rows, num_cols = A.shape;
-
-    if num_rows != 3:
-        raise Exception("matrix A is not 3xN, it is {}x{}".format(num_rows, num_cols))
-
-    [num_rows, num_cols] = B.shape;
-    if num_rows != 3:
-        raise Exception("matrix B is not 3xN, it is {}x{}".format(num_rows, num_cols))
-
-    # find mean column wise
-    centroid_A = np.mean(A, axis=1)
-    centroid_B = np.mean(B, axis=1)
-
-    # subtract mean
-    Am = A - np.tile(centroid_A, (1, num_cols))
-    Bm = B - np.tile(centroid_B, (1, num_cols))
-
-    # dot is matrix multiplication for array
-    H = Am * np.transpose(Bm)
-
-    # find rotation
-    U, S, Vt = np.linalg.svd(H)
-    R = Vt.T * U.T
-
-    # special reflection case
-    if np.linalg.det(R) < 0:
-        print("det(R) < R, reflection detected!, correcting for it ...\n");
-        Vt[2,:] *= -1
-        R = Vt.T * U.T
-
-    t = -R*centroid_A + centroid_B
-
-    return R, t
-
-
-def estimate_transform_target(p1, p2, e=None):
-    assert len(p1) == len(p2)
-    expand_dim = False
-    if p1.shape[1] == 2:
-        p1 = np.append(p1, np.zeros((p1.shape[0], 1)), 1)
-        p2 = np.append(p2, np.zeros((p2.shape[0], 1)), 1)
-        expand_dim = True
-    elif p1.shape[1] != 3:
-        raise Exception("expected 2d or 3d points")
-
-    r, t = rigid_transform_3d_numpy(p1, p2)
-    At = np.matmul(r, p1.T) + t
-    if expand_dim:
-        At = At[:-1, :]
-    return At.T
-
-
 def estimate_transform(p1, p2):
     assert len(p1) == len(p2)
     if p1.shape[1] == 2:
-        p1 = np.append(p1, np.zeros((p1.shape[0], 1)), 1)
-        p2 = np.append(p2, np.zeros((p2.shape[0], 1)), 1)
+        p1 = torch.hstack([p1, torch.zeros((p1.shape[0], 1))])
+        p2 = torch.hstack([p2, torch.zeros((p2.shape[0], 1))])
     elif p1.shape[1] != 3:
         raise Exception("expected 2d or 3d points")
 
-    r, t = rigid_transform_3d_numpy(p1, p2)
+    r, t = rigid_transform_3d(p1, p2)
 
     return r, t
 
@@ -202,7 +124,7 @@ def estimate_inverse_transform(p1, p2):
     return estimate_transform(p2, p1)
 
 
-def estimate_transform_target_pytorch(p1, p2):
+def estimate_transform_target(p1, p2):
     assert len(p1) == len(p2)
 
     # Mask out nan which came from empty clusters
@@ -219,7 +141,7 @@ def estimate_transform_target_pytorch(p1, p2):
     p11 = p1[~mask]
     p22 = p2[~mask]
 
-    r, t = rigid_transform_3d_pytorch(p11, p22)
+    r, t = rigid_transform_3d(p11, p22)
     print(r)
     print(t)
     At = torch.mm(r, p1.t().clone()) + t

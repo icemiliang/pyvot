@@ -1,6 +1,7 @@
 # PyVot Python Variational Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
 # Date: April 28th 2020
+# Latest update: Sep 1st 2023
 # Licence: MIT
 
 import os
@@ -8,9 +9,9 @@ import sys
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from vot_numpy import VOT, VOTREG
-import utils
+import utils_numpy as utils
 
 # -------------------------------------- #
 # --------- w/o regularization --------- #
@@ -137,5 +138,5 @@ for py, cy in zip(vot.y, cys):
 
 # ---- plot and save ---- #
 plt.tight_layout(pad=1.0, w_pad=1.5, h_pad=0.5)
-plt.savefig("potential.png")
-plt.show()
+plt.savefig("potential_numpy.png")
+# plt.show()

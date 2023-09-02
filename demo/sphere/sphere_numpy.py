@@ -1,6 +1,7 @@
 # PyVot Python Variational Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
 # Date: April 28th 2020
+# Latest update: Sep 1st 2023
 # Licence: MIT
 
 
@@ -9,7 +10,7 @@ import sys
 import numpy as np
 from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from vot_numpy import VOT
 
 
@@ -42,9 +43,6 @@ v0 = v0 * np.pi / 8 + np.pi * 1 / 4
 y1 = np.cos(u0) * np.sin(v0)
 y2 = np.sin(u0) * np.sin(v0)
 y3 = np.cos(v0)
-
-
-plt.show()
 
 x1 = np.stack((x11, x12, x13), axis=1).clip(-0.99, 0.99)
 x2 = np.stack((x21, x22, x23), axis=1).clip(-0.99, 0.99)
@@ -87,4 +85,4 @@ for k in [12]:
     ax.view_init(elev=10., azim=100.)
     plt.axis('off')
     # plt.savefig("sphere_" + str(k) + ".svg", bbox_inches='tight')
-    plt.savefig("sphere_" + str(k) + ".png", dpi=300, bbox_inches='tight')
+    plt.savefig("sphere_" + str(k) + "_numpy.png", dpi=300, bbox_inches='tight')

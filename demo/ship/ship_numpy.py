@@ -1,6 +1,7 @@
 # PyVot Python Variational Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
 # Date: April 28th 2020
+# Latest update: Sep 1st 2023
 # Licence: MIT
 
 
@@ -8,9 +9,9 @@ import os
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from vot_numpy import VOT
-import utils
+import utils_numpy as utils
 
 
 np.random.seed(19)
@@ -55,4 +56,4 @@ for k in [33]:
         y = [e1[1], p[1], e0[1]]
         plt.plot(x, y, c='lightgray', alpha=0.4)
     # plt.savefig("ship" + str(k) + ".svg")
-    plt.savefig("ship" + str(k) + ".png", dpi=300, bbox_inches='tight')
+    plt.savefig("ship" + str(k) + "_numpy.png", dpi=300, bbox_inches='tight')

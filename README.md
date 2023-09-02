@@ -1,7 +1,7 @@
 # PyVot : Python Variational Optimal Transportation
-This is a collection of codes for computing semi-discrete Monge optimal transportation (OT) through the variational method.
+This is a collection of code for computing semi-discrete Monge optimal transportation (OT) through a variational method.
 
-We name our method *variational optimal transportation* (VOT) or *variational Wasserstein clustering* (VWC).
+We named our method *variational optimal transportation* (VOT) or *variational Wasserstein clustering* (VWC).
 
 * Given the empirical distributions (marginals) and the initial centroids, 
 the vinilla VWC compute VOT and then update the centroids to the centers of mass.
@@ -27,21 +27,13 @@ can be found in [demo/](demo/).
 
 ## Dependencies
 
-We implemented our method with both NumPy and PyTorch.
+PyVot was implemented with both NumPy and PyTorch. It requires the following libraries: 
 
-* Python
-* NumPy
-* SciPy
-* Imageio
-* scikit-image
-* scikit-learn
-* Matplotlib
-* PyTorch (optional)
+numpy, scipy, imageio, scikit-image, scikit-learn, Matplotlib, PyTorch (optional), POT (optional)
 
-To use pip to install prerequisites:
+Install prerequisites via conda:
 ```
-pip install --upgrade pip
-pip install -r requirements.txt
+conda env create -f environment.yml
 ```
 
 ## References
@@ -61,23 +53,16 @@ Mi, Liang, Wen Zhang, Xianfeng Gu, and Yalin Wang. "Variational Wasserstein Clus
 }
 ```
 
-Mi, Liang, Wen Zhang, and Yalin Wang. "Regularized Wasserstein Means Based on Variational Transportation." arXiv preprint arXiv:1812.00338 (2018).
+Mi, Liang, Wen Zhang, and Yalin Wang. "Regularized Wasserstein means for aligning distributional data." In Proceedings of the AAAI Conference on Artificial Intelligence, vol. 34, no. 04, pp. 5166-5173. 2020.
 ```
-@article{mi2018regularized,
-  title={Regularized Wasserstein Means Based on Variational Transportation},
+@inproceedings{mi2020regularized,
+  title={Regularized Wasserstein means for aligning distributional data},
   author={Mi, Liang and Zhang, Wen and Wang, Yalin},
-  journal={arXiv preprint arXiv:1812.00338},
-  year={2018}
-}
-```
-
-Mi, Liang, Tianshu Yu, José Bento, Wen Zhang, Baoxin Li, and Yalin Wang, “Variational Wasserstein Barycenters for Geometric Clustering” arXiv preprint arXiv:2002.10543 (2020). 
-```
-@article{mi2020variational,
-    title={Variational Wasserstein Barycenters for Geometric Clustering},
-    author={Liang Mi and Tianshu Yu and Jose Bento and Wen Zhang and Baoxin Li and Yalin Wang},
-    journal={arXiv preprint arXiv:2002.10543},
-    year={2020}
+  booktitle={Proceedings of the AAAI Conference on Artificial Intelligence},
+  volume={34},
+  number={04},
+  pages={5166--5173},
+  year={2020}
 }
 ```
 
@@ -87,10 +72,11 @@ Mi, Liang, Tianshu Yu, José Bento, Wen Zhang, Baoxin Li, and Yalin Wang, “Var
 
 [2] Mi, Liang, Wen Zhang, Xianfeng Gu, and Yalin Wang. "[Variational Wasserstein Clustering.](https://arxiv.org/abs/1806.09045)" In Proceedings of the European Conference on Computer Vision (ECCV), pp. 322-337. 2018.
 
-[3] Mi, Liang, Wen Zhang, and Yalin Wang. "[Regularized Wasserstein Means Based on Variational Transportation.](http://arxiv.org/abs/1812.00338)" arXiv preprint arXiv:1812.00338 (2018).
+[3] Mi, Liang, Wen Zhang, and Yalin Wang. "[Regularized Wasserstein means for aligning distributional data.](https://ojs.aaai.org/index.php/AAAI/article/view/5960)" In Proceedings of the AAAI Conference on Artificial Intelligence, vol. 34, no. 04, pp. 5166-5173. 2020.
 
-[4] Mi, Liang, Tianshu Yu, José Bento, Wen Zhang, Baoxin Li, and Yalin Wang, “[Variational Wasserstein Barycenters for Geometric Clustering](http://arxiv.org/abs/2002.10543)”. arXiv preprint arXiv:2002.10543 (2020).
+[4] Mi, Liang. "[Variational wasserstein barycenters for geometric clustering.](https://arxiv.org/abs/2002.10543)" arXiv preprint arXiv:2002.10543 (2020).
+ 
 
 ## Contact
 
-Please contact Liang Mi icemiliang@gmail.com for any issues. Pull requests and issues are welcome.
+Please contact Liang Mi (icemiliang@gmail.com) for any issues. Pull requests and issues are welcome.

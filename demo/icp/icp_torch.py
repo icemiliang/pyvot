@@ -1,23 +1,23 @@
 # PyVot Python Variational Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
 # Date: April 28th 2020
+# Latest update: Sep 1st 2023
 # Licence: MIT
 
 
 import os
 import sys
-import torch
 import numpy as np
+import torch
 from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from vot_torch import ICPVWB
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from vot_torch import VOT
 
 
 np.random.seed(19)
 
-x1 = np.loadtxt("kitten1.csv", delimiter=',')
-# x1 = np.loadtxt("bunny_8k.txt", delimiter=' ')
+x1 = np.loadtxt("kitten.csv", delimiter=',')
 
 x1 = x1[:, [0, 2, 1]]
 
@@ -45,8 +45,6 @@ x2 = np.dot(R, x2.T).T
 num = x1.shape[0]
 x2 += np.random.randn(num, 3) * noise_sigma
 
-print(R)
-
 translation = -2   # max translation of the test set
 rotation = -.6     # max rotation (radians) of the test set
 
@@ -56,15 +54,12 @@ R = rotation_matrix(np.random.rand(3), rotation)
 x3 = np.dot(R, x3.T).T
 x3 += np.random.randn(num, 3) * noise_sigma
 
-
 translation = 0
 rotation = .2
 
 t = np.random.rand(3) * translation
 x1 = x1.copy() + t
 x1 += np.random.randn(num, 3) * noise_sigma
-
-print(R)
 
 # scale
 x1min = np.amin(x1, axis=0)
@@ -103,11 +98,11 @@ alpha = 0.3
 
 color_map = np.array([[237, 125, 49, 255], [112, 173, 71, 255], [91, 155, 213, 255], [237, 41, 57, 255]]) / 255
 
-downsample = 10
-x1_down = x1[0:-1:downsample, :]
+downsample = 100
+x1_down = x1[0::downsample, :]
 
 
-# ------- run WM -------- #
+# ------- run VOT -------- #
 
 iterP = 8
 
@@ -117,43 +112,34 @@ if use_gpu and torch.cuda.is_available():
 else:
     device = 'cpu'
 
-downsample = 10
+
 x = torch.from_numpy(x1_down).to(device)
 x1_copy = torch.from_numpy(x1).to(device)
 x2_copy = torch.from_numpy(x2).to(device)
 x3_copy = torch.from_numpy(x3).to(device)
 
 
-vwb = ICPVWB(x, [x1_copy, x2_copy, x3_copy], device=device, verbose=False)
-output = vwb.cluster(reg=10, lr=1, max_iter_h=3000, max_iter_p=iterP, lr_decay=500, beta=0.5)
+vot = VOT(x, [x1_copy, x2_copy, x3_copy], device=device, verbose=False)
+vot.cluster(lr=1, max_iter_h=3000, max_iter_y=iterP, lr_decay=500, beta=0.5, icp=True)
 
 fig2 = plt.figure(figsize=(8, 8))
 #
 ax2 = fig2.add_subplot(111, projection='3d')
 #
-outE1 = vwb.x[0].detach().cpu().numpy()
-outE2 = vwb.x[1].detach().cpu().numpy()
-outE3 = vwb.x[2].detach().cpu().numpy()
-outP = vwb.y.detach().cpu().numpy()
+outE1 = vot.x[0].detach().cpu().numpy()
+outE2 = vot.x[1].detach().cpu().numpy()
+outE3 = vot.x[2].detach().cpu().numpy()
+outP = vot.y.detach().cpu().numpy()
 
-ax2.scatter(x1[:, 0], x1[:, 1], x1[:, 2], s=dot_size, color=color_map[2], alpha=alpha)
+ax2.scatter(x1[:, 0], x1[:, 1], x1[:, 2], s=dot_size, color=color_map[0], alpha=alpha)
 ax2.scatter(x2[:, 0], x2[:, 1], x2[:, 2], s=dot_size, color=color_map[1], alpha=alpha)
 ax2.scatter(x3[:, 0], x3[:, 1], x3[:, 2], s=dot_size, color=color_map[2], alpha=alpha)
-#
+
 ax2.scatter(outE1[:, 0], outE1[:, 1], outE1[:, 2], s=dot_size, color=color_map[0], alpha=alpha)
 ax2.scatter(outE2[:, 0], outE2[:, 1], outE2[:, 2], s=dot_size, color=color_map[1], alpha=alpha)
 ax2.scatter(outE3[:, 0], outE3[:, 1], outE3[:, 2], s=dot_size, color=color_map[2], alpha=alpha)
 ax2.scatter(outP[:, 0], outP[:, 1], outP[:, 2], s=5, marker='o',
                facecolors='none', linewidth=2, color=color_map[3], zorder=5)
-
-# np.savetxt('outx1_8k_iter{}.txt'.format(iterP), outE1, delimiter=',')
-# np.savetxt('outx2_8k_iter{}.txt'.format(iterP), outE2, delimiter=',')
-# np.savetxt('outx3_8k_iter{}.txt'.format(iterP), outE3, delimiter=',')
-# np.savetxt('outP_8k_iter{}.txt'.format(iterP), outP, delimiter=',')
-# np.savetxt('/home/icemiliang/OneDrive/Projects/pami/figs/icp/x1.txt', x1, delimiter=',')
-# np.savetxt('/home/icemiliang/OneDrive/Projects/pami/figs/icp/x2.txt', x2, delimiter=',')
-# np.savetxt('/home/icemiliang/OneDrive/Projects/pami/figs/icp/x3.txt', x3, delimiter=',')
-# np.savetxt('p_8k_iter{}.txt'.format(iterP), outP, delimiter=',')
 
 bound = 1.
 minx, maxx = -bound, bound
@@ -167,12 +153,11 @@ ax2.set_zlim(minz, maxz)
 ax2.xaxis.pane.fill = False
 ax2.yaxis.pane.fill = False
 ax2.zaxis.pane.fill = False
-#
+
 ax2.set_xlabel('X')
 ax2.set_ylabel('Y')
 ax2.set_zlabel('Z')
 plt.axis('off')
-# plt.savefig("icp.svg", bbox_inches='tight')
-# plt.savefig("/home/icemiliang/OneDrive/Projects/pami/figs/icp/bunny_8k_initial.png".format(iterP), dpi=600, bbox_inches='tight')
-# plt.savefig("/home/icemiliang/OneDrive/Projects/pami/figs/icp/bunny_8k_initial.svg".format(iterP), bbox_inches='tight')
-plt.show()
+
+plt.savefig("kitten_{}_torch.png".format(iterP), bbox_inches='tight')
+# plt.show()

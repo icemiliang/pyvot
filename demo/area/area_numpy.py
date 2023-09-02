@@ -1,6 +1,7 @@
 # PyVot Python Variational Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
 # Date: April 28th 2020
+# Latest update: Sep 1st 2023
 # Licence: MIT
 
 """
@@ -21,9 +22,9 @@ import sys
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from vot_numpy import VOTAP
-import utils
+import utils_numpy as utils
 
 
 np.random.seed(0)
@@ -57,11 +58,11 @@ print('total time: {0:.4f}'.format(tock-tick))
 # ----- plot before ----- #
 plt.figure(figsize=(12, 8))
 plt.subplot(231)
-utils.scatter_otsamples(vot.data_p_original, vot.x, title='before', )
+utils.scatter_otsamples(vot.y_original, vot.x, title='before', )
 
 # ------ plot map ------- #
 fig232 = plt.subplot(232)
-utils.plot_otmap(vot.data_p_original, vot.y, fig232, title='vot map', facecolor_after='none')
+utils.plot_otmap(vot.y_original, vot.y, fig232, title='vot map', facecolor_after='none')
 
 # ------ plot after ----- #
 ce = np.array(plt.get_cmap('viridis')(idx / (N - 1)))
@@ -86,11 +87,11 @@ print('total time: {0:.4f}'.format(tock-tick))
 
 # ----- plot before ----- #
 plt.subplot(234)
-utils.scatter_otsamples(vot2.data_p_original, vot2.x, title='before')
+utils.scatter_otsamples(vot2.y_original, vot2.x, title='before')
 
 # ------ plot map ------- #
 fig235 = plt.subplot(235)
-utils.plot_otmap(vot2.data_p_original, vot2.y, fig235, title='vot map', facecolor_after='none')
+utils.plot_otmap(vot2.y_original, vot2.y, fig235, title='vot map', facecolor_after='none')
 
 # ------ plot after ----- #
 cx = np.array(plt.get_cmap('viridis')(idx / (N - 1)))
