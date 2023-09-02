@@ -1,6 +1,7 @@
 # PyVot Python Variational Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
 # Date: April 28th 2020
+# Latest update: Sep 1st 2023
 # Licence: MIT
 
 import os
@@ -146,7 +147,7 @@ ax6.set_zlabel('B')
 # fig6.savefig("x3_histogram_kmeans1.svg", bbox_inches='tight')
 fig6.savefig("x3_histogram_kmeans1.png", dpi=300, bbox_inches='tight')
 
-# -------------- VWB ------------------ #
+# -------------- VOT ------------------ #
 
 x1 = x1.clip(-0.99, 0.99)
 x2 = x2.clip(-0.99, 0.99)
@@ -154,16 +155,16 @@ x3 = x3.clip(-0.99, 0.99)
 
 
 x = C1_16.clip(-0.99, 0.99)
-vwb = VOT(x, [x1], verbose=False)
-vwb.cluster(lr=1, max_iter_h=5000, max_iter_y=1)
-idx = vwb.idx[0]
-x1_vwb_16 = vwb.y[idx, :]
-x1_vwb_16 = np.transpose(np.reshape(x1_vwb_16 * 255, (128, 128, 3)), (1, 0, 2))
-imageio.imwrite("x1_vwb_16.png", x1_vwb_16.astype('uint8'))
+vot = VOT(x, [x1], verbose=False)
+vot.cluster(lr=1, max_iter_h=5000, max_iter_y=1)
+idx = vot.idx[0]
+x1_vot_16 = vot.y[idx, :]
+x1_vot_16 = np.transpose(np.reshape(x1_vot_16 * 255, (128, 128, 3)), (1, 0, 2))
+imageio.imwrite("x1_vot_16_numpy.png", x1_vot_16.astype('uint8'))
 fig1 = plt.figure(figsize=(8, 8))
 ax1 = fig1.add_subplot(111, projection='3d')
-ce2 = vwb.y[idx]
-p11 = vwb.y
+ce2 = vot.y[idx]
+p11 = vot.y
 ax1.scatter(x1[:, 0], x1[:, 1], x1[:, 2], s=dot_size, color=ce2, alpha=alpha)
 ax1.xaxis.pane.fill = False
 ax1.yaxis.pane.fill = False
@@ -172,20 +173,20 @@ ax1.scatter(p11[:, 0], p11[:, 1], p11[:, 2], s=dot_size*dot_size_scale, color='k
 ax1.set_xlabel('R')
 ax1.set_ylabel('G')
 ax1.set_zlabel('B')
-# fig1.savefig("x1_histogram_vwb_16.svg", bbox_inches='tight')
-fig1.savefig("x1_histogram_vwb_16.png", dpi=300, bbox_inches='tight')
+# fig1.savefig("x1_histogram_vot_16.svg", bbox_inches='tight')
+fig1.savefig("x1_histogram_vot_16_numpy.png", dpi=300, bbox_inches='tight')
 
 x = C2_16.clip(-0.99, 0.99)
-vwb = VOT(x, [x2], verbose=False)
-vwb.cluster(lr=1, max_iter_h=5000, max_iter_y=1)
-idx = vwb.idx[0]
-x2_vwb_16 = vwb.y[idx, :]
-x2_vwb_16 = np.transpose(np.reshape(x2_vwb_16 * 255, (128, 128, 3)), (1, 0, 2))
-imageio.imwrite("x2_vwb_16.png", x2_vwb_16.astype('uint8'))
+vot = VOT(x, [x2], verbose=False)
+vot.cluster(lr=1, max_iter_h=5000, max_iter_y=1)
+idx = vot.idx[0]
+x2_vot_16 = vot.y[idx, :]
+x2_vot_16 = np.transpose(np.reshape(x2_vot_16 * 255, (128, 128, 3)), (1, 0, 2))
+imageio.imwrite("x2_vot_16_numpy.png", x2_vot_16.astype('uint8'))
 fig2 = plt.figure(figsize=(8, 8))
 ax2 = fig2.add_subplot(111, projection='3d')
-ce2 = vwb.y[idx]
-p21 = vwb.y
+ce2 = vot.y[idx]
+p21 = vot.y
 ax2.scatter(x2[:, 0], x2[:, 1], x2[:, 2], s=dot_size, color=ce2, alpha=alpha)
 ax2.xaxis.pane.fill = False
 ax2.yaxis.pane.fill = False
@@ -194,20 +195,20 @@ ax2.scatter(p21[:, 0], p21[:, 1], p21[:, 2], s=dot_size*dot_size_scale, color='k
 ax2.set_xlabel('R')
 ax2.set_ylabel('G')
 ax2.set_zlabel('B')
-# fig2.savefig("x2_histogram_vwb_16.svg", bbox_inches='tight')
-fig2.savefig("x2_histogram_vwb_16.png", dpi=300, bbox_inches='tight')
+# fig2.savefig("x2_histogram_vot_16.svg", bbox_inches='tight')
+fig2.savefig("x2_histogram_vot_16_numpy.png", dpi=300, bbox_inches='tight')
 
 x = C3_16.clip(-0.99, 0.99)
-vwb = VOT(x, [x3], verbose=False)
-vwb.cluster(lr=1, max_iter_h=5000, max_iter_y=1)
-idx = vwb.idx[0]
-x3_vwb_16 = vwb.y[idx, :]
-x3_vwb_16 = np.transpose(np.reshape(x3_vwb_16 * 255, (128, 128, 3)), (1, 0, 2))
-imageio.imwrite("x3_vwb_16.png", x3_vwb_16.astype('uint8'))
+vot = VOT(x, [x3], verbose=False)
+vot.cluster(lr=1, max_iter_h=5000, max_iter_y=1)
+idx = vot.idx[0]
+x3_vot_16 = vot.y[idx, :]
+x3_vot_16 = np.transpose(np.reshape(x3_vot_16 * 255, (128, 128, 3)), (1, 0, 2))
+imageio.imwrite("x3_vot_16_numpy.png", x3_vot_16.astype('uint8'))
 fig3 = plt.figure(figsize=(8, 8))
 ax3 = fig3.add_subplot(111, projection='3d')
-ce3 = vwb.y[idx]
-p31 = vwb.y
+ce3 = vot.y[idx]
+p31 = vot.y
 ax3.scatter(x3[:, 0], x3[:, 1], x3[:, 2], s=dot_size, color=ce3, alpha=alpha)
 ax3.xaxis.pane.fill = False
 ax3.yaxis.pane.fill = False
@@ -216,32 +217,32 @@ ax3.scatter(p31[:, 0], p31[:, 1], p31[:, 2], s=dot_size*dot_size_scale, color='k
 ax3.set_xlabel('R')
 ax3.set_ylabel('G')
 ax3.set_zlabel('B')
-# fig3.savefig("x3_histogram_vwb_16.svg", bbox_inches='tight')
-fig3.savefig("x3_histogram_vwb_16.png", dpi=300, bbox_inches='tight')
+# fig3.savefig("x3_histogram_vot_16.svg", bbox_inches='tight')
+fig3.savefig("x3_histogram_vot_16_numpy.png", dpi=300, bbox_inches='tight')
 
 
-# -------------- VWB ALL ------------------ #
+# -------------- vot ALL ------------------ #
 
 x = C_all_16.clip(-0.99, 0.99)
-vwb = VOT(x, [x1, x2, x3], verbose=False)
-vwb.cluster(lr=1, max_iter_h=5000, max_iter_y=1)
-idx = vwb.idx
+vot = VOT(x, [x1, x2, x3], verbose=False)
+vot.cluster(lr=1, max_iter_h=5000, max_iter_y=1)
+idx = vot.idx
 
 
-x1_vwb_all = vwb.y[idx[0], :]
-x2_vwb_all = vwb.y[idx[1], :]
-x3_vwb_all = vwb.y[idx[2], :]
-x1_vwb_all = np.transpose(np.reshape(x1_vwb_all*255, (128, 128, 3)), (1, 0, 2))
-x2_vwb_all = np.transpose(np.reshape(x2_vwb_all*255, (128, 128, 3)), (1, 0, 2))
-x3_vwb_all = np.transpose(np.reshape(x3_vwb_all*255, (128, 128, 3)), (1, 0, 2))
-imageio.imwrite("x1_vwb_all.png", x1_vwb_all.astype('uint8'))
-imageio.imwrite("x2_vwb_all.png", x2_vwb_all.astype('uint8'))
-imageio.imwrite("x3_vwb_all.png", x3_vwb_all.astype('uint8'))
+x1_vot_all = vot.y[idx[0], :]
+x2_vot_all = vot.y[idx[1], :]
+x3_vot_all = vot.y[idx[2], :]
+x1_vot_all = np.transpose(np.reshape(x1_vot_all*255, (128, 128, 3)), (1, 0, 2))
+x2_vot_all = np.transpose(np.reshape(x2_vot_all*255, (128, 128, 3)), (1, 0, 2))
+x3_vot_all = np.transpose(np.reshape(x3_vot_all*255, (128, 128, 3)), (1, 0, 2))
+imageio.imwrite("x1_vot_all_numpy.png", x1_vot_all.astype('uint8'))
+imageio.imwrite("x2_vot_all_numpy.png", x2_vot_all.astype('uint8'))
+imageio.imwrite("x3_vot_all_numpy.png", x3_vot_all.astype('uint8'))
 
 fig1 = plt.figure(figsize=(8, 8))
 ax1 = fig1.add_subplot(111, projection='3d')
-ce1 = vwb.y[idx[0]]
-p1 = vwb.y
+ce1 = vot.y[idx[0]]
+p1 = vot.y
 ax1.scatter(x1[:, 0], x1[:, 1], x1[:, 2], s=dot_size, color=ce1, alpha=alpha)
 ax1.xaxis.pane.fill = False
 ax1.yaxis.pane.fill = False
@@ -250,13 +251,13 @@ ax1.scatter(p1[:, 0], p1[:, 1], p1[:, 2], s=dot_size*dot_size_scale, color='k', 
 ax1.set_xlabel('R')
 ax1.set_ylabel('G')
 ax1.set_zlabel('B')
-# fig1.savefig("x1_histogram_vwb1all.svg", bbox_inches='tight')
-fig1.savefig("x1_histogram_vwb1all.png", dpi=300, bbox_inches='tight')
+# fig1.savefig("x1_histogram_vot1all.svg", bbox_inches='tight')
+fig1.savefig("x1_histogram_vot1all_numpy.png", dpi=300, bbox_inches='tight')
 
 fig2 = plt.figure(figsize=(8, 8))
 ax2 = fig2.add_subplot(111, projection='3d')
-ce2 = vwb.y[idx[1]]
-p2 = vwb.y
+ce2 = vot.y[idx[1]]
+p2 = vot.y
 ax2.scatter(x2[:, 0], x2[:, 1], x2[:, 2], s=dot_size, color=ce2, alpha=alpha)
 ax2.xaxis.pane.fill = False
 ax2.yaxis.pane.fill = False
@@ -265,13 +266,13 @@ ax2.scatter(p2[:, 0], p2[:, 1], p2[:, 2], s=dot_size*dot_size_scale, color='k', 
 ax2.set_xlabel('R')
 ax2.set_ylabel('G')
 ax2.set_zlabel('B')
-# fig2.savefig("x2_histogram_vwb1all.svg", bbox_inches='tight')
-fig2.savefig("x2_histogram_vwb1all.png", dpi=300, bbox_inches='tight')
+# fig2.savefig("x2_histogram_vot1all.svg", bbox_inches='tight')
+fig2.savefig("x2_histogram_vot1all_numpy.png", dpi=300, bbox_inches='tight')
 
 fig3 = plt.figure(figsize=(8, 8))
 ax3 = fig3.add_subplot(111, projection='3d')
-ce3 = vwb.y[idx[2]]
-p3 = vwb.y
+ce3 = vot.y[idx[2]]
+p3 = vot.y
 ax3.scatter(x3[:, 0], x3[:, 1], x3[:, 2], s=dot_size, color=ce3, alpha=alpha)
 ax3.xaxis.pane.fill = False
 ax3.yaxis.pane.fill = False
@@ -280,5 +281,5 @@ ax3.scatter(p3[:, 0], p3[:, 1], p3[:, 2], s=dot_size*dot_size_scale, color='k', 
 ax3.set_xlabel('R')
 ax3.set_ylabel('G')
 ax3.set_zlabel('B')
-# fig3.savefig("x3_histogram_vwb1all.svg", bbox_inches='tight')
-fig3.savefig("x3_histogram_vwb1all.png", dpi=300, bbox_inches='tight')
+# fig3.savefig("x3_histogram_vot1all.svg", bbox_inches='tight')
+fig3.savefig("x3_histogram_vot1all_numpy.png", dpi=300, bbox_inches='tight')

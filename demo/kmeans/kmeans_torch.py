@@ -1,6 +1,7 @@
 # PyVot Python Variational Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
 # Date: April 28th 2020
+# Latest update: Sep 1st 2023
 # Licence: MIT
 
 
@@ -76,8 +77,8 @@ for reg in [0.5, 2, 1e9]:
     utils.scatter_otsamples(vot.y, vot.x[0], size_p=30, marker_p='o', color_x=ce,
                             xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
     plt.axis('off')
-    # plt.savefig("0.svg", bbox_inches='tight')
-    plt.savefig(str(reg) + ".png", dpi=300, bbox_inches='tight')
+    # plt.savefig("0_torch.svg", bbox_inches='tight')
+    plt.savefig(str(reg) + "_torch.png", dpi=300, bbox_inches='tight')
 
 
 plt.figure(figsize=(4, 4))
@@ -86,5 +87,5 @@ ce = color_map[label]
 utils.scatter_otsamples(newx, x0, size_p=30, marker_p='o', color_x=ce,
                         xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax, facecolor_p='none')
 plt.axis('off')
-# plt.savefig("0.svg", bbox_inches='tight')
-plt.savefig("0.png", dpi=300, bbox_inches='tight')
+# plt.savefig("0_torch.svg", bbox_inches='tight')
+plt.savefig("0_torch.png", dpi=300, bbox_inches='tight')

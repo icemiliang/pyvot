@@ -1,6 +1,7 @@
 # PyVot Python Variational Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
 # Date: April 28th 2020
+# Latest update: Sep 1st 2023
 # Licence: MIT
 
 import numpy as np
@@ -401,7 +402,7 @@ class VOTREG(VOT):
         idxs = []
         for iter_y in range(max_iter_y):
             dist = cdist(self.y, self.x[0], 'sqeuclidean')
-            output = self.update_map(0, dist, max_iter_h, lr=lrs[0], lr_decay=lr_decay, stop=stop, keep_idx=keep_idx,)
+            output = self.update_map(0, dist, max_iter_h, lr=lrs[0], lr_decay=lr_decay, stop=stop, keep_idx=keep_idx)
             self.idx[0] = output['idx']
             if keep_idx:
                 idxs.append(output['idxs'])
@@ -427,30 +428,30 @@ class VOTREG(VOT):
         """ update each p to the centroids of its cluster,
         """
 
-        def f(p, p0, label=None, reg=0.01):
+        def f(y, y0, label=None, reg=0.01):
             """ objective function incorporating labels
 
             Args:
-                p  (numpy ndarray): p
-                p0 (numpy ndarray): centroids of e
-                label (numpy ndarray): labels of p
+                y  (numpy ndarray): y
+                y0 (numpy ndarray): centroids of x
+                label (numpy ndarray): labels of y
                 reg (float): regularizer weight
 
             Returns:
-                float: f = sum(|p-p0|^2) + reg * sum(1(li == lj)*|pi-pj|^2)
+                float: f = sum(|y-y0|^2) + reg * sum(1(li == lj)*|pi-pj|^2)
             """
 
-            p = p.reshape(p0.shape)
+            y = y.reshape(y0.shape)
             reg_term = 0.0
             for l in np.unique(label):
-                p_sub = p[label == l, :]
+                y_sub = y[label == l, :]
                 # pairwise distance with smaller memory burden
-                # |pi - pj|^2 = pi^2 + pj^2 - 2*pi*pj
-                reg_term += np.sum((p_sub ** 2).sum(axis=1, keepdims=True) +
-                                   (p_sub ** 2).sum(axis=1) -
-                                   2 * p_sub.dot(p_sub.T))
+                # |yi - yj|^2 = yi^2 + yj^2 - 2*yi*yj
+                reg_term += np.sum((y_sub ** 2).sum(axis=1, keepdims=True) +
+                                   (y_sub ** 2).sum(axis=1) -
+                                   2 * y_sub.dot(y_sub.T))
 
-            return np.sum((p - p0) ** 2.0) + reg * reg_term
+            return np.sum((y - y0) ** 2.0) + reg * reg_term
 
         if np.unique(self.label_y).size == 1:
             warnings.warn("All known samples belong to the same class")
@@ -480,23 +481,23 @@ class VOTREG(VOT):
         yt = utils.estimate_transform_target(self.y, y0)
 
         # regularize within each label
-        # yt = np.zeros(p0.shape)
+        # yt = np.zeros(y0.shape)
         # for label in np.unique(self.label_y):
         #     idx_p_label = self.label_y == label
         #     y_sub = self.y[idx_y_label, :]
-        #     y0_sub = p0[idx_y_label, :]
+        #     y0_sub = y0[idx_y_label, :]
         #     T = tf.EuclideanTransform()
         #     # T = tf.AffineTransform()
         #     # T = tf.ProjectiveTransform()
         #     T.estimate(y_sub, y0_sub)
         #     yt[idx_p_label, :] = T(y_sub)
         #
-        # pt = self.y.copy()
+        # yt = self.y.copy()
         # T = tf.EuclideanTransform()
         # T.estimate(yt, y0)
         # yt = T(yt)
 
         self.y = yt
-        # self.y = 1 / (1 + reg) * p0 + reg / (1 + reg) * pt
+        # self.y = 1 / (1 + reg) * y0 + reg / (1 + reg) * yt
         # return convergence
         return True if max_change_pct < self.tol else False

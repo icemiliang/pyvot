@@ -1,6 +1,7 @@
 # PyVot Python Variational Optimal Transportation
 # Author: Liang Mi <icemiliang@gmail.com>
 # Date: April 28th 2020
+# Latest update: Sep 1st 2023
 # Licence: MIT
 
 import torch
@@ -35,7 +36,7 @@ class VOTAP:
         self.K = self.y.shape[0]
 
         self.label_y = label
-        self.weight_p = nu if nu is not None else torch.ones(self.K).double().to(device) / self.K
+        self.weight_y = nu if nu is not None else torch.ones(self.K).double().to(device) / self.K
 
         self.thres = thres
         self.device = device
@@ -63,9 +64,9 @@ class VOTAP:
             idx = torch.argmin(self.dist, axis=0)
 
             # calculate total mass of each cell
-            mass_p = torch.bincount(idx, minlength=self.K) / self.N0
+            mass_y = torch.bincount(idx, minlength=self.K) / self.N0
             # gradient descent with momentum and decay
-            dh = beta * dh + (1-beta) * (mass_p - self.weight_p)
+            dh = beta * dh + (1-beta) * (mass_y - self.weight_y)
             if i != 0 and i % lr_decay == 0:
                 lr *= 0.9
             self.dist += lr * dh[:, None]
@@ -77,7 +78,7 @@ class VOTAP:
                 imgs.append(img)
 
             # check if converge
-            max_change = torch.max((mass_p - self.weight_p) / self.weight_p)
+            max_change = torch.max((mass_y - self.weight_y) / self.weight_y)
             if torch.numel(max_change) > 1:
                 max_change = max_change[0]
             max_change *= 100
@@ -427,25 +428,25 @@ class VOTREG(VOT):
         """ update each p to the centroids of its cluster,
         """
 
-        def f(p, p0, label=None, reg=0.1):
+        def f(y, y0, label=None, reg=0.1):
             """ objective function incorporating labels
 
             Args:
-                p  pytorch floattensor:   p
-                p0 pytorch floattensor:  centroids of e
+                y  pytorch floattensor:   p
+                y0 pytorch floattensor:  centroids of e
                 label pytorch inttensor: labels of p
                 reg float: regularizer weight
 
             Returns:
-                pytorch inttensor: f = sum(|p-p0|^2) + reg * sum(1(li == lj)*|pi-pj|^2)
+                pytorch inttensor: f = sum(|y-y0|^2) + reg * sum(1(li == lj)*|pi-pj|^2)
             """
 
             reg_term = 0.0
             for l in torch.unique(label):
-                p_sub = p[label == l, :]
-                reg_term += torch.pow(torch.pdist(p_sub, p=2), 2).sum()
+                y_sub = y[label == l, :]
+                reg_term += torch.pow(torch.pdist(y_sub, p=2), 2).sum()
 
-            return torch.sum((p - p0) ** 2.0) + reg * reg_term
+            return torch.sum((y - y0) ** 2.0) + reg * reg_term
 
         if torch.unique(self.label_y).size == 1:
             warnings.warn("All known samples belong to the same class")
@@ -488,14 +489,13 @@ class VOTREG(VOT):
         if self.verbose:
             print("it {0:d}: max centroid change {1:.2f}".format(iter_p, max_change_pct))
 
-        # pt = utils.estimate_transform_target_pytorch(self.y.detach(), p0)
         yt = utils.estimate_transform_target(self.y, y0)
         # regularize within each label
-        # yt = torchzeros(p0.shape)
+        # yt = torchzeros(y0.shape)
         # for label in torchunique(self.label_y):
         #     idx_y_label = self.label_y == label
         #     y_sub = self.y[idx_y_label, :]
-        #     y0_sub = p0[idx_y_label, :]
+        #     y0_sub = y0[idx_y_label, :]
         #     T = tf.EuclideanTransform()
         #     # T = tf.AffineTransform()
         #     # T = tf.ProjectiveTransform()
