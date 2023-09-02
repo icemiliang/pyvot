@@ -224,14 +224,17 @@ class VOT:
 
         # compute W_2^2
         twd = 0
+        twd_squared = 0
         wds = []
         for i in range(self.N):
             tmp = (self.y[self.idx[i], :] - self.x[i]) ** 2
             wd = np.sum(np.sum(tmp, axis=1) * self.mu[i])
-            twd += wd
+            twd += np.sqrt(wd)
+            twd_squared += wd
             wds.append(wd)
 
         output['wd'] = twd
+        output['wd_squared'] = twd_squared
         output['wds'] = wds
         return output
 
