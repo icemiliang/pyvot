@@ -87,7 +87,7 @@ def plot_map(data, idx, color_map='viridis'):
     return fig
 
 
-def rigid_transform_3d_numpy(p1, p2):
+def rigid_transform_3d(p1, p2):
     center_p1 = np.mean(p1, axis=0, keepdims=True)
     center_p2 = np.mean(p2, axis=0, keepdims=True)
 
@@ -108,44 +108,6 @@ def rigid_transform_3d_numpy(p1, p2):
     return r, t
 
 
-def rigid_transform_3D(A, B):
-    assert len(A) == len(B)
-
-    num_rows, num_cols = A.shape;
-
-    if num_rows != 3:
-        raise Exception("matrix A is not 3xN, it is {}x{}".format(num_rows, num_cols))
-
-    [num_rows, num_cols] = B.shape;
-    if num_rows != 3:
-        raise Exception("matrix B is not 3xN, it is {}x{}".format(num_rows, num_cols))
-
-    # find mean column wise
-    centroid_A = np.mean(A, axis=1)
-    centroid_B = np.mean(B, axis=1)
-
-    # subtract mean
-    Am = A - np.tile(centroid_A, (1, num_cols))
-    Bm = B - np.tile(centroid_B, (1, num_cols))
-
-    # dot is matrix multiplication for array
-    H = Am * np.transpose(Bm)
-
-    # find rotation
-    U, S, Vt = np.linalg.svd(H)
-    R = Vt.T * U.T
-
-    # special reflection case
-    if np.linalg.det(R) < 0:
-        print("det(R) < R, reflection detected!, correcting for it ...\n");
-        Vt[2,:] *= -1
-        R = Vt.T * U.T
-
-    t = -R*centroid_A + centroid_B
-
-    return R, t
-
-
 def estimate_transform_target(p1, p2, e=None):
     assert len(p1) == len(p2)
     expand_dim = False
@@ -156,7 +118,7 @@ def estimate_transform_target(p1, p2, e=None):
     elif p1.shape[1] != 3:
         raise Exception("expected 2d or 3d points")
 
-    r, t = rigid_transform_3d_numpy(p1, p2)
+    r, t = rigid_transform_3d(p1, p2)
     At = np.matmul(r, p1.T) + t
     if expand_dim:
         At = At[:-1, :]
@@ -171,7 +133,7 @@ def estimate_transform(p1, p2):
     elif p1.shape[1] != 3:
         raise Exception("expected 2d or 3d points")
 
-    r, t = rigid_transform_3d_numpy(p1, p2)
+    r, t = rigid_transform_3d(p1, p2)
 
     return r, t
 

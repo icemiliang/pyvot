@@ -401,7 +401,7 @@ class VOTREG(VOT):
         idxs = []
         for iter_y in range(max_iter_y):
             dist = cdist(self.y, self.x[0], 'sqeuclidean')
-            output = self.update_map(0, dist, max_iter_h, lr=lrs[0], lr_decay=lr_decay, stop=stop)
+            output = self.update_map(0, dist, max_iter_h, lr=lrs[0], lr_decay=lr_decay, stop=stop, keep_idx=keep_idx,)
             self.idx[0] = output['idx']
             if keep_idx:
                 idxs.append(output['idxs'])
@@ -409,7 +409,7 @@ class VOTREG(VOT):
                 if self.update_y_potential(iter_y, reg):
                     break
             elif reg_type == 2 or reg_type == 'transform':
-                if self.update_p_transform(iter_y, reg):
+                if self.update_y_transform(iter_y, reg):
                     break
             else:
                 raise Exception('regularization type not defined')
@@ -466,38 +466,37 @@ class VOTREG(VOT):
 
         return True if max_change_pct < self.tol else False
 
-    def update_p_transform(self, iter_p=0, reg=0.01):
+    def update_y_transform(self, iter_p=0, reg=0.01):
         """ update each p to the centroids of its cluster,
         """
 
         assert self.y.shape[1] == 2, "dim has to be 2 for geometric transformation"
 
-        p0, max_change_pct = self.update_y_base(self.idx[0], self.y, self.x[0])
+        y0, max_change_pct = self.update_y_base(self.idx[0], self.y, self.x[0])
 
         if self.verbose:
             print("it {0:d}: max centroid change {1:.2f}".format(iter_p, max_change_pct))
 
-        pt = np.zeros_like(self.y)
-        pt = utils.estimate_transform_target(pt, p0)
+        yt = utils.estimate_transform_target(self.y, y0)
 
         # regularize within each label
-        # pt = np.zeros(p0.shape)
+        # yt = np.zeros(p0.shape)
         # for label in np.unique(self.label_y):
         #     idx_p_label = self.label_y == label
-        #     p_sub = self.y[idx_p_label, :]
-        #     p0_sub = p0[idx_p_label, :]
+        #     y_sub = self.y[idx_y_label, :]
+        #     y0_sub = p0[idx_y_label, :]
         #     T = tf.EuclideanTransform()
         #     # T = tf.AffineTransform()
         #     # T = tf.ProjectiveTransform()
-        #     T.estimate(p_sub, p0_sub)
-        #     pt[idx_p_label, :] = T(p_sub)
+        #     T.estimate(y_sub, y0_sub)
+        #     yt[idx_p_label, :] = T(y_sub)
         #
         # pt = self.y.copy()
         # T = tf.EuclideanTransform()
-        # T.estimate(pt, p0)
-        # pt = T(pt)
+        # T.estimate(yt, y0)
+        # yt = T(yt)
 
-        self.y = pt
+        self.y = yt
         # self.y = 1 / (1 + reg) * p0 + reg / (1 + reg) * pt
         # return convergence
         return True if max_change_pct < self.tol else False

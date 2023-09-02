@@ -95,10 +95,10 @@ def rigid_transform_3d(p1, p2):
 
     h = torch.mm(pp1.t(), pp2)
     u, _, v = torch.svd(h)
-    r = torch.mm(v.t(), u.t())
+    r = torch.mm(v, u.T)
 
     # reflection
-    if np.linalg.det(r.cpu().numpy()) < 0:
+    if torch.linalg.det(r) < 0:
         v[2, :] *= -1
         r = torch.mm(v.t(), u.t())
 
@@ -107,49 +107,11 @@ def rigid_transform_3d(p1, p2):
     return r, t
 
 
-def rigid_transform_3D(A, B):
-    assert len(A) == len(B)
-
-    num_rows, num_cols = A.shape;
-
-    if num_rows != 3:
-        raise Exception("matrix A is not 3xN, it is {}x{}".format(num_rows, num_cols))
-
-    [num_rows, num_cols] = B.shape;
-    if num_rows != 3:
-        raise Exception("matrix B is not 3xN, it is {}x{}".format(num_rows, num_cols))
-
-    # find mean column wise
-    centroid_A = np.mean(A, axis=1)
-    centroid_B = np.mean(B, axis=1)
-
-    # subtract mean
-    Am = A - np.tile(centroid_A, (1, num_cols))
-    Bm = B - np.tile(centroid_B, (1, num_cols))
-
-    # dot is matrix multiplication for array
-    H = Am * np.transpose(Bm)
-
-    # find rotation
-    U, S, Vt = np.linalg.svd(H)
-    R = Vt.T * U.T
-
-    # special reflection case
-    if np.linalg.det(R) < 0:
-        print("det(R) < R, reflection detected!, correcting for it ...\n");
-        Vt[2,:] *= -1
-        R = Vt.T * U.T
-
-    t = -R*centroid_A + centroid_B
-
-    return R, t
-
-
 def estimate_transform(p1, p2):
     assert len(p1) == len(p2)
     if p1.shape[1] == 2:
-        p1 = np.append(p1, np.zeros((p1.shape[0], 1)), 1)
-        p2 = np.append(p2, np.zeros((p2.shape[0], 1)), 1)
+        p1 = torch.hstack([p1, torch.zeros((p1.shape[0], 1))])
+        p2 = torch.hstack([p2, torch.zeros((p2.shape[0], 1))])
     elif p1.shape[1] != 3:
         raise Exception("expected 2d or 3d points")
 

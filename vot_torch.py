@@ -483,32 +483,31 @@ class VOTREG(VOT):
 
         assert self.y.shape[1] == 3 or self.y.shape[1] == 2, "dim has to be 2 or 3 for geometric transformation"
 
-        p0, max_change_pct = self.update_y_base(self.idx[0], self.y.detach(), self.x)
+        y0, max_change_pct = self.update_y_base(self.idx[0], self.y.detach(), self.x[0])
 
         if self.verbose:
             print("it {0:d}: max centroid change {1:.2f}".format(iter_p, max_change_pct))
 
         # pt = utils.estimate_transform_target_pytorch(self.y.detach(), p0)
-        pt = utils.estimate_transform_target(self.y.detach(), p0)
+        yt = utils.estimate_transform_target(self.y, y0)
         # regularize within each label
-        # pt = torchzeros(p0.shape)
+        # yt = torchzeros(p0.shape)
         # for label in torchunique(self.label_y):
-        #     idx_p_label = self.label_y == label
-        #     p_sub = self.y[idx_p_label, :]
-        #     p0_sub = p0[idx_p_label, :]
+        #     idx_y_label = self.label_y == label
+        #     y_sub = self.y[idx_y_label, :]
+        #     y0_sub = p0[idx_y_label, :]
         #     T = tf.EuclideanTransform()
         #     # T = tf.AffineTransform()
         #     # T = tf.ProjectiveTransform()
-        #     T.estimate(p_sub, p0_sub)
-        #     pt[idx_p_label, :] = T(p_sub)
+        #     T.estimate(y_sub, y0_sub)
+        #     yt[idx_y_label, :] = T(y_sub)
         #
-        # pt = self.y.clone()
+        # yt = self.y.clone()
         # T = tf.EuclideanTransform()
-        # T.estimate(pt, p0)
-        # pt = T(pt)
+        # T.estimate(yt, y0)
+        # yt = T(yt)
 
-        # pt = p0 + pt
-
-        self.y = 1 / (1 + reg) * p0 + reg / (1 + reg) * pt
+        self.y = yt
+        # self.y = 1 / (1 + reg) * y0 + reg / (1 + reg) * yt
         # return convergence
         return True if max_change_pct < self.tol else False

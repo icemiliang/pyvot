@@ -100,10 +100,18 @@ for py, cy in zip(vot.y, cys):
 vot_reg = VOTREG(y.copy(), [x.copy()], label_y=labels, verbose=False)
 print("running regularized Wasserstein clustering...")
 tick = time.time()
-vot_reg.map(reg_type='transform', reg=5, max_iter_y=5, lr=0.005)
+vot_reg.map(reg_type='transform', reg=1, max_iter_y=5, lr=0.5)
 tock = time.time()
 print("total running time : {0:.4f} seconds".format(tock-tick))
-cxs = cxs_base[vot_reg.label_x[0]]
+# cxs = cxs_base[vot_reg.label_x[0]]
+
+# Compute OT one more time to disperse the centroids into the empirical domain.
+# This does not change the correspondence but can give better visual.
+# This is optional.
+print("[optional] distribute centroids into target domain...")
+vot = VOT(vot_reg.y, vot_reg.x, label_y=labels, verbose=False)
+vot.cluster(max_iter_y=1)
+cxs = cxs_base[vot.label_x[0]]
 
 # ------- plot map ------ #
 plt.subplot(235)
