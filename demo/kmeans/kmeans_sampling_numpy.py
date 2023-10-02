@@ -35,27 +35,30 @@ kmeans = KMeans(n_clusters=K, init=init_centers).fit(x)
 label = kmeans.predict(x)
 y = kmeans.cluster_centers_
 
-fig, axs = plt.subplots(1, 4, figsize=(20, 5))
-axs[0].scatter(x[0::10,1], x[0::10,0], s=2, c='#009900', alpha=0.3)
-axs[0].scatter(y[:,1], y[:,0], s=50, c='#0047AB', alpha=1, facecolors='none')
-axs[0].axis([-1, 1, -1, 1])
+fig, axs = plt.subplots(2, 2, figsize=(10, 7))
+axs[0,0].scatter(x[:,1], x[:,0], s=0.3, c='#009900', alpha=0.3)
+axs[0,0].scatter(y[:,1], y[:,0], s=50, c='#0047AB', alpha=1, facecolors='none')
+axs[0,0].axis([-1, 1, -1, 1])
+axs[0,0].title.set_text('Reg = 0')
 # plt.show()
 # ---------------VWB---------------
-regs = [0.01, 0.1, 1e9]
+regs = [0.5, 1.5, 1e9]
 for i in range(len(regs)):
     reg = regs[i]
     y_copy = init_centers.copy()
     x_copy = x.copy()
 
     vot = VOT(y_copy, [x_copy], verbose=False)
-    vot.cluster(lr=0.5, max_iter_h=1000, max_iter_y=1, beta=0.5, reg=reg)
+    vot.cluster(lr=0.5, max_iter_h=1000, max_iter_y=10, beta=0.5, reg=reg)
 
     # idx = vot.idx
     y = vot.y
+    print(y)
 
-    axs[i+1].scatter(x[0::10, 1], x[0::10, 0], s=2, c='#009900', alpha=0.3)
-    axs[i+1].scatter(y[:, 1], y[:, 0], s=50, c='#0047AB', alpha=1, facecolors='none')
-    axs[i+1].axis([-1, 1, -1, 1])
+    axs[(i+1)//2, (i+1)%2].scatter(x[:, 1], x[:, 0], s=0.3, c='#009900', alpha=0.3)
+    axs[(i+1)//2, (i+1)%2].scatter(y[:, 1], y[:, 0], s=50, c='#0047AB', alpha=1, facecolors='none')
+    axs[(i+1)//2, (i+1)%2].axis([-1, 1, -1, 1])
+    axs[(i+1)//2, (i+1)%2].title.set_text('Reg = {:g}'.format(reg))
 
 fig.savefig('test.jpeg', dpi='figure')
 pass
